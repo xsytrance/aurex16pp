@@ -1,5 +1,20 @@
 # Aurex-16++ Architecture Progress
 
+## Phase 4 — Framebuffer Skeleton
+- Added PPU-A16 framebuffer at 426×240
+- Internal pixel format is u16 RGB555 (0RRRRRGGGGGBBBBB)
+- Framebuffer clears to black each frame (no rendering yet)
+
+## Phase 3.6 — Real DMA (WRAM → VRAM)
+
+- DMA now copies real bytes from WRAM into specific VRAM partitions
+- Transfers validated at request time (Option A discipline)
+- No clipping, no partial writes
+- Max 4 commands per frame
+- Max 64 KB VRAM upload per frame
+- All large memory blocks allocated via Vec → Box<[u8]> to avoid stack overflow
+- Audio DMA temporarily disabled (reserved for ASU-816 phase)
+
 ## Phase 3.5
 - DMA now queues accepted transfers
 - DMA apply stage executes at frame end

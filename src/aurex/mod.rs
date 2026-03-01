@@ -19,6 +19,7 @@ pub struct Aurex {
     vm: Vm32,
     dma: DmaController,
     vram: Vram,
+    fb: ppu::framebuffer::Framebuffer,
 }
 
 impl Aurex {
@@ -30,6 +31,7 @@ impl Aurex {
             vm: Vm32::new(),
             dma: DmaController::new(),
             vram: Vram::new(),
+            fb: ppu::framebuffer::Framebuffer::new(),
         }
     }
 
@@ -37,6 +39,11 @@ impl Aurex {
         loop {
             self.clock.begin_frame();
             self.pdu.begin_frame();
+
+            use crate::aurex::ppu::framebuffer::rgb555;
+
+            self.fb.clear(rgb555(0, 0, 0)); // black
+
             self.dma.begin_frame();
 
             // CPU execution for this frame
