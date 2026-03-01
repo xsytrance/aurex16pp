@@ -1,9 +1,3 @@
-AUREX-16++ AI HANDOFF DOCUMENT
-
-This document defines the canonical state of Aurex-16++.
-
-If context is lost, this file restores architectural truth.
-
 Project Overview
 
 Aurex-16++ is a deterministic 2D fantasy console platform built in Rust.
@@ -20,76 +14,122 @@ Support trophies
 
 Support guided game creation
 
-Remain 2D-only
+Remain strictly 2D
 
-Core System Summary
-Frame Model
+It follows the RX philosophy:
+Lightweight. Balanced. Constrained. Tuned. Deterministic.
 
-60 FPS fixed
+Current Engine Status
+Core Engine — LOCKED
 
-200k ops per frame cap
+The following systems are fully implemented and frozen:
 
-Deterministic execution
+CPU (VM-32)
 
+200,000 ops per frame cap (hard enforced)
+
+Deterministic 60 FPS model
+
+No floating point in core VM
+
+CPU cap violations tracked (cpu_rejects)
+
+WRAM
+
+512 KB hard-locked constant
+
+Heap-backed allocation
+
+Size enforced via constant
+
+DMA
+
+Max 4 commands per frame
+
+Max 64 KB VRAM upload per frame
+
+Max 16 KB audio upload per frame
+
+Immediate rejection when caps exceeded
+
+Reject telemetry tracked per frame
+
+AudioRam explicitly separated from PPU
+
+Any AudioRam access through PPU panics (debug enforcement)
+
+Core tolerances must not be re-architected without explicit approval.
+
+Hardware Canon
 Memory
 
 512 KB WRAM
 
-1 MB VRAM (partitioned)
+1 MB VRAM (partitioned — formal layout pending finalization)
 
 256 KB ASU sample RAM
 
-Graphics
+Graphics (PPU-A16)
 
-Tile + sprite based
+426×240 (16:9)
 
-Mode 7 support
+4 BG layers
 
-Line effects capped
+BG2 reserved for Mode 7 affine plane
 
-256 colors max on screen
+256 sprites (64 per scanline)
 
-Audio
+256 on-screen colors
 
-16 voices
+15-bit palette (5:5:5)
 
-PCM + synth hybrid
+Line effects tightly capped
 
-Built-in sequencer
+Audio (ASU-816)
 
-Echo + limiter
+16 voices (8 PCM + 8 synth)
 
-DMA
+ADSR per voice
 
-Hard capped
+Built-in SEQ-16 sequencer
 
-Reject with visible warning
+Echo + soft limiter
 
-4 commands per frame max
+44.1 kHz stereo
 
-Entities
+ECSU
 
-256 ECSU slots
+256 entity slots
 
-Standardized structure
+Standardized layout
 
-Diagnostics
+PDU
 
-PDU tracks everything performance-related
+Tracks CPU usage
 
-Achievements
+Tracks DMA usage
 
-Built-in system
+Tracks VRAM usage
 
-Trophy metadata in cart
+Tracks audio usage
+
+Tracks reject counts
+
+AAS
+
+Built-in achievement system
 
 Unlock API
 
+Persistent profile storage
+
 GCU
 
-Built-in guided creation system
+Built-in Guided Creation Unit
 
 Visible in Library
+
+LLM-assisted cartridge creation
 
 Architectural Rule
 
@@ -99,22 +139,22 @@ Determinism
 
 2D-only philosophy
 
-Hardware-style constraints
+Hard hardware constraints
 
-They are rejected.
+Canon caps (CPU, DMA, memory)
 
-Immediate Rebuild Starting Point
+They must be rejected.
 
-Begin with:
+No silent budget forgiveness.
+No deferred DMA.
+No implicit scaling.
 
-Clean Rust project
+Current Development Phase
 
-Frame loop
+Core Engine + DMA complete and locked.
 
-PDU
+Next major milestone:
 
-Ops enforcement
+VRAM memory map formalization and PPU-A16 partition locking.
 
-WRAM scaffold
-
-Everything else builds on top.
+Development continues in strict build order.
