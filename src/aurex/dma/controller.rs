@@ -17,12 +17,14 @@ use crate::aurex::{ppu::vram::Vram, wram::Wram};
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
 const DMA_MAX_VRAM_BYTES_PER_FRAME: u32 = 64 * 1024;
+const DMA_MAX_AUDIO_BYTES_PER_FRAME: u32 = 16 * 1024;
 
 pub struct DmaController {
     commands_used: u32,
     vram_bytes_used: u32,
     rejects_this_frame: u32,
     queue: Vec<DmaCommand>,
+    audio_bytes_used: u32,
 }
 
 impl DmaController {
@@ -30,6 +32,7 @@ impl DmaController {
         Self {
             commands_used: 0,
             vram_bytes_used: 0,
+            audio_bytes_used: 0,
             rejects_this_frame: 0,
             queue: Vec::new(),
         }
@@ -39,6 +42,7 @@ impl DmaController {
         self.commands_used = 0;
         self.vram_bytes_used = 0;
         self.rejects_this_frame = 0;
+        self.audio_bytes_used = 0;
         self.queue.clear();
     }
 
@@ -51,6 +55,13 @@ impl DmaController {
         // Cap: total VRAM bytes per frame
         if self.vram_bytes_used + cmd.bytes as u32 > DMA_MAX_VRAM_BYTES_PER_FRAME {
             return self.reject();
+        }
+
+        // Cap: total AUDIO bytes per frame
+        if cmd.is_audio() {
+            if self.audio_bytes_used + cmd.bytes as u32 > DMA_MAX_AUDIO_BYTES_PER_FRAME {
+                return self.reject();
+            }
         }
 
         // Validate WRAM bounds
@@ -66,7 +77,12 @@ impl DmaController {
         }
 
         self.commands_used += 1;
-        self.vram_bytes_used += cmd.bytes as u32;
+
+        if cmd.is_audio() {
+            self.audio_bytes_used += cmd.bytes as u32;
+        } else {
+            self.vram_bytes_used += cmd.bytes as u32;
+        }
         self.queue.push(cmd);
         true
     }

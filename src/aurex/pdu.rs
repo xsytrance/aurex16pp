@@ -17,6 +17,7 @@
 pub struct Pdu {
     // CPU usage
     ops_used: u32,
+    cpu_rejects: u32,
 
     // DMA telemetry (read-only from DMA each frame)
     dma_commands_used: u32,
@@ -39,6 +40,7 @@ impl Pdu {
             dma_audio_bytes_used: 0,
             dma_rejects: 0,
             frame_index: 0,
+            cpu_rejects: 0,
         }
     }
 
@@ -57,10 +59,12 @@ impl Pdu {
         self.dma_vram_bytes_used = 0;
         self.dma_audio_bytes_used = 0;
         self.dma_rejects = 0;
+        self.cpu_rejects = 0;
     }
 
     pub fn consume(&mut self, ops: u32) -> bool {
         if self.ops_used + ops > OPS_CAP {
+            self.cpu_rejects += 1;
             return false;
         }
         self.ops_used += ops;
@@ -82,6 +86,10 @@ impl Pdu {
         // Temporary heartbeat debug
         if self.frame_index % 60 == 0 {
             println!("Frame: {}", self.frame_index);
+        }
+        // TEMP DEBUG
+        if self.cpu_rejects > 0 {
+            println!("CPU budget exceeded {} times this frame", self.cpu_rejects);
         }
     }
 }

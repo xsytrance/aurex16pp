@@ -20,6 +20,10 @@ pub enum VramRegion {
     SpriteTiles,
     Mode7Tex,
     Palettes,
+
+    // ASU-816 Sample RAM
+    AudioRam,
+
     Reserved,
 }
 
@@ -39,5 +43,9 @@ impl DmaCommand {
             dst_offset,
             bytes,
         }
+    }
+
+    pub fn is_audio(&self) -> bool {
+        matches!(self.region, VramRegion::AudioRam)
     }
 }

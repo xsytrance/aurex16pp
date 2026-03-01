@@ -71,6 +71,9 @@ impl Vram {
             VramRegion::Mode7Tex => self.mode7_tex.len(),
             VramRegion::Palettes => self.palettes.len(),
             VramRegion::Reserved => self.reserved.len(),
+
+            // Audio RAM does not belong to PPU
+            VramRegion::AudioRam => panic!("AudioRam accessed through PPU VRAM"),
         }
     }
 
@@ -82,6 +85,9 @@ impl Vram {
             VramRegion::Mode7Tex => &mut self.mode7_tex,
             VramRegion::Palettes => &mut self.palettes,
             VramRegion::Reserved => &mut self.reserved,
+
+            // Audio RAM does not belong to PPU
+            VramRegion::AudioRam => panic!("AudioRam accessed through PPU VRAM"),
         }
     }
 }
