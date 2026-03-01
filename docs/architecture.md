@@ -1,5 +1,18 @@
 # Aurex-16++ Architecture Progress
 
+## Phase 3.5
+- DMA now queues accepted transfers
+- DMA apply stage executes at frame end
+- VRAM partitions implemented as separate heap allocations
+- Placeholder DMA writes currently mark BG tile memory
+- No WRAM source copying yet
+
+### Technical Notes
+- All large memory blocks (WRAM, VRAM partitions) allocated via Vec -> Box<[u8]>
+  to prevent Windows stack overflow during initialization.
+- Core loop contains no temporary smoke tests.
+- Frame timing uses anchored frame_start approach (no drift accumulation).
+
 ## Phase 3
 - PPU-A16 VRAM skeleton implemented as separate fixed partitions (Option B)
 - Total VRAM = 1 MiB split into:
