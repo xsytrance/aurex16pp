@@ -42,6 +42,15 @@ impl Pdu {
         }
     }
 
+    // --------------------------------------------------------------------------
+    // TEMP ACCESSOR
+    // Exposes frame index for debug rendering.
+    // Safe to keep long-term; useful for diagnostics and overlays.
+    // --------------------------------------------------------------------------
+    pub fn frame_index(&self) -> u64 {
+        self.frame_index
+    }
+
     pub fn begin_frame(&mut self) {
         self.ops_used = 0;
         self.dma_commands_used = 0;

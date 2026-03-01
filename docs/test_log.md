@@ -1,4 +1,14 @@
 
+## Phase 4.5
+- Implemented framebuffer TEMP TEST pattern
+- Verified clean compile and runtime
+- Prepared system for SDL presenter integration
+
+## Phase 4.5
+- Added TEMP TEST debug_draw module
+- Framebuffer now populated with deterministic test pattern
+- Marked clearly for removal or gating before production
+
 ## Phase 4
 - Verified framebuffer alloc + per-frame clear compiles clean
 

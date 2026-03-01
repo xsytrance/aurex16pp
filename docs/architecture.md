@@ -1,5 +1,12 @@
 # Aurex-16++ Architecture Progress
 
+## Phase 4.5 — Framebuffer Debug Test
+
+- Added TEMP TEST debug draw module
+- Framebuffer is populated each frame with a deterministic test pattern
+- Used to validate pixel pipeline before SDL integration
+- Marked clearly as non-production logic
+
 ## Phase 4 — Framebuffer Skeleton
 - Added PPU-A16 framebuffer at 426×240
 - Internal pixel format is u16 RGB555 (0RRRRRGGGGGBBBBB)
