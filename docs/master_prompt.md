@@ -1,12 +1,12 @@
-AUREX-16++ MASTER PROMPT (Rebuild v1.0)
+AUREX-16++ MASTER PROMPT (Rebuild v1.1)
 Identity
 
 Project: Aurex-16++ (aurex16pp)
 Location: C:\Users\ageno\Apps\aurex16pp
 
-Aurex-16++ is a fantasy 2D console inspired by the 16-bit era, designed with modern AI-assisted development in mind.
+Aurex-16++ is a fantasy 2D console inspired by the late 16-bit era, designed with modern AI-assisted development in mind.
 
-It follows the “RX car philosophy”:
+It follows the RX car philosophy:
 
 Lightweight
 
@@ -18,7 +18,7 @@ Tuned
 
 Deterministic
 
-2D only
+2D-only
 
 It is not a 3D engine.
 It is not Unity.
@@ -36,7 +36,7 @@ VM-32
 
 60 FPS deterministic
 
-512 KB WRAM
+512 KB WRAM (hard-locked constant)
 
 No floats in core VM
 
@@ -68,7 +68,11 @@ Max 64 KB VRAM upload per frame
 
 Max 16 KB audio upload per frame
 
-Exceeding caps → reject with visible warning
+Exceeding caps → rejected immediately
+
+Reject counts tracked per frame
+
+Audio RAM strictly separated from PPU VRAM
 
 ASU-816
 
@@ -102,9 +106,21 @@ Standardized position/velocity/state layout
 
 PDU
 
-Tracks ops, DMA usage, VRAM usage, audio usage, rejects
+Tracks CPU ops
 
-AAS
+Tracks DMA usage
+
+Tracks VRAM usage
+
+Tracks audio usage
+
+Tracks reject counts
+
+Enforces 200,000 ops cap
+
+CPU cap violations tracked (cpu_rejects)
+
+AAS (Achievement Service)
 
 Built-in trophy system
 
@@ -112,11 +128,31 @@ Unlock API
 
 Persistent profile storage
 
-GCU
+GCU (Guided Creation Unit)
 
 Visible in Library as first-party Game Maker tool
 
 Powers LLM-assisted cartridge creation
+
+Must remain constrained and hardware-aware
+
+Engine Core Status (Milestone Locked)
+
+The following systems are fully implemented and considered frozen:
+
+WRAM hard-locked to 512 KB
+
+CPU 200,000 ops/frame enforced
+
+CPU reject telemetry active
+
+DMA caps fully enforced (commands, VRAM, audio)
+
+AudioRam separated from PPU; illegal routing panics
+
+Deterministic frame lifecycle operational
+
+Core engine tolerances must not be re-architected unless explicitly approved.
 
 Development Order (Strict)
 
@@ -128,15 +164,15 @@ WRAM scaffold
 
 DMA controller
 
-PPU
+PPU-A16
 
-ASU
+ASU-816 + SEQ-16
 
 ECSU + TCU
 
 Cartridge system
 
-Achievements
+Achievement Service
 
 GCU
 
@@ -152,3 +188,7 @@ No unlimited VRAM
 No deferred DMA
 
 No silent budget forgiveness
+
+No silent hardware cap bypass
+
+Violations must be rejected, not ignored.
