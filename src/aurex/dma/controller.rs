@@ -72,6 +72,26 @@ impl DmaController {
         // Validate VRAM bounds
         let region_len = vram.region_len(&cmd.region);
 
+        // -------------------------------------------------------------------------
+        // HARDWARE ENFORCEMENT:
+        // DMA transfer must not exceed region boundary
+        // -------------------------------------------------------------------------
+
+        // -------------------------------------------------------------------------
+        // HARDWARE ENFORCEMENT:
+        // DMA transfer must not exceed region boundary
+        // -------------------------------------------------------------------------
+
+        if cmd.dst_offset + cmd.bytes > region_len {
+            #[cfg(debug_assertions)]
+            panic!("DMA transfer exceeds region boundary");
+
+            #[cfg(not(debug_assertions))]
+            {
+                return;
+            }
+        }
+
         if cmd.dst_offset + cmd.bytes > region_len {
             return self.reject();
         }

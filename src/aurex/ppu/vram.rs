@@ -24,6 +24,94 @@ const VRAM_TOTAL_BYTES: usize = BG_TILES_BYTES
     + PALETTE_BYTES
     + RESERVED_BYTES;
 
+// ============================================================================
+// AUREX-16++ VRAM MEMORY MAP (LOCKED)
+// ----------------------------------------------------------------------------
+// Total VRAM: 1 MB (0x100000 bytes)
+// Canonical hardware partition — DO NOT RE-ARCHITECT
+// All regions are inclusive ranges.
+// Alignment: 0x4000 (16 KB)
+// ============================================================================
+
+pub const VRAM_SIZE: usize = 0x100000; // 1,048,576 bytes
+
+// -----------------------------------------------------------------------------
+// Region A — General Tile Pattern Memory (BG0/BG1/BG3)
+// -----------------------------------------------------------------------------
+pub const VRAM_A_BASE: usize = 0x00000;
+pub const VRAM_A_END: usize = 0x4FFFF;
+
+// -----------------------------------------------------------------------------
+// Region B — BG Tilemaps (BG0/BG1/BG3)
+// -----------------------------------------------------------------------------
+pub const VRAM_B_BASE: usize = 0x50000;
+pub const VRAM_B_END: usize = 0x5FFFF;
+
+// -----------------------------------------------------------------------------
+// Region C — Sprite Pattern Memory
+// -----------------------------------------------------------------------------
+pub const VRAM_C_BASE: usize = 0x60000;
+pub const VRAM_C_END: usize = 0x8FFFF;
+
+// -----------------------------------------------------------------------------
+// Region D — Sprite Tables
+// -----------------------------------------------------------------------------
+pub const VRAM_D_BASE: usize = 0x90000;
+pub const VRAM_D_END: usize = 0x93FFF;
+
+// -----------------------------------------------------------------------------
+// Region E — Mode 7 Map (BG2 ONLY)
+// -----------------------------------------------------------------------------
+pub const VRAM_E_BASE: usize = 0x94000;
+pub const VRAM_E_END: usize = 0xA3FFF;
+
+// -----------------------------------------------------------------------------
+// Region F — Mode 7 Texture / Pattern Store (BG2 ONLY)
+// -----------------------------------------------------------------------------
+pub const VRAM_F_BASE: usize = 0xA4000;
+pub const VRAM_F_END: usize = 0xD3FFF;
+
+// -----------------------------------------------------------------------------
+// Region G — Line Tables (Scanline Effects)
+// -----------------------------------------------------------------------------
+pub const VRAM_G_BASE: usize = 0xD4000;
+pub const VRAM_G_END: usize = 0xDBFFF;
+
+// -----------------------------------------------------------------------------
+// Region H — Cartridge General-Purpose VRAM
+// -----------------------------------------------------------------------------
+pub const VRAM_H_BASE: usize = 0xDC000;
+pub const VRAM_H_END: usize = 0xFBFFF;
+
+// -----------------------------------------------------------------------------
+// Region I — RESERVED (DO NOT USE)
+// -----------------------------------------------------------------------------
+pub const VRAM_I_BASE: usize = 0xFC000;
+pub const VRAM_I_END: usize = 0xFFFFF;
+
+// ============================================================================
+// VRAM Region Classification
+// ============================================================================
+
+pub fn classify_region(addr: usize) -> Option<VramRegion> {
+    match addr {
+        VRAM_A_BASE..=VRAM_A_END => Some(VramRegion::BgTiles),
+        VRAM_B_BASE..=VRAM_B_END => Some(VramRegion::Tilemaps),
+        VRAM_C_BASE..=VRAM_C_END => Some(VramRegion::SpriteTiles),
+        VRAM_D_BASE..=VRAM_D_END => Some(VramRegion::SpriteTiles),
+        VRAM_E_BASE..=VRAM_E_END => Some(VramRegion::Mode7Tex),
+        VRAM_F_BASE..=VRAM_F_END => Some(VramRegion::Mode7Tex),
+        VRAM_G_BASE..=VRAM_G_END => Some(VramRegion::BgTiles),
+        VRAM_H_BASE..=VRAM_H_END => Some(VramRegion::BgTiles),
+        VRAM_I_BASE..=VRAM_I_END => None, // RESERVED
+        _ => None,
+    }
+}
+
+pub fn vram_write_allowed(addr: usize) -> bool {
+    classify_region(addr).is_some()
+}
+
 pub struct Vram {
     pub bg_tiles: Box<[u8]>,
     pub tilemaps: Box<[u8]>,
