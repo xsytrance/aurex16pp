@@ -1,3 +1,21 @@
+// ============================================================================
+// DMA Controller (Phase 2)
+// ----------------------------------------------------------------------------
+// Responsible for enforcing per-frame transfer caps.
+// This simulates hardware-level DMA arbitration.
+//
+// IMPORTANT:
+// - No actual memory copying happens yet.
+// - This module only enforces limits and tracks usage.
+// - VRAM and Audio RAM are not implemented yet.
+// - Reject logic will later feed into PDU-visible warnings.
+//
+// Likely to evolve when:
+// - VRAM becomes real memory
+// - Audio sample RAM is implemented
+// - DMA scheduling becomes ordered/queued
+// ============================================================================
+
 use super::command::{DmaCommand, DmaTarget};
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;

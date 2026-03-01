@@ -1,12 +1,14 @@
 pub mod clock;
 pub mod dma;
 pub mod pdu;
+pub mod ppu;
 pub mod vm32;
 pub mod wram;
 
 use clock::Clock;
 use dma::controller::DmaController;
 use pdu::Pdu;
+use ppu::vram::Vram;
 use vm32::core::Vm32;
 use wram::Wram;
 
@@ -16,6 +18,7 @@ pub struct Aurex {
     wram: Wram,
     vm: Vm32,
     dma: DmaController,
+    vram: Vram,
 }
 
 impl Aurex {
@@ -26,6 +29,7 @@ impl Aurex {
             wram: Wram::new(),
             vm: Vm32::new(),
             dma: DmaController::new(),
+            vram: Vram::new(),
         }
     }
 
@@ -46,6 +50,13 @@ impl Aurex {
             let fifth = self.dma.request(DmaCommand::vram_upload(1024));
 
             self.vm.run_frame(&mut self.pdu);
+
+            self.pdu.ingest_dma(
+                self.dma.commands_used(),
+                self.dma.vram_bytes_used(),
+                self.dma.audio_bytes_used(),
+                self.dma.rejects_this_frame(),
+            );
 
             self.pdu.end_frame();
 

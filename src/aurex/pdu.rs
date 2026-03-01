@@ -1,5 +1,30 @@
+// ============================================================================
+// Performance Diagnostic Unit (PDU)
+// ----------------------------------------------------------------------------
+// Tracks per-frame hardware usage and enforces CPU operation caps.
+//
+// IMPORTANT:
+// - Hard 200,000 ops per frame.
+// - Frame-based (no time deltas).
+// - Will later aggregate DMA usage and audio usage.
+//
+// Likely to evolve when:
+// - Overlay UI is implemented
+// - Logging system becomes configurable
+// - Budget telemetry is exposed to Library cart
+// ============================================================================
+
 pub struct Pdu {
+    // CPU usage
     ops_used: u32,
+
+    // DMA telemetry (read-only from DMA each frame)
+    dma_commands_used: u32,
+    dma_vram_bytes_used: u32,
+    dma_audio_bytes_used: u32,
+    dma_rejects: u32,
+
+    // Frame tracking
     frame_index: u64,
 }
 
@@ -9,12 +34,20 @@ impl Pdu {
     pub fn new() -> Self {
         Self {
             ops_used: 0,
+            dma_commands_used: 0,
+            dma_vram_bytes_used: 0,
+            dma_audio_bytes_used: 0,
+            dma_rejects: 0,
             frame_index: 0,
         }
     }
 
     pub fn begin_frame(&mut self) {
         self.ops_used = 0;
+        self.dma_commands_used = 0;
+        self.dma_vram_bytes_used = 0;
+        self.dma_audio_bytes_used = 0;
+        self.dma_rejects = 0;
     }
 
     pub fn consume(&mut self, ops: u32) -> bool {
@@ -25,9 +58,19 @@ impl Pdu {
         true
     }
 
+    /// Called by Aurex core at end of frame to import DMA stats.
+    /// Keeps DMA and PDU decoupled.
+    pub fn ingest_dma(&mut self, commands: u32, vram_bytes: u32, audio_bytes: u32, rejects: u32) {
+        self.dma_commands_used = commands;
+        self.dma_vram_bytes_used = vram_bytes;
+        self.dma_audio_bytes_used = audio_bytes;
+        self.dma_rejects = rejects;
+    }
+
     pub fn end_frame(&mut self) {
         self.frame_index += 1;
 
+        // Temporary heartbeat debug
         if self.frame_index % 60 == 0 {
             println!("Frame: {}", self.frame_index);
         }
