@@ -37,20 +37,15 @@ impl Aurex {
         loop {
             self.clock.begin_frame();
             self.pdu.begin_frame();
-
             self.dma.begin_frame();
 
-            // DMA smoke test (temporary): accept 4 commands, reject the 5th
-            use crate::aurex::dma::command::DmaCommand;
-
-            let _ = self.dma.request(DmaCommand::vram_upload(1024));
-            let _ = self.dma.request(DmaCommand::vram_upload(1024));
-            let _ = self.dma.request(DmaCommand::audio_upload(1024));
-            let _ = self.dma.request(DmaCommand::audio_upload(1024));
-            let fifth = self.dma.request(DmaCommand::vram_upload(1024));
-
+            // CPU execution for this frame
             self.vm.run_frame(&mut self.pdu);
 
+            // Apply accepted DMA transfers to hardware memory
+            self.dma.apply(&mut self.vram);
+
+            // Aggregate telemetry into PDU
             self.pdu.ingest_dma(
                 self.dma.commands_used(),
                 self.dma.vram_bytes_used(),
@@ -59,7 +54,6 @@ impl Aurex {
             );
 
             self.pdu.end_frame();
-
             self.clock.end_frame();
         }
     }

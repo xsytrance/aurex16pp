@@ -1,37 +1,38 @@
 // ============================================================================
-// DMA Controller (Phase 2)
+// DMA Controller (Phase 3.5 - Apply Stage)
 // ----------------------------------------------------------------------------
-// Responsible for enforcing per-frame transfer caps.
-// This simulates hardware-level DMA arbitration.
+// Responsibilities:
+// - Enforce per-frame caps (commands + byte budgets)
+// - Queue accepted DMA commands
+// - Apply queued transfers to hardware memory at frame end
 //
-// IMPORTANT:
-// - No actual memory copying happens yet.
-// - This module only enforces limits and tracks usage.
-// - VRAM and Audio RAM are not implemented yet.
-// - Reject logic will later feed into PDU-visible warnings.
+// IMPORTANT DESIGN:
+// - CPU never writes directly to VRAM
+// - DMA validates first, applies later
+// - Max 4 commands per frame
 //
-// Likely to evolve when:
-// - VRAM becomes real memory
-// - Audio sample RAM is implemented
-// - DMA scheduling becomes ordered/queued
+// Likely-to-change areas:
+// - Transfer struct may later include src/dst offsets
+// - Might evolve into priority scheduling
+// - Could become cycle-costed instead of instant
 // ============================================================================
 
 use super::command::{DmaCommand, DmaTarget};
+use crate::aurex::ppu::vram::Vram;
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
 const DMA_MAX_VRAM_BYTES_PER_FRAME: u32 = 64 * 1024;
 const DMA_MAX_AUDIO_BYTES_PER_FRAME: u32 = 16 * 1024;
 
-#[derive(Debug)]
 pub struct DmaController {
-    // Per-frame usage
     commands_used: u32,
     vram_bytes_used: u32,
     audio_bytes_used: u32,
 
-    // Lifetime diagnostics
-    rejects_total: u64,
     rejects_this_frame: u32,
+
+    // Queue of accepted transfers
+    queue: Vec<DmaCommand>,
 }
 
 impl DmaController {
@@ -40,8 +41,8 @@ impl DmaController {
             commands_used: 0,
             vram_bytes_used: 0,
             audio_bytes_used: 0,
-            rejects_total: 0,
             rejects_this_frame: 0,
+            queue: Vec::new(),
         }
     }
 
@@ -50,9 +51,11 @@ impl DmaController {
         self.vram_bytes_used = 0;
         self.audio_bytes_used = 0;
         self.rejects_this_frame = 0;
+        self.queue.clear();
     }
 
-    /// Request a DMA transfer. Returns true if accepted, false if rejected by hardware caps.
+    /// CPU requests DMA transfer.
+    /// Returns true if accepted, false if rejected.
     pub fn request(&mut self, cmd: DmaCommand) -> bool {
         if self.commands_used + 1 > DMA_MAX_COMMANDS_PER_FRAME {
             self.reject();
@@ -77,15 +80,37 @@ impl DmaController {
         }
 
         self.commands_used += 1;
+        self.queue.push(cmd);
         true
     }
 
     fn reject(&mut self) {
-        self.rejects_total += 1;
         self.rejects_this_frame += 1;
     }
 
-    // Minimal getters for later PDU integration
+    /// Apply all accepted transfers to hardware memory.
+    /// NOTE: Currently writes zeroes as placeholder data.
+    /// Later will copy real memory from WRAM.
+    pub fn apply(&mut self, vram: &mut Vram) {
+        for cmd in &self.queue {
+            match cmd.target {
+                DmaTarget::Vram => {
+                    // Placeholder: just write into BG tiles for now.
+                    // Later this will respect explicit destination offsets.
+                    let max = vram.bg_tiles.len().min(cmd.bytes as usize);
+                    for i in 0..max {
+                        vram.bg_tiles[i] = 1; // dummy marker value
+                    }
+                }
+                DmaTarget::AudioRam => {
+                    // Audio RAM not implemented yet.
+                    // Placeholder: no-op.
+                }
+            }
+        }
+    }
+
+    // Telemetry getters
     pub fn commands_used(&self) -> u32 {
         self.commands_used
     }
@@ -97,8 +122,5 @@ impl DmaController {
     }
     pub fn rejects_this_frame(&self) -> u32 {
         self.rejects_this_frame
-    }
-    pub fn rejects_total(&self) -> u64 {
-        self.rejects_total
     }
 }
