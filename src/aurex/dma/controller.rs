@@ -1,37 +1,27 @@
 // ============================================================================
-// DMA Controller (Phase 3.5 - Apply Stage)
+// DMA Controller (Phase 3.6 - Real Transfers)
 // ----------------------------------------------------------------------------
 // Responsibilities:
-// - Enforce per-frame caps (commands + byte budgets)
-// - Queue accepted DMA commands
-// - Apply queued transfers to hardware memory at frame end
+// - Enforce per-frame caps
+// - Validate WRAM and VRAM bounds at request time
+// - Queue valid transfers
+// - Apply transfers WRAM -> VRAM at frame end
 //
-// IMPORTANT DESIGN:
-// - CPU never writes directly to VRAM
-// - DMA validates first, applies later
-// - Max 4 commands per frame
-//
-// Likely-to-change areas:
-// - Transfer struct may later include src/dst offsets
-// - Might evolve into priority scheduling
-// - Could become cycle-costed instead of instant
+// IMPORTANT:
+// - Invalid DMA is rejected immediately (Option A).
+// - No clipping or partial writes.
 // ============================================================================
 
-use super::command::{DmaCommand, DmaTarget};
-use crate::aurex::ppu::vram::Vram;
+use super::command::DmaCommand;
+use crate::aurex::{ppu::vram::Vram, wram::Wram};
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
 const DMA_MAX_VRAM_BYTES_PER_FRAME: u32 = 64 * 1024;
-const DMA_MAX_AUDIO_BYTES_PER_FRAME: u32 = 16 * 1024;
 
 pub struct DmaController {
     commands_used: u32,
     vram_bytes_used: u32,
-    audio_bytes_used: u32,
-
     rejects_this_frame: u32,
-
-    // Queue of accepted transfers
     queue: Vec<DmaCommand>,
 }
 
@@ -40,7 +30,6 @@ impl DmaController {
         Self {
             commands_used: 0,
             vram_bytes_used: 0,
-            audio_bytes_used: 0,
             rejects_this_frame: 0,
             queue: Vec::new(),
         }
@@ -49,76 +38,61 @@ impl DmaController {
     pub fn begin_frame(&mut self) {
         self.commands_used = 0;
         self.vram_bytes_used = 0;
-        self.audio_bytes_used = 0;
         self.rejects_this_frame = 0;
         self.queue.clear();
     }
 
-    /// CPU requests DMA transfer.
-    /// Returns true if accepted, false if rejected.
-    pub fn request(&mut self, cmd: DmaCommand) -> bool {
+    pub fn request(&mut self, cmd: DmaCommand, wram: &Wram, vram: &Vram) -> bool {
+        // Cap: number of commands
         if self.commands_used + 1 > DMA_MAX_COMMANDS_PER_FRAME {
-            self.reject();
-            return false;
+            return self.reject();
         }
 
-        match cmd.target {
-            DmaTarget::Vram => {
-                if self.vram_bytes_used + cmd.bytes > DMA_MAX_VRAM_BYTES_PER_FRAME {
-                    self.reject();
-                    return false;
-                }
-                self.vram_bytes_used += cmd.bytes;
-            }
-            DmaTarget::AudioRam => {
-                if self.audio_bytes_used + cmd.bytes > DMA_MAX_AUDIO_BYTES_PER_FRAME {
-                    self.reject();
-                    return false;
-                }
-                self.audio_bytes_used += cmd.bytes;
-            }
+        // Cap: total VRAM bytes per frame
+        if self.vram_bytes_used + cmd.bytes as u32 > DMA_MAX_VRAM_BYTES_PER_FRAME {
+            return self.reject();
+        }
+
+        // Validate WRAM bounds
+        if cmd.src_offset + cmd.bytes > wram.len() {
+            return self.reject();
+        }
+
+        // Validate VRAM bounds
+        let region_len = vram.region_len(&cmd.region);
+
+        if cmd.dst_offset + cmd.bytes > region_len {
+            return self.reject();
         }
 
         self.commands_used += 1;
+        self.vram_bytes_used += cmd.bytes as u32;
         self.queue.push(cmd);
         true
     }
 
-    fn reject(&mut self) {
+    fn reject(&mut self) -> bool {
         self.rejects_this_frame += 1;
+        false
     }
 
-    /// Apply all accepted transfers to hardware memory.
-    /// NOTE: Currently writes zeroes as placeholder data.
-    /// Later will copy real memory from WRAM.
-    pub fn apply(&mut self, vram: &mut Vram) {
+    pub fn apply(&mut self, wram: &Wram, vram: &mut Vram) {
         for cmd in &self.queue {
-            match cmd.target {
-                DmaTarget::Vram => {
-                    // Placeholder: just write into BG tiles for now.
-                    // Later this will respect explicit destination offsets.
-                    let max = vram.bg_tiles.len().min(cmd.bytes as usize);
-                    for i in 0..max {
-                        vram.bg_tiles[i] = 1; // dummy marker value
-                    }
-                }
-                DmaTarget::AudioRam => {
-                    // Audio RAM not implemented yet.
-                    // Placeholder: no-op.
-                }
-            }
+            let src = &wram.memory()[cmd.src_offset..cmd.src_offset + cmd.bytes];
+
+            let dst_slice = vram.region_mut(&cmd.region);
+
+            let dst = &mut dst_slice[cmd.dst_offset..cmd.dst_offset + cmd.bytes];
+
+            dst.copy_from_slice(src);
         }
     }
 
-    // Telemetry getters
     pub fn commands_used(&self) -> u32 {
         self.commands_used
     }
     pub fn vram_bytes_used(&self) -> u32 {
         self.vram_bytes_used
-    }
-    pub fn audio_bytes_used(&self) -> u32 {
-        self.audio_bytes_used
     }
     pub fn rejects_this_frame(&self) -> u32 {
         self.rejects_this_frame

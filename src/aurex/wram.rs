@@ -18,4 +18,16 @@ impl Wram {
         debug_assert_eq!(w.memory.len(), WRAM_BYTES);
         w
     }
+
+    pub fn len(&self) -> usize {
+        self.memory.len()
+    }
+
+    pub fn memory(&self) -> &[u8] {
+        &self.memory
+    }
+
+    pub fn memory_mut(&mut self) -> &mut [u8] {
+        &mut self.memory
+    }
 }

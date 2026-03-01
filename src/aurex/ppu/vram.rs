@@ -8,6 +8,7 @@
 // - Sizes are enforced by constants + debug assertions.
 // - No rendering yet. Memory only.
 // ============================================================================
+use crate::aurex::dma::command::VramRegion;
 
 const BG_TILES_BYTES: usize = 384 * 1024;
 const TILEMAP_BYTES: usize = 128 * 1024;
@@ -61,5 +62,26 @@ impl Vram {
             + self.mode7_tex.len()
             + self.palettes.len()
             + self.reserved.len()
+    }
+    pub fn region_len(&self, region: &VramRegion) -> usize {
+        match region {
+            VramRegion::BgTiles => self.bg_tiles.len(),
+            VramRegion::Tilemaps => self.tilemaps.len(),
+            VramRegion::SpriteTiles => self.sprite_tiles.len(),
+            VramRegion::Mode7Tex => self.mode7_tex.len(),
+            VramRegion::Palettes => self.palettes.len(),
+            VramRegion::Reserved => self.reserved.len(),
+        }
+    }
+
+    pub fn region_mut(&mut self, region: &VramRegion) -> &mut [u8] {
+        match region {
+            VramRegion::BgTiles => &mut self.bg_tiles,
+            VramRegion::Tilemaps => &mut self.tilemaps,
+            VramRegion::SpriteTiles => &mut self.sprite_tiles,
+            VramRegion::Mode7Tex => &mut self.mode7_tex,
+            VramRegion::Palettes => &mut self.palettes,
+            VramRegion::Reserved => &mut self.reserved,
+        }
     }
 }

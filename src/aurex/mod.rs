@@ -43,13 +43,13 @@ impl Aurex {
             self.vm.run_frame(&mut self.pdu);
 
             // Apply accepted DMA transfers to hardware memory
-            self.dma.apply(&mut self.vram);
+            self.dma.apply(&self.wram, &mut self.vram);
 
             // Aggregate telemetry into PDU
             self.pdu.ingest_dma(
                 self.dma.commands_used(),
                 self.dma.vram_bytes_used(),
-                self.dma.audio_bytes_used(),
+                0, // audio not implemented yet
                 self.dma.rejects_this_frame(),
             );
 
