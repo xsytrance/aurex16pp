@@ -182,3 +182,23 @@ DMA transfers are region-bound.
 A single DMA command may not exceed its region.
 Reserved region writes are rejected.
 Mode 7 (BG2) is restricted to its dedicated regions.
+
+---
+
+PHASE: PPU-A16 PIPELINE INIT
+Status: IN PROGRESS
+
+---
+
+PPU device instantiated and integrated into Aurex motherboard.
+
+Debug framebuffer renderer removed from frame loop.
+
+New hardware render entry:
+Aurex -> PPU::render_frame()
+
+Current behavior:
+PPU renders empty scanlines (black frame).
+
+Next step:
+Background fetch discipline (BG0 only).

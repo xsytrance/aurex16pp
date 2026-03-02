@@ -5,7 +5,7 @@ pub mod ppu;
 pub mod vm32;
 pub mod wram;
 
-use crate::aurex::ppu::debug_draw::draw_test_pattern;
+use crate::aurex::ppu::ppu::Ppu;
 use clock::Clock;
 use dma::controller::DmaController;
 use pdu::Pdu;
@@ -21,6 +21,7 @@ pub struct Aurex {
     dma: DmaController,
     vram: Vram,
     fb: ppu::framebuffer::Framebuffer,
+    ppu: Ppu,
 }
 
 impl Aurex {
@@ -33,6 +34,7 @@ impl Aurex {
             dma: DmaController::new(),
             vram: Vram::new(),
             fb: ppu::framebuffer::Framebuffer::new(),
+            ppu: Ppu::new(),
         }
     }
 
@@ -51,10 +53,10 @@ impl Aurex {
             // Enabled only in debug builds.
             // Remove or replace when real PPU rendering exists.
             // =====================================================================
-            #[cfg(debug_assertions)]
-            {
-                draw_test_pattern(&mut self.fb, self.pdu.frame_index());
-            }
+            // =====================================================================
+            // PPU FRAME RENDER
+            // =====================================================================
+            self.ppu.render_frame(&mut self.fb);
 
             self.dma.begin_frame();
 
