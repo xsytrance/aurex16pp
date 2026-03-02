@@ -46,6 +46,11 @@ impl Aurex {
             seed_test_bg0(&mut s.vram);
         }
 
+        #[cfg(debug_assertions)]
+        {
+            seed_test_bg0(&mut s.vram);
+        }
+
         s
     }
 
@@ -68,6 +73,18 @@ impl Aurex {
         // PPU FRAME RENDER
         // ---------------------------------------------------------------------
         self.ppu.render_frame(&self.vram, &mut self.fb);
+
+        // =====================================================================
+        // PPU → PDU TELEMETRY BRIDGE
+        // ---------------------------------------------------------------------
+        // The PPU latches hardware events during rendering (e.g. sprite overflow).
+        // The PDU collects per-frame telemetry for debugging / future SDK hooks.
+        // This keeps rendering logic isolated from diagnostics logic.
+        // =====================================================================
+        self.pdu.ingest_ppu(
+            self.ppu.sprite_overflow_latched(),
+            self.ppu.sprite_overflow_scanlines(),
+        );
 
         // ---------------------------------------------------------------------
         // DMA + CPU

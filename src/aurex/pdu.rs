@@ -25,6 +25,12 @@ pub struct Pdu {
     dma_audio_bytes_used: u32,
     dma_rejects: u32,
 
+    // -----------------------------------------------------------------
+    // PPU telemetry (latched per frame)
+    // -----------------------------------------------------------------
+    ppu_sprite_overflow: bool,
+    ppu_sprite_overflow_scanlines: u32,
+
     // Frame tracking
     frame_index: u64,
 }
@@ -41,6 +47,8 @@ impl Pdu {
             dma_rejects: 0,
             frame_index: 0,
             cpu_rejects: 0,
+            ppu_sprite_overflow: false,
+            ppu_sprite_overflow_scanlines: 0,
         }
     }
 
@@ -60,6 +68,8 @@ impl Pdu {
         self.dma_audio_bytes_used = 0;
         self.dma_rejects = 0;
         self.cpu_rejects = 0;
+        self.ppu_sprite_overflow = false;
+        self.ppu_sprite_overflow_scanlines = 0;
     }
 
     pub fn consume(&mut self, ops: u32) -> bool {
@@ -91,5 +101,10 @@ impl Pdu {
         if self.cpu_rejects > 0 {
             println!("CPU budget exceeded {} times this frame", self.cpu_rejects);
         }
+    }
+
+    pub fn ingest_ppu(&mut self, sprite_overflow: bool, overflow_scanlines: u32) {
+        self.ppu_sprite_overflow = sprite_overflow;
+        self.ppu_sprite_overflow_scanlines = overflow_scanlines;
     }
 }

@@ -289,3 +289,43 @@ Memory exists before behavior.
 
 Next milestone:
 Scanline sprite renderer with strict 8-sprite-per-line hardware limit.
+
+Phase 5 — Sprite Rendering + Priority
+
+Sprite rendering is now functional.
+
+Implemented:
+
+8x8 sprite rendering (4bpp decode)
+
+Palette lookup (RGB555)
+
+Transparent pixel skip (color index 0)
+
+Per-scanline sprite evaluation
+
+Hard 8-sprite-per-line cap
+
+Priority-based sprite sorting (low first, high last)
+
+Current behavior:
+
+Sprites overwrite background pixels
+
+Sprite priority determines layering between sprites
+
+Background currently treated as implicit lowest layer
+
+No sprite/background priority bits yet
+
+No blending
+
+No overflow telemetry wired yet
+
+Status:
+
+PPU now supports:
+BG0 + Sprites + Priority (basic)
+
+Next planned milestone:
+Sprite overflow flag exposure OR BG1 layer introduction.

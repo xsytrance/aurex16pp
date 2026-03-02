@@ -19,6 +19,12 @@ pub struct Ppu {
 
     // Sprite memory
     oam: Oam,
+
+    // -----------------------------------------------------------------
+    // Sprite overflow telemetry (latched per frame)
+    // -----------------------------------------------------------------
+    sprite_overflow_latched: bool,
+    sprite_overflow_scanlines: u32,
 }
 
 impl Ppu {
@@ -28,6 +34,20 @@ impl Ppu {
             bg0_scroll_x: 0,
             bg0_scroll_y: 0,
             oam: Oam::new(),
+            sprite_overflow_latched: false,
+            sprite_overflow_scanlines: 0,
+        }
+    }
+
+    // ============================================================================
+    // DEBUG ONLY: Direct OAM injection
+    // Used for hardware validation (sprite overflow testing)
+    // Remove when DMA/OAM pipeline is implemented.
+    // ============================================================================
+    #[cfg(debug_assertions)]
+    pub fn debug_set_sprite(&mut self, index: usize, sprite: super::oam::Sprite) {
+        if let Some(slot) = self.oam.sprite_mut(index) {
+            *slot = sprite;
         }
     }
 
@@ -97,6 +117,9 @@ impl Ppu {
     // FRAME ENTRY
     // -------------------------------------------------------------------------
     pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
+        // Reset sprite overflow telemetry for this frame
+        self.sprite_overflow_latched = false;
+        self.sprite_overflow_scanlines = 0;
         // TEMP TEST: auto-scroll BG0 horizontally
         // Removal: delete once CPU register writes exist
 
@@ -120,7 +143,8 @@ impl Ppu {
             self.evaluate_sprites_for_scanline(y);
 
         if sprite_overflow {
-            // For now just debug log once per frame later
+            self.sprite_overflow_latched = true;
+            self.sprite_overflow_scanlines += 1;
         }
 
         // NOTE:
@@ -282,5 +306,13 @@ impl Ppu {
                 }
             }
         }
+    }
+
+    pub fn sprite_overflow_latched(&self) -> bool {
+        self.sprite_overflow_latched
+    }
+
+    pub fn sprite_overflow_scanlines(&self) -> u32 {
+        self.sprite_overflow_scanlines
     }
 }
