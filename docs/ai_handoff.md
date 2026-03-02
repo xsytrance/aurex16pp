@@ -158,3 +158,27 @@ Next major milestone:
 VRAM memory map formalization and PPU-A16 partition locking.
 
 Development continues in strict build order.
+
+---
+
+PHASE: VRAM PARTITION LOCK
+Status: COMPLETE
+
+---
+
+Total VRAM: 1 MB (0x100000 bytes)
+
+Region A (0x00000–0x4FFFF) – BG Tile Patterns (BG0/BG1/BG3)
+Region B (0x50000–0x5FFFF) – BG Tilemaps
+Region C (0x60000–0x8FFFF) – Sprite Tile Patterns
+Region D (0x90000–0x93FFF) – Sprite Tables
+Region E (0x94000–0xA3FFF) – Mode 7 Map (BG2 only)
+Region F (0xA4000–0xD3FFF) – Mode 7 Texture (BG2 only)
+Region G (0xD4000–0xDBFFF) – Line Tables
+Region H (0xDC000–0xFBFFF) – Cartridge General VRAM
+Region I (0xFC000–0xFFFFF) – Reserved (inaccessible)
+
+DMA transfers are region-bound.
+A single DMA command may not exceed its region.
+Reserved region writes are rejected.
+Mode 7 (BG2) is restricted to its dedicated regions.

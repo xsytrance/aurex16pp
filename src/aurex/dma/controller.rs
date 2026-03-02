@@ -13,7 +13,9 @@
 // ============================================================================
 
 use super::command::DmaCommand;
-use crate::aurex::{ppu::vram::Vram, wram::Wram};
+use crate::aurex::dma::command::VramRegion;
+use crate::aurex::ppu::vram::{VRAM_I_BASE, VRAM_I_END, Vram};
+use crate::aurex::wram::Wram;
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
 const DMA_MAX_VRAM_BYTES_PER_FRAME: u32 = 64 * 1024;
@@ -73,15 +75,8 @@ impl DmaController {
         let region_len = vram.region_len(&cmd.region);
 
         // -------------------------------------------------------------------------
-        // HARDWARE ENFORCEMENT:
-        // DMA transfer must not exceed region boundary
+        // HARDWARE ENFORCEMENT: REGION BOUNDARY
         // -------------------------------------------------------------------------
-
-        // -------------------------------------------------------------------------
-        // HARDWARE ENFORCEMENT:
-        // DMA transfer must not exceed region boundary
-        // -------------------------------------------------------------------------
-
         if cmd.dst_offset + cmd.bytes > region_len {
             #[cfg(debug_assertions)]
             panic!("DMA transfer exceeds region boundary");
@@ -92,9 +87,53 @@ impl DmaController {
             }
         }
 
-        if cmd.dst_offset + cmd.bytes > region_len {
-            return self.reject();
+        // ⬇⬇⬇ PASTE RESERVED CHECK HERE ⬇⬇⬇
+
+        // -------------------------------------------------------------------------
+        // HARDWARE ENFORCEMENT: RESERVED VRAM REGION
+        // -------------------------------------------------------------------------
+        if cmd.bytes > 0 {
+            let (base, _) = vram.region_bounds_abs(&cmd.region);
+            let abs_start = base + cmd.dst_offset;
+            let abs_end = abs_start + cmd.bytes - 1;
+
+            let intersects_reserved = abs_start <= VRAM_I_END && abs_end >= VRAM_I_BASE;
+
+            if intersects_reserved {
+                #[cfg(debug_assertions)]
+                panic!("DMA attempted write into reserved VRAM region");
+
+                #[cfg(not(debug_assertions))]
+                {
+                    return;
+                }
+            }
         }
+
+        // -------------------------------------------------------------------------
+        // HARDWARE ENFORCEMENT: MODE 7 ISOLATION
+        // BG2 (Mode7Tex) must reside strictly within Mode 7 reserved regions
+        // -------------------------------------------------------------------------
+        if cmd.region == VramRegion::Mode7Tex && cmd.bytes > 0 {
+            let (base, _) = vram.region_bounds_abs(&cmd.region);
+            let abs_start = base + cmd.dst_offset;
+            let abs_end = abs_start + cmd.bytes - 1;
+
+            let inside_mode7_region = (abs_start >= 0x94000 && abs_end <= 0xA3FFF) || // Region E
+        (abs_start >= 0xA4000 && abs_end <= 0xD3FFF); // Region F
+
+            if !inside_mode7_region {
+                #[cfg(debug_assertions)]
+                panic!("Mode 7 DMA attempted outside reserved Mode 7 regions");
+
+                #[cfg(not(debug_assertions))]
+                {
+                    return;
+                }
+            }
+        }
+
+        // ⬇ actual copy logic continues below
 
         self.commands_used += 1;
 

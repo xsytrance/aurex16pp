@@ -151,6 +151,29 @@ impl Vram {
             + self.palettes.len()
             + self.reserved.len()
     }
+
+    pub fn region_base(&self, region: &VramRegion) -> usize {
+        match region {
+            VramRegion::BgTiles => VRAM_A_BASE,
+            VramRegion::Tilemaps => VRAM_B_BASE,
+            VramRegion::SpriteTiles => VRAM_C_BASE,
+            VramRegion::Mode7Tex => VRAM_E_BASE,
+            VramRegion::Palettes => VRAM_H_BASE,
+            VramRegion::AudioRam => panic!("AudioRam accessed through PPU VRAM"),
+            VramRegion::Reserved => panic!("Reserved VRAM region cannot be accessed"),
+        }
+    }
+
+    pub fn region_end_abs(&self, region: &VramRegion) -> usize {
+        let base = self.region_base(region);
+        let len = self.region_len(region);
+        base + len.saturating_sub(1)
+    }
+
+    pub fn region_bounds_abs(&self, region: &VramRegion) -> (usize, usize) {
+        (self.region_base(region), self.region_end_abs(region))
+    }
+
     pub fn region_len(&self, region: &VramRegion) -> usize {
         match region {
             VramRegion::BgTiles => self.bg_tiles.len(),
