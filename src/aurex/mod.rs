@@ -78,6 +78,25 @@ impl Aurex {
         self.vm.run_frame(&mut self.pdu);
 
         // =====================================================================
+        // TEMP TEST: Moving test sprite
+        // Removal: replace with cartridge logic later
+        // =====================================================================
+        #[cfg(debug_assertions)]
+        {
+            let frame = self.pdu.frame_index() as u16;
+
+            let x = (frame % 400) as u16;
+            let y = 120;
+
+            self.ppu.write_sprite(
+                0, // sprite index
+                x, y, 0, // tile index
+                0, // palette
+                0, // priority
+            );
+        }
+
+        // =====================================================================
         // TEMP TEST: CPU writes to PPU scroll register
         // Removal: replace with proper memory-mapped register writes
         // =====================================================================
@@ -176,5 +195,27 @@ fn seed_test_bg0(vram: &mut crate::aurex::ppu::vram::Vram) {
             vram.tilemaps[idx] = (entry & 0xFF) as u8;
             vram.tilemaps[idx + 1] = (entry >> 8) as u8;
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // Seed sprite tile 0 (8x8 solid color index 1)
+    // ---------------------------------------------------------------------
+    for row in 0..8 {
+        let base = row * 4; // 4 bytes per row
+        for i in 0..4 {
+            if base + i < vram.sprite_tiles.len() {
+                vram.sprite_tiles[base + i] = 0x11;
+                // both pixels = color index 1
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Seed sprite palette entry 1 (bright red)
+    // ---------------------------------------------------------------------
+    if vram.palettes.len() >= 4 {
+        let green = crate::aurex::ppu::framebuffer::rgb555(0, 31, 0);
+        vram.palettes[2] = (green & 0xFF) as u8;
+        vram.palettes[3] = (green >> 8) as u8;
     }
 }

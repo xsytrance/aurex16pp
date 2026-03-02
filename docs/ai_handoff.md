@@ -251,3 +251,41 @@ TEMP TEST VRAM seed exists in debug builds only.
 PPU scroll registers introduced (BG0 only).
 Scroll now controlled via CPU-side register write (temporary).
 PPU no longer self-mutates state.
+
+Phase 4 — OAM (Object Attribute Memory) Introduced
+
+Sprite hardware memory layer has been implemented.
+
+128 hardware sprite slots (MAX_SPRITES = 128)
+
+Fixed 8x8 sprite assumption (Phase 1)
+
+Sprite struct fields:
+
+x
+
+y
+
+tile_index
+
+palette
+
+priority
+
+visible
+
+CPU-accessible write API via:
+
+Ppu::write_sprite(...)
+
+No rendering yet
+
+No per-scanline sprite limits yet
+
+No priority sorting yet
+
+Architectural rule:
+Memory exists before behavior.
+
+Next milestone:
+Scanline sprite renderer with strict 8-sprite-per-line hardware limit.

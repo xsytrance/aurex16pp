@@ -31,6 +31,38 @@ impl Ppu {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Sprite Scanline Evaluation
+    // -------------------------------------------------------------------------
+    fn evaluate_sprites_for_scanline(&self, y: usize) -> ([usize; 8], usize, bool) {
+        let mut visible_indices = [0usize; 8];
+        let mut count = 0;
+        let mut overflow = false;
+
+        for i in 0..self.oam.len() {
+            if let Some(sprite) = self.oam.sprite(i) {
+                if !sprite.visible {
+                    continue;
+                }
+
+                let sprite_top = sprite.y as usize;
+                let sprite_bottom = sprite_top + 8; // 8x8 for now
+
+                if y >= sprite_top && y < sprite_bottom {
+                    if count < 8 {
+                        visible_indices[count] = i;
+                        count += 1;
+                    } else {
+                        overflow = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        (visible_indices, count, overflow)
+    }
+
     // ---------------------------------------------------------------------
     // Sprite write interface (temporary direct API)
     // ---------------------------------------------------------------------
@@ -80,6 +112,22 @@ impl Ppu {
     // -------------------------------------------------------------------------
     fn render_scanline(&mut self, vram: &Vram, y: usize, fb: &mut Framebuffer) {
         let pixels = fb.pixels_mut();
+
+        // -------------------------------------------------------------------------
+        // Sprite Scanline Evaluation (Phase 1 - no rendering yet)
+        // -------------------------------------------------------------------------
+        let (_sprite_indices, _sprite_count, sprite_overflow) =
+            self.evaluate_sprites_for_scanline(y);
+
+        if sprite_overflow {
+            // For now just debug log once per frame later
+        }
+
+        // NOTE:
+        // - _sprite_indices holds up to 8 sprite indices
+        // - _sprite_count is how many are active
+        // - _sprite_overflow is true if >8 found
+        // Rendering will be implemented in next phase.
 
         // ---------------------------------------------------------------------
         // BG0 Bring-up (v0.1)
@@ -179,6 +227,59 @@ impl Ppu {
 
                 let fb_index = y * FB_W + dst_x;
                 pixels[fb_index] = rgb555;
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Sprite Rendering (Phase 1 - no priority, overwrite BG)
+        // -------------------------------------------------------------------------
+        // Sort visible sprites by priority (low first)
+        let mut sorted_indices = _sprite_indices[.._sprite_count].to_vec();
+
+        sorted_indices.sort_by_key(|&idx| self.oam.sprite(idx).map(|s| s.priority).unwrap_or(0));
+
+        for sprite_index in sorted_indices {
+            if let Some(sprite) = self.oam.sprite(sprite_index) {
+                let sprite_y = sprite.y as usize;
+                let row_in_sprite = y - sprite_y;
+
+                // 8x8 tile, 4bpp, 32 bytes per tile
+                let tile_base = sprite.tile_index as usize * 32;
+
+                for col in 0..8 {
+                    let screen_x = sprite.x as usize + col;
+
+                    if screen_x >= FB_W {
+                        continue;
+                    }
+
+                    let byte_index = tile_base + row_in_sprite * 4 + (col / 2);
+
+                    if byte_index >= vram.sprite_tiles.len() {
+                        continue;
+                    }
+
+                    let byte = vram.sprite_tiles[byte_index];
+
+                    let color_index = if col % 2 == 0 { byte >> 4 } else { byte & 0x0F };
+
+                    if color_index == 0 {
+                        continue; // transparent
+                    }
+
+                    let palette_offset = sprite.palette as usize * 16;
+                    let palette_index = palette_offset + color_index as usize;
+
+                    if palette_index * 2 + 1 >= vram.palettes.len() {
+                        continue;
+                    }
+
+                    let lo = vram.palettes[palette_index * 2] as u16;
+                    let hi = vram.palettes[palette_index * 2 + 1] as u16;
+                    let rgb = lo | (hi << 8);
+
+                    pixels[y * FB_W + screen_x] = rgb;
+                }
             }
         }
     }
