@@ -202,3 +202,24 @@ PPU renders empty scanlines (black frame).
 
 Next step:
 Background fetch discipline (BG0 only).
+
+---
+
+PHASE: PPU-A16 BG0 ONLINE
+Status: COMPLETE
+
+---
+
+BG0 scanline fetch implemented.
+
+Pipeline:
+Tilemap (64x64) ->
+4bpp tile pattern fetch ->
+Palette bank select ->
+RGB555 framebuffer write
+
+SDL host loop restored.
+Console now renders via PPU device.
+
+Temporary VRAM seed active (debug only).
+To be removed when cartridge DMA uploads real assets.

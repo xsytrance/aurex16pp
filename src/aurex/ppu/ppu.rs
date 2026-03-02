@@ -6,7 +6,8 @@
 // No blending, no priority yet.
 // ============================================================================
 
-use super::framebuffer::{FB_H, Framebuffer};
+use super::framebuffer::{FB_H, FB_W, Framebuffer};
+use super::vram::Vram;
 
 pub struct Ppu {
     frame_counter: u64,
@@ -20,9 +21,9 @@ impl Ppu {
     // -------------------------------------------------------------------------
     // FRAME ENTRY
     // -------------------------------------------------------------------------
-    pub fn render_frame(&mut self, fb: &mut Framebuffer) {
+    pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
         for y in 0..FB_H {
-            self.render_scanline(y, fb);
+            self.render_scanline(vram, y, fb);
         }
 
         self.frame_counter += 1;
@@ -31,8 +32,109 @@ impl Ppu {
     // -------------------------------------------------------------------------
     // SCANLINE STUB
     // -------------------------------------------------------------------------
-    fn render_scanline(&mut self, _y: usize, _fb: &mut Framebuffer) {
-        // Background + sprite pipeline will be implemented here.
-        // Currently empty — debug draw still active.
+    fn render_scanline(&mut self, vram: &Vram, y: usize, fb: &mut Framebuffer) {
+        let pixels = fb.pixels_mut();
+
+        // ---------------------------------------------------------------------
+        // BG0 Bring-up (v0.1)
+        // - Tilemap source: vram.tilemaps (start)
+        // - Pattern source: vram.bg_tiles (start)
+        // - Palette source: vram.palettes (first 256 RGB555 entries, little-endian)
+        //
+        // Tile encoding (LOCKED for now):
+        // - 8x8, 4bpp packed, 32 bytes per tile
+        // - Each row is 4 bytes => 8 pixels
+        // - Each byte stores 2 pixels: hi nibble then lo nibble (left->right)
+        //
+        // Tilemap entry (u16) bits:
+        // 0..9   tile_index
+        // 10..11 palette_select (0..3) => palette bank * 16
+        // 12     hflip
+        // 13     vflip
+        // 14..15 priority (ignored in v0.1)
+        // ---------------------------------------------------------------------
+
+        // TEMP: Scroll registers (until PPU regs exist)
+        let scroll_x: usize = 0;
+        let scroll_y: usize = 0;
+
+        let sy = y.wrapping_add(scroll_y);
+        let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
+        let row_in_tile = sy & 7;
+
+        // Screen tiles across (ceil)
+        let tiles_x = (FB_W + 7) / 8;
+
+        for tx in 0..tiles_x {
+            let sx = (tx * 8).wrapping_add(scroll_x);
+            let tile_x = (sx / 8) & 63;
+
+            // Tilemap index in entries (64x64)
+            let map_index = tile_y * 64 + tile_x;
+            let map_byte = map_index * 2;
+
+            // Read little-endian u16 entry
+            let lo = vram.tilemaps[map_byte] as u16;
+            let hi = vram.tilemaps[map_byte + 1] as u16;
+            let entry = lo | (hi << 8);
+
+            let tile_index = (entry & 0x03FF) as usize;
+            let pal_sel = ((entry >> 10) & 0x3) as u8;
+            let hflip = ((entry >> 12) & 0x1) != 0;
+            let vflip = ((entry >> 13) & 0x1) != 0;
+
+            let row = if vflip { 7 - row_in_tile } else { row_in_tile };
+
+            // Pattern base: 32 bytes per tile
+            let tile_base = tile_index * 32;
+            let row_base = tile_base + row * 4;
+
+            // Fetch 4 packed bytes for this row
+            let b0 = vram.bg_tiles[row_base];
+            let b1 = vram.bg_tiles[row_base + 1];
+            let b2 = vram.bg_tiles[row_base + 2];
+            let b3 = vram.bg_tiles[row_base + 3];
+
+            // Write 8 pixels
+            for px in 0..8 {
+                let dst_x = tx * 8 + px;
+                if dst_x >= FB_W {
+                    continue;
+                }
+
+                // Determine source pixel index with optional hflip
+                let src_px = if hflip { 7 - px } else { px };
+
+                // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
+                let (byte, shift_hi) = match src_px {
+                    0 => (b0, true),
+                    1 => (b0, false),
+                    2 => (b1, true),
+                    3 => (b1, false),
+                    4 => (b2, true),
+                    5 => (b2, false),
+                    6 => (b3, true),
+                    _ => (b3, false),
+                };
+
+                let pix4 = if shift_hi {
+                    (byte >> 4) & 0x0F
+                } else {
+                    byte & 0x0F
+                };
+
+                // Palette bank: 0..3 => 0,16,32,48
+                let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
+
+                // Palette lookup: first 256 entries are RGB555 u16 LE
+                let pal_ofs = color_index * 2;
+                let plo = vram.palettes[pal_ofs] as u16;
+                let phi = vram.palettes[pal_ofs + 1] as u16;
+                let rgb555 = plo | (phi << 8);
+
+                let fb_index = y * FB_W + dst_x;
+                pixels[fb_index] = rgb555;
+            }
+        }
     }
 }
