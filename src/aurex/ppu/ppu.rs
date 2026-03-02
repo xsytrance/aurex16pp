@@ -7,17 +7,18 @@
 // ============================================================================
 
 use super::framebuffer::{FB_H, FB_W, Framebuffer};
+use super::oam::Oam;
 use super::vram::Vram;
 
 pub struct Ppu {
     frame_counter: u64,
 
-    // -----------------------------------------------------------------
-    // PPU Registers (v0.2)
-    // -----------------------------------------------------------------
-    // BG0 scroll registers (pixel units)
+    // BG0 scroll registers
     bg0_scroll_x: u16,
     bg0_scroll_y: u16,
+
+    // Sprite memory
+    oam: Oam,
 }
 
 impl Ppu {
@@ -26,6 +27,29 @@ impl Ppu {
             frame_counter: 0,
             bg0_scroll_x: 0,
             bg0_scroll_y: 0,
+            oam: Oam::new(),
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Sprite write interface (temporary direct API)
+    // ---------------------------------------------------------------------
+    pub fn write_sprite(
+        &mut self,
+        index: usize,
+        x: u16,
+        y: u16,
+        tile: u16,
+        palette: u8,
+        priority: u8,
+    ) {
+        if let Some(sprite) = self.oam.sprite_mut(index) {
+            sprite.x = x;
+            sprite.y = y;
+            sprite.tile_index = tile;
+            sprite.palette = palette;
+            sprite.priority = priority;
+            sprite.visible = true;
         }
     }
 
