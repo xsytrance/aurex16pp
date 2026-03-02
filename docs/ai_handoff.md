@@ -247,3 +247,7 @@ Also note:
 BG0 currently treats tilemap as 64×64 (wrap).
 
 TEMP TEST VRAM seed exists in debug builds only.
+
+PPU scroll registers introduced (BG0 only).
+Scroll now controlled via CPU-side register write (temporary).
+PPU no longer self-mutates state.

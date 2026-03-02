@@ -11,17 +11,39 @@ use super::vram::Vram;
 
 pub struct Ppu {
     frame_counter: u64,
+
+    // -----------------------------------------------------------------
+    // PPU Registers (v0.2)
+    // -----------------------------------------------------------------
+    // BG0 scroll registers (pixel units)
+    bg0_scroll_x: u16,
+    bg0_scroll_y: u16,
 }
 
 impl Ppu {
     pub fn new() -> Self {
-        Self { frame_counter: 0 }
+        Self {
+            frame_counter: 0,
+            bg0_scroll_x: 0,
+            bg0_scroll_y: 0,
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Register setters (to be wired to CPU later)
+    // ---------------------------------------------------------------------
+    pub fn set_bg0_scroll(&mut self, x: u16, y: u16) {
+        self.bg0_scroll_x = x;
+        self.bg0_scroll_y = y;
     }
 
     // -------------------------------------------------------------------------
     // FRAME ENTRY
     // -------------------------------------------------------------------------
     pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
+        // TEMP TEST: auto-scroll BG0 horizontally
+        // Removal: delete once CPU register writes exist
+
         for y in 0..FB_H {
             self.render_scanline(vram, y, fb);
         }
@@ -55,9 +77,8 @@ impl Ppu {
         // ---------------------------------------------------------------------
 
         // TEMP: Scroll registers (until PPU regs exist)
-        let scroll_x: usize = 0;
-        let scroll_y: usize = 0;
-
+        let scroll_x = self.bg0_scroll_x as usize;
+        let scroll_y = self.bg0_scroll_y as usize;
         let sy = y.wrapping_add(scroll_y);
         let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
         let row_in_tile = sy & 7;

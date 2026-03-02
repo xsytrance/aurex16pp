@@ -77,6 +77,16 @@ impl Aurex {
         // CPU execution for this frame
         self.vm.run_frame(&mut self.pdu);
 
+        // =====================================================================
+        // TEMP TEST: CPU writes to PPU scroll register
+        // Removal: replace with proper memory-mapped register writes
+        // =====================================================================
+        #[cfg(debug_assertions)]
+        {
+            let scroll = (self.pdu.frame_index() as u16).wrapping_mul(1);
+            self.ppu.set_bg0_scroll(scroll, 0);
+        }
+
         // Apply accepted DMA transfers to hardware memory
         self.dma.apply(&self.wram, &mut self.vram);
 
