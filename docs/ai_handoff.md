@@ -223,3 +223,27 @@ Console now renders via PPU device.
 
 Temporary VRAM seed active (debug only).
 To be removed when cartridge DMA uploads real assets.
+
+PPU-A16 Formats (LOCKED)
+
+BG tile encoding: 8×8, 4bpp packed, 32 bytes/tile, row = 4 bytes, each byte stores 2 pixels (hi nibble then lo nibble, left→right)
+
+Tilemap entry: u16 little-endian
+
+bits 0–9: tile index (0..1023)
+
+bits 10–11: palette select (0..3) → bank\*16
+
+bit 12: hflip
+
+bit 13: vflip
+
+bits 14–15: priority (reserved; ignored in v0.1)
+
+Palette: first 256 entries = RGB555 u16 little-endian (2 bytes each)
+
+Also note:
+
+BG0 currently treats tilemap as 64×64 (wrap).
+
+TEMP TEST VRAM seed exists in debug builds only.
