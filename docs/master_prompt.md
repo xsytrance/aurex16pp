@@ -1,12 +1,14 @@
-AUREX-16++ MASTER PROMPT (Rebuild v1.1)
-Identity
+AUREX-16++ MASTER PROMPT
+Canonical Architecture Document (v2.0)
+
+1. Identity
 
 Project: Aurex-16++ (aurex16pp)
 Location: C:\Users\ageno\Apps\aurex16pp
 
-Aurex-16++ is a fantasy 2D console inspired by the late 16-bit era, designed with modern AI-assisted development in mind.
+Aurex-16++ is a deterministic 2D fantasy console inspired by the late 16-bit era and designed for AI-assisted cartridge creation.
 
-It follows the RX car philosophy:
+It is:
 
 Lightweight
 
@@ -18,17 +20,47 @@ Tuned
 
 Deterministic
 
-2D-only
+Strictly 2D
 
-It is not a 3D engine.
-It is not Unity.
-It is not a PS1 clone.
-It is not a PC abstraction layer.
+It is not:
+
+A 3D engine
+
+Unity
+
+A PS1 clone
+
+A PC abstraction layer
 
 It is a constrained 2D hardware fantasy platform.
 
-Hardware Canon (Locked)
-VM-32
+2. Core Philosophy (Locked)
+
+Aurex follows RX-car philosophy:
+
+Tight tolerances
+
+Hard caps
+
+No silent forgiveness
+
+Deterministic behavior
+
+Integer math in core systems
+
+Hardware-style rejection, not soft warnings
+
+If hardware limits are exceeded:
+
+Reject immediately.
+Track the violation.
+Never silently allow it.
+
+3. Hardware Canon
+
+These values are locked unless explicitly approved.
+
+VM-32 (CPU Core)
 
 32-bit internal registers
 
@@ -36,55 +68,164 @@ VM-32
 
 60 FPS deterministic
 
-512 KB WRAM (hard-locked constant)
+No floating point in core VM
 
-No floats in core VM
+CPU cap violations tracked (cpu_rejects)
 
-PPU-A16
+Memory
+WRAM
+
+512 KB (hard-locked constant)
+
+VRAM
+
+1 MB total
+
+Partitioned into:
+
+BG tile data
+
+Sprite tile data
+
+Tilemaps
+
+Palettes
+
+Audio RAM
+
+256 KB
+
+Strictly separated from VRAM
+
+Illegal routing panics immediately
+
+4. PPU-A16 (Graphics Unit)
+   Display
 
 426×240 (16:9)
 
-4 BG layers
+256 on-screen colors max
 
-BG2 = Mode 7 affine plane
+RGB555 (5:5:5)
 
-256 sprites (64 per scanline)
+Integer-only color math
 
-256 on-screen colors
+Background System (Current Status)
+BG0 (Implemented – Phase 1 Complete)
 
-15-bit palette (5:5:5)
+64×64 tilemap (wrap)
 
-Color math supported
+8×8 tiles
 
-1 MB VRAM (partitioned)
+4bpp packed format
+
+32 bytes per tile
+
+4 bytes per row
+
+Each byte = 2 pixels (hi nibble → lo nibble)
+
+Tilemap Entry (u16, little-endian)
+
+Bits 0–9: tile index (0..1023)
+
+Bits 10–11: palette select (0..3 → bank ×16)
+
+Bit 12: hflip
+
+Bit 13: vflip
+
+Bits 14–15: priority (reserved)
+
+Palette
+
+First 256 entries = RGB555 (u16 little-endian)
+
+Deterministic integer math only
+
+Sprite System (Phase 1 Complete)
+Sprite Format
+
+Each sprite contains:
+
+x (u16)
+
+y (u16)
+
+tile_index (u16)
+
+palette (u8)
+
+priority (u8)
+
+visible (bool)
+
+blend (BlendMode)
+
+Sprite Rendering Rules
+
+8×8 tiles
+
+4bpp packed
+
+Color index 0 = transparent
+
+Sorted by priority (low first)
+
+Composited after BG0
+
+Scanline Rules
+
+8 sprites max per scanline
+
+Additional sprites trigger overflow
+
+Overflow tracking:
+
+sprite_overflow_latched
+
+sprite_overflow_scanlines
+
+Blending System (Implemented)
+Blend Modes
+
+Normal
+
+Additive
+
+Additive Blending
+
+RGB555 channel-wise add
+
+Clamp per channel (0–31)
+
+No overflow
+
+No floats
+
+Fully deterministic
+
+Future PPU Expansion (Planned, Not Yet Implemented)
+
+BG1–BG3
+
+Mode 7 affine plane (BG2)
+
+Sprite flipping
+
+16×16 sprites
+
+Layer priority mixing
+
+Window layers
+
+Extended blend modes
 
 Line table effects (tightly capped)
 
-PPU-A16 Formats (LOCKED)
+These must preserve determinism and hardware caps.
 
-BG tile encoding: 8×8, 4bpp packed, 32 bytes/tile, row = 4 bytes, each byte stores 2 pixels (hi nibble then lo nibble, left→right)
-
-Tilemap entry: u16 little-endian
-
-bits 0–9: tile index (0..1023)
-
-bits 10–11: palette select (0..3) → bank\*16
-
-bit 12: hflip
-
-bit 13: vflip
-
-bits 14–15: priority (reserved; ignored in v0.1)
-
-Palette: first 256 entries = RGB555 u16 little-endian (2 bytes each)
-
-Also note:
-
-BG0 currently treats tilemap as 64×64 (wrap).
-
-TEMP TEST VRAM seed exists in debug builds only.
-
-DMA
+5. DMA Controller
 
 Max 4 commands per frame
 
@@ -92,13 +233,14 @@ Max 64 KB VRAM upload per frame
 
 Max 16 KB audio upload per frame
 
-Exceeding caps → rejected immediately
+Reject immediately if exceeded
 
 Reject counts tracked per frame
 
-Audio RAM strictly separated from PPU VRAM
+No deferred DMA.
+No silent forgiveness.
 
-ASU-816
+6. ASU-816 (Audio System)
 
 16 voices (8 PCM + 8 synth)
 
@@ -112,39 +254,49 @@ Echo + soft limiter
 
 SEQ-16 built-in sequencer
 
-TCU
+Fully deterministic
+
+7. TCU (Timing & Control Unit)
 
 Frame counter
 
-4 timers
+4 hardware timers
 
 Deterministic RNG
 
 Sync clock
 
-ECSU
+8. ECSU (Entity System)
 
 256 entity slots
 
 Standardized position/velocity/state layout
 
-PDU
+Deterministic update cycle
 
-Tracks CPU ops
+9. PDU (Performance & Diagnostics Unit)
 
-Tracks DMA usage
+Tracks per frame:
 
-Tracks VRAM usage
+CPU ops
 
-Tracks audio usage
+DMA usage
 
-Tracks reject counts
+VRAM usage
 
-Enforces 200,000 ops cap
+Audio usage
 
-CPU cap violations tracked (cpu_rejects)
+Reject counts
 
-AAS (Achievement Service)
+Sprite overflow
+
+CPU cap violations
+
+Enforces:
+
+200,000 ops cap
+
+10. AAS (Achievement Service)
 
 Built-in trophy system
 
@@ -152,35 +304,19 @@ Unlock API
 
 Persistent profile storage
 
-GCU (Guided Creation Unit)
+11. GCU (Guided Creation Unit)
 
-Visible in Library as first-party Game Maker tool
+First-party Game Maker tool
 
 Powers LLM-assisted cartridge creation
 
-Must remain constrained and hardware-aware
+Must respect hardware limits
 
-Engine Core Status (Milestone Locked)
+Cannot bypass caps
 
-The following systems are fully implemented and considered frozen:
+12. Development Order (Strict)
 
-WRAM hard-locked to 512 KB
-
-CPU 200,000 ops/frame enforced
-
-CPU reject telemetry active
-
-DMA caps fully enforced (commands, VRAM, audio)
-
-AudioRam separated from PPU; illegal routing panics
-
-Deterministic frame lifecycle operational
-
-Core engine tolerances must not be re-architected unless explicitly approved.
-
-Development Order (Strict)
-
-Core frame loop + VM stub
+Core frame loop
 
 PDU
 
@@ -201,9 +337,9 @@ Achievement Service
 GCU
 
 No skipping.
-No architectural rewrites midstream.
+No midstream architectural rewrites.
 
-Non-Negotiables
+13. Non-Negotiables
 
 No 3D pipeline
 
@@ -211,8 +347,18 @@ No unlimited VRAM
 
 No deferred DMA
 
+No floating point in core rendering
+
 No silent budget forgiveness
 
-No silent hardware cap bypass
+No hidden hardware bypasses
 
-Violations must be rejected, not ignored.
+Violations must be rejected.
+
+14. Current Milestone
+
+PPU Phase 1: COMPLETE
+
+The rendering pipeline is stable, deterministic, and hardware-consistent.
+
+Future work must extend capability without breaking architectural constraints.

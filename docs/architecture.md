@@ -1,64 +1,172 @@
-# Aurex-16++ Architecture Progress
+# AUREX-16++ Architecture
 
-## Phase 4.5 — Framebuffer Debug Test
+Aurex-16++ is a deterministic 2D fantasy console designed to be:
 
-- Added TEMP TEST debug draw module
-- Framebuffer is populated each frame with a deterministic test pattern
-- Used to validate pixel pipeline before SDL integration
-- Marked clearly as non-production logic
+- Hardware-inspired
+- Strictly constrained
+- LLM-friendly
+- Deterministic
+- 60 FPS fixed
+- Integer-only rendering
+- 2D-only (no 3D pipeline)
 
-## Phase 4 — Framebuffer Skeleton
-- Added PPU-A16 framebuffer at 426×240
-- Internal pixel format is u16 RGB555 (0RRRRRGGGGGBBBBB)
-- Framebuffer clears to black each frame (no rendering yet)
+---
 
-## Phase 3.6 — Real DMA (WRAM → VRAM)
+# Core System Overview
 
-- DMA now copies real bytes from WRAM into specific VRAM partitions
-- Transfers validated at request time (Option A discipline)
-- No clipping, no partial writes
-- Max 4 commands per frame
-- Max 64 KB VRAM upload per frame
-- All large memory blocks allocated via Vec → Box<[u8]> to avoid stack overflow
-- Audio DMA temporarily disabled (reserved for ASU-816 phase)
+## Frame Model
 
-## Phase 3.5
-- DMA now queues accepted transfers
-- DMA apply stage executes at frame end
-- VRAM partitions implemented as separate heap allocations
-- Placeholder DMA writes currently mark BG tile memory
-- No WRAM source copying yet
+- 60 FPS fixed timestep
+- Deterministic execution
+- No floating point in core rendering
+- Frame-based hardware-style pipeline
 
-### Technical Notes
-- All large memory blocks (WRAM, VRAM partitions) allocated via Vec -> Box<[u8]>
-  to prevent Windows stack overflow during initialization.
-- Core loop contains no temporary smoke tests.
-- Frame timing uses anchored frame_start approach (no drift accumulation).
+---
 
-## Phase 3
-- PPU-A16 VRAM skeleton implemented as separate fixed partitions (Option B)
-- Total VRAM = 1 MiB split into:
-  - 384 KB BG tiles
-  - 128 KB tilemaps
-  - 384 KB sprite tiles
-  - 64 KB Mode7 texture
-  - 16 KB palettes
-  - 64 KB reserved/system
-- No rendering yet (memory only)
+# Memory Layout
 
-## Phase 1
-- Deterministic 60 FPS clock
-- 200,000 ops per frame CPU cap
-- 512 KB WRAM (heap allocated)
-- VM-32 stub
+## WRAM
 
-## Phase 2
-- DMA Controller
-  - Max 4 commands per frame
-  - Max 64 KB VRAM upload
-  - Max 16 KB audio upload
-  - Reject tracking
+- 512 KB
 
-## Phase 2.5
-- PDU now ingests DMA telemetry
-- CPU and DMA budgets unified under frame diagnostics
+## VRAM
+
+- 1 MB total
+- Partitioned into:
+  - BG tile data
+  - Sprite tile data
+  - Tilemaps
+  - Palettes
+
+## Palette Format
+
+- RGB555
+- Little-endian
+- First 256 entries active
+- Deterministic integer math only
+
+---
+
+# Graphics Subsystem (PPU)
+
+## Background Layer (BG0)
+
+- 64x64 tilemap
+- 8x8 tiles
+- 4bpp packed format (32 bytes per tile)
+- Tilemap entry (u16):
+  - 0..9 tile_index
+  - 10..11 palette select (4 banks)
+  - 12 hflip
+  - 13 vflip
+  - 14..15 priority (reserved)
+
+### BG Rendering Rules
+
+- Rendered first
+- Scroll registers supported (bg0_scroll_x / bg0_scroll_y)
+- Deterministic scanline rendering
+- No floating point
+
+---
+
+## Sprite System
+
+### Sprite Format
+
+Each sprite contains:
+
+- x (u16)
+- y (u16)
+- tile_index (u16)
+- palette (u8)
+- priority (u8)
+- visible (bool)
+- blend (BlendMode)
+
+### Sprite Tile Format
+
+- 8x8
+- 4bpp packed
+- 32 bytes per tile
+- Color index 0 = transparent
+
+---
+
+## Sprite Pipeline
+
+### Scanline Evaluation
+
+- Per-scanline sprite selection
+- Maximum 8 sprites per scanline
+- Additional sprites trigger overflow
+
+### Overflow Tracking
+
+- `sprite_overflow_latched` (per frame)
+- `sprite_overflow_scanlines` (counter)
+
+### Priority Sorting
+
+- Sprites sorted by priority (low first)
+- Composited after BG
+
+---
+
+## Blending System
+
+### Supported Blend Modes
+
+- Normal (overwrite)
+- Additive
+
+### Additive Blending
+
+- RGB555 channel-wise add
+- Clamp per channel (0–31)
+- No overflow
+- Deterministic
+- Integer-only math
+
+---
+
+# Current Rendering Order
+
+1. BG0 rendered
+2. Sprites composited in priority order
+3. Blend mode applied per pixel
+
+---
+
+# Current Limitations (Intentional)
+
+- Only one background layer (BG0)
+- No sprite flipping yet
+- No sprite scaling
+- No affine transforms
+- No window layers
+- No multi-layer priority system
+- No alpha blending (only additive)
+- No hardware register abstraction yet
+
+---
+
+# Development Status
+
+PPU Phase 1: COMPLETE
+
+The core 2D rendering pipeline is operational, deterministic, and stable.
+
+Next milestones will expand capability without breaking determinism.
+
+---
+
+# Design Philosophy
+
+Aurex-16++ aims to:
+
+- Be superior to SNES/Genesis in flexibility
+- Remain below PS1 complexity
+- Encourage creative constraint
+- Support LLM-generated cartridges under hardware-style limits
+- Prioritize readability, determinism, and performance
