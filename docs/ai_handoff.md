@@ -329,3 +329,102 @@ BG0 + Sprites + Priority (basic)
 
 Next planned milestone:
 Sprite overflow flag exposure OR BG1 layer introduction.
+
+Phase 6 — Sprite Overflow Telemetry
+
+Implemented:
+
+8 sprites per scanline limit
+
+Overflow detection during scanline evaluation
+
+Per-frame latch of overflow state
+
+Count of overflowed scanlines
+
+PPU → PDU telemetry bridge
+
+Frame reset of telemetry
+
+Hardware Behavior:
+
+Sprites are evaluated per scanline.
+
+Only first 8 visible sprites render.
+
+If >8 detected, overflow flag is set.
+
+Overflow persists for entire frame.
+
+Overflow scanline count recorded.
+
+Architecture:
+
+PPU:
+
+Owns overflow detection + latch
+
+Resets at start of frame
+
+Exposes read-only getters
+
+PDU:
+
+Ingests PPU telemetry per frame
+
+Holds status for debugging / SDK / future register exposure
+
+Temporary overflow validation test:
+
+Seeded 12 sprites on one scanline
+
+Confirmed 8-scanline overflow (sprite height = 8)
+
+Test removed
+
+Status:
+Sprite pipeline now hardware-accurate.
+
+Next milestone candidate:
+
+Sprite vs BG priority interaction
+
+BG1 layer
+
+Sprite size modes
+
+Hardware register mapping
+
+OAM DMA pipeline
+
+Graphics Pipeline Status
+
+BG0: 8x8 tiles, 4bpp, 64x64 map
+
+Sprites: 8x8, 4bpp
+
+8 sprites per scanline
+
+Overflow flag + per-frame counter
+
+Priority sorting (low first)
+
+Blend modes:
+
+Normal
+
+Additive (RGB555 channel clamp)
+
+Then list:
+
+Known limitations
+
+No sprite flipping yet
+
+No sprite scaling
+
+No window layers
+
+No per-layer priority
+
+No transparency blend modes other than additive

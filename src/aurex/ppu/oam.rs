@@ -9,6 +9,18 @@
 
 pub const MAX_SPRITES: usize = 128;
 
+// ============================================================================
+// Sprite Blend Mode
+// ----------------------------------------------------------------------------
+// Normal   : Standard overwrite rendering
+// Additive : RGB555 channel-wise additive blending (clamped)
+// ============================================================================
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum BlendMode {
+    Normal,
+    Additive,
+}
+
 // Sprite size is fixed to 8x8 for Phase 1.
 // Later we add size flags.
 #[derive(Clone, Copy, Debug)]
@@ -19,6 +31,11 @@ pub struct Sprite {
     pub palette: u8,
     pub priority: u8,
     pub visible: bool,
+
+    // ------------------------------------------------------------------------
+    // Blend mode (default: Normal)
+    // ------------------------------------------------------------------------
+    pub blend: BlendMode,
 }
 
 impl Default for Sprite {
@@ -30,6 +47,7 @@ impl Default for Sprite {
             palette: 0,
             priority: 0,
             visible: false,
+            blend: BlendMode::Normal,
         }
     }
 }

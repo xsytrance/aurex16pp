@@ -9,6 +9,7 @@
 use super::framebuffer::{FB_H, FB_W, Framebuffer};
 use super::oam::Oam;
 use super::vram::Vram;
+use crate::aurex::ppu::oam::BlendMode;
 
 pub struct Ppu {
     frame_counter: u64,
@@ -37,6 +38,28 @@ impl Ppu {
             sprite_overflow_latched: false,
             sprite_overflow_scanlines: 0,
         }
+    }
+
+    // ============================================================================
+    // RGB555 Additive Blend
+    // ----------------------------------------------------------------------------
+    // Adds two RGB555 pixels channel-wise and clamps to 31.
+    // Deterministic. No floats. No overflow.
+    // ============================================================================
+    fn add_rgb555(dst: u16, src: u16) -> u16 {
+        let dr = (dst >> 10) & 0x1F;
+        let dg = (dst >> 5) & 0x1F;
+        let db = dst & 0x1F;
+
+        let sr = (src >> 10) & 0x1F;
+        let sg = (src >> 5) & 0x1F;
+        let sb = src & 0x1F;
+
+        let r = (dr + sr).min(31);
+        let g = (dg + sg).min(31);
+        let b = (db + sb).min(31);
+
+        (r << 10) | (g << 5) | b
     }
 
     // ============================================================================
@@ -102,6 +125,7 @@ impl Ppu {
             sprite.palette = palette;
             sprite.priority = priority;
             sprite.visible = true;
+            sprite.blend = BlendMode::Additive;
         }
     }
 
@@ -250,6 +274,8 @@ impl Ppu {
                 let rgb555 = plo | (phi << 8);
 
                 let fb_index = y * FB_W + dst_x;
+                use crate::aurex::ppu::oam::BlendMode;
+
                 pixels[fb_index] = rgb555;
             }
         }
@@ -288,7 +314,7 @@ impl Ppu {
                     let color_index = if col % 2 == 0 { byte >> 4 } else { byte & 0x0F };
 
                     if color_index == 0 {
-                        continue; // transparent
+                        continue; // transparent pixel
                     }
 
                     let palette_offset = sprite.palette as usize * 16;
@@ -302,7 +328,17 @@ impl Ppu {
                     let hi = vram.palettes[palette_index * 2 + 1] as u16;
                     let rgb = lo | (hi << 8);
 
-                    pixels[y * FB_W + screen_x] = rgb;
+                    let fb_index = y * FB_W + screen_x;
+
+                    match sprite.blend {
+                        BlendMode::Normal => {
+                            pixels[fb_index] = rgb;
+                        }
+                        BlendMode::Additive => {
+                            let dst = pixels[fb_index];
+                            pixels[fb_index] = Self::add_rgb555(dst, rgb);
+                        }
+                    }
                 }
             }
         }
