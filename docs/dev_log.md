@@ -6,6 +6,43 @@ Newest entries are always added at the top.
 This file tracks engineering evolution, not canonical hardware state.
 Refer to ai_handoff_canon.md for current hardware truth.
 
+## [PPU Phase 6 / Boot Demo Recovery] Sprite pipeline bugfix + VBlank foundation
+
+### What went wrong (root cause)
+
+We hit a failure mode where 16x16 glyph/sprite rendering appeared “cut off” or garbage:
+
+- Sprite scanline evaluation was still locked to 8x8 height (`sprite_bottom = sprite_top + 8`) even when sprites were actually rendered as 16x16.
+- Sprite renderer temporarily forced `sprite_size = 16` unconditionally, creating a mismatch between evaluation and render rules.
+- BG priority buffer (`bg_priority_line`) was accidentally re-declared inside the per-pixel loop, shadowing the intended scanline buffer and breaking its lifetime/scope.
+
+Net effect:
+
+- Sprites were only considered “present” on the first 8 scanlines, so the bottom half never rendered.
+- Some experimental paths caused tile math to read the wrong rows/tiles, producing broken glyph shapes.
+
+### Fix summary
+
+- Sprite evaluation now uses the sprite’s configured size:
+  - `sprite_size = if sprite.size_16 { 16 } else { 8 }`
+  - `sprite_bottom = sprite_top + sprite_size`
+- Sprite renderer now uses the same size logic (no hard-coded 16).
+- Removed the accidental re-declaration of `bg_priority_line` inside the pixel loop so it persists for the entire scanline as intended.
+
+### Phase 6 note (VBlank foundation)
+
+PPU now simulates VBlank with a simple deterministic latch:
+
+- `vblank = false` at frame start
+- `vblank = true` after all scanlines render
+  No mid-scanline timing yet (pre-VBlank simulation only), but this enables deterministic “VBlank-only VRAM write” enforcement.
+
+### Outcome
+
+- A clean 16x16 proof sprite renders correctly.
+- PrimeIgnition boot demo glyphs now render legibly (AUREX-16 is visible and centered).
+- This unblocks visual polish work (glow, easing, starfield, etc.) without fighting broken fundamentals.
+
 ## [YYYY-MM-DD] — Boot DMA + Sprite Format Validation
 
 - Implemented PrimeIgnition boot module.

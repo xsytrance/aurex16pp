@@ -155,4 +155,21 @@ src/aurex/ppu/vram.rs
 boot/
 prime_ignition.rs - Boot cinematic sequence - DMA glyph upload - Temporary visual validation logic
 
+## Boot / Demo Modules
+
+- `src/aurex/boot/prime_ignition.rs`
+  - Owner: Boot demo (PrimeIgnition)
+  - Responsibility:
+    - Deterministic boot-time visuals (logo/glyph staging)
+    - Asset staging into WRAM + DMA requests into VRAM (when enabled)
+    - No architecture mutation; must obey Phase 6 VBlank gating rules
+  - TEMP status: Yes (boot demo), but intentionally retained as a system-level integration test.
+
+- `src/aurex/boot/render_probe.rs`
+  - Owner: Render probe (diagnostic)
+  - Responsibility:
+    - Minimal known-good sprite/tile output for pipeline validation
+    - Used to isolate issues in evaluation/render/tile indexing
+  - TEMP status: Yes (diagnostic tool). May be disabled when PrimeIgnition is stable.
+
 END OF INDEX

@@ -151,6 +151,23 @@ No direct field mutation outside PPU.
   - Deterministic silent rejection.
   - No IRQ or stall behavior yet.
 
+  ### PPU Phase 6 — VBlank Simulation (Foundational / Pre-Timing)
+
+  Status: Implemented (foundational latch only)
+
+Rules:
+
+- PPU is passive: it does not mutate bus registers during rendering.
+- VBlank is a deterministic internal state latch (not cycle-accurate yet):
+  - `vblank = false` at start of `render_frame`
+  - `vblank = true` after the last scanline is rendered
+- No IRQ timing, no mid-frame toggles, no per-scanline status yet.
+
+Purpose:
+
+- Provides a clean deterministic hook for DMA gating (VRAM writes only during VBlank).
+- Sets the stage for later timing granularity without redesigning the architecture.
+
 ---
 
 # 7. Determinism Guarantees

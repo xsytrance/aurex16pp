@@ -340,7 +340,8 @@ impl Ppu {
                 }
 
                 let sprite_top = sprite.y as usize;
-                let sprite_bottom = sprite_top + 8; // 8x8 for now
+                let sprite_height = if sprite.size_16 { 16 } else { 8 };
+                let sprite_bottom = sprite_top + sprite_height;
 
                 if y >= sprite_top && y < sprite_bottom {
                     if count < 8 {
@@ -452,6 +453,7 @@ impl Ppu {
 
     fn render_scanline(&mut self, vram: &Vram, y: usize, fb: &mut Framebuffer) {
         let pixels = fb.pixels_mut();
+        let mut bg_priority_line = [0u8; FB_W];
 
         // -------------------------------------------------------------------------
         // Sprite Scanline Evaluation (Phase 1 - no rendering yet)
@@ -504,7 +506,6 @@ impl Ppu {
             // Per-scanline BG priority buffer (0 = low, 1 = high)
             // Must live for entire scanline (BG + sprite pass)
             // -----------------------------------------------------------------------------
-            let mut bg_priority_line = [0u8; FB_W];
 
             // -----------------------------------------------------------------------------
             // Window check (vertical clip)
@@ -552,7 +553,6 @@ impl Ppu {
                     // -----------------------------------------------------------------------------
                     // Per-scanline BG priority buffer (0 = low, 1 = high)
                     // -----------------------------------------------------------------------------
-                    let mut bg_priority_line = [0u8; FB_W];
                     let dst_x = tx * 8 + px;
                     if dst_x >= FB_W {
                         continue;
@@ -757,7 +757,7 @@ impl Ppu {
                     let sprite_x = sprite.x as usize;
                     let sprite_y = sprite.y as usize;
 
-                    let sprite_size = if sprite.size_16 { 16 } else { 8 };
+                    let sprite_size = 16;
 
                     // Skip scanlines outside sprite vertically
                     if y < sprite_y || y >= sprite_y + sprite_size {
@@ -766,8 +766,7 @@ impl Ppu {
 
                     let row_in_sprite = y - sprite_y;
 
-                    let tiles_per_row = if sprite.size_16 { 2 } else { 1 };
-
+                    let tiles_per_row = if sprite_size == 16 { 2 } else { 1 };
                     // Iterate across full sprite width (8 or 16)
                     for screen_dx in 0..sprite_size {
                         let screen_x = sprite_x + screen_dx;
