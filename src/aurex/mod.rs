@@ -46,11 +46,6 @@ impl Aurex {
             seed_test_bg0(&mut s.vram);
         }
 
-        #[cfg(debug_assertions)]
-        {
-            seed_test_bg0(&mut s.vram);
-        }
-
         s
     }
 

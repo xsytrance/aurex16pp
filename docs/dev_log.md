@@ -6,6 +6,19 @@ Newest entries are always added at the top.
 This file tracks engineering evolution, not canonical hardware state.
 Refer to ai_handoff_canon.md for current hardware truth.
 
+## 2026-03-02 — PPU VBlank Simulation Introduced
+
+Added a hardware-style `vblank` boolean to the PPU.
+
+- Cleared at start of `render_frame`
+- Set true after scanline rendering completes
+- No IRQ system yet
+- No behavior change
+
+This establishes future-safe DMA gating and proper console timing architecture.
+
+Rendering pipeline remains unchanged and deterministic.
+
 ## 2026-03-02 — Hardware Register Bus + Mutation Isolation
 
 Register system fully activated and enforced.

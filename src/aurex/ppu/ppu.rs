@@ -25,6 +25,9 @@ pub const PPU_BG0_ENABLE: u16 = 0x0020;
 pub const PPU_BG1_ENABLE: u16 = 0x0022;
 pub const PPU_SPRITE_ENABLE: u16 = 0x0024;
 
+pub const PPU_WINDOW_LEFT: u16 = 0x0016;
+pub const PPU_WINDOW_RIGHT: u16 = 0x0018;
+
 // === AUREX SDK SURFACE: PPU REGISTER ENUM ===
 pub enum PpuReg {
     Bg0ScrollX,
@@ -34,9 +37,35 @@ pub enum PpuReg {
     WindowEnable,
     WindowTop,
     WindowBottom,
+    WindowLeft,
+    WindowRight,
     Bg0Enable,
     Bg1Enable,
     SpriteEnable,
+}
+
+// === AUREX SDK SURFACE: PPU STATE SNAPSHOT ===
+// Captures PPU register-like state for save-state / deterministic replay.
+// Does NOT include VRAM, OAM, or framebuffer.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct PpuState {
+    pub frame_counter: u64,
+
+    // Scroll regs
+    pub bg0_scroll_x: u16,
+    pub bg0_scroll_y: u16,
+    pub bg1_scroll_x: u16,
+    pub bg1_scroll_y: u16,
+
+    // Window regs
+    pub window_enabled: bool,
+    pub window_top: u16,
+    pub window_bottom: u16,
+
+    // Layer enable regs
+    pub bg0_enable: bool,
+    pub bg1_enable: bool,
+    pub sprite_enable: bool,
 }
 
 pub struct Ppu {
@@ -58,6 +87,8 @@ pub struct Ppu {
     pub window_enabled: bool,
     pub window_top: u16,
     pub window_bottom: u16,
+    pub window_left: u16,
+    pub window_right: u16,
 
     // -----------------------------------------------------------------------------
     // Layer enable flags (Phase 5)
@@ -98,6 +129,8 @@ impl Ppu {
             window_enabled: false,
             window_top: 0,
             window_bottom: 0,
+            window_left: 0,
+            window_right: (FB_W as u16).saturating_sub(1),
             bg0_enable: true,
             bg1_enable: true,
             sprite_enable: true,
@@ -115,6 +148,8 @@ impl Ppu {
             PPU_WINDOW_ENABLE => self.read_reg(PpuReg::WindowEnable),
             PPU_WINDOW_TOP => self.read_reg(PpuReg::WindowTop),
             PPU_WINDOW_BOTTOM => self.read_reg(PpuReg::WindowBottom),
+            PPU_WINDOW_LEFT => self.read_reg(PpuReg::WindowLeft),
+            PPU_WINDOW_RIGHT => self.read_reg(PpuReg::WindowRight),
 
             PPU_BG0_ENABLE => self.read_reg(PpuReg::Bg0Enable),
             PPU_BG1_ENABLE => self.read_reg(PpuReg::Bg1Enable),
@@ -135,6 +170,8 @@ impl Ppu {
             PPU_WINDOW_ENABLE => self.write_reg(PpuReg::WindowEnable, value),
             PPU_WINDOW_TOP => self.write_reg(PpuReg::WindowTop, value),
             PPU_WINDOW_BOTTOM => self.write_reg(PpuReg::WindowBottom, value),
+            PPU_WINDOW_LEFT => self.write_reg(PpuReg::WindowLeft, value),
+            PPU_WINDOW_RIGHT => self.write_reg(PpuReg::WindowRight, value),
 
             PPU_BG0_ENABLE => self.write_reg(PpuReg::Bg0Enable, value),
             PPU_BG1_ENABLE => self.write_reg(PpuReg::Bg1Enable, value),
@@ -144,6 +181,45 @@ impl Ppu {
                 // Unknown register — ignore for now
             }
         }
+    }
+
+    // === AUREX SDK SURFACE: PPU SNAPSHOT ===
+    pub fn snapshot(&self) -> PpuState {
+        PpuState {
+            frame_counter: self.frame_counter,
+
+            bg0_scroll_x: self.bg0_scroll_x,
+            bg0_scroll_y: self.bg0_scroll_y,
+            bg1_scroll_x: self.bg1_scroll_x,
+            bg1_scroll_y: self.bg1_scroll_y,
+
+            window_enabled: self.window_enabled,
+            window_top: self.window_top,
+            window_bottom: self.window_bottom,
+
+            bg0_enable: self.bg0_enable,
+            bg1_enable: self.bg1_enable,
+            sprite_enable: self.sprite_enable,
+        }
+    }
+
+    // === AUREX SDK SURFACE: PPU RESTORE ===
+    pub fn restore(&mut self, s: PpuState) {
+        self.frame_counter = s.frame_counter;
+
+        // Restore via register bus to preserve layering rules.
+        self.write_reg(PpuReg::Bg0ScrollX, s.bg0_scroll_x);
+        self.write_reg(PpuReg::Bg0ScrollY, s.bg0_scroll_y);
+        self.write_reg(PpuReg::Bg1ScrollX, s.bg1_scroll_x);
+        self.write_reg(PpuReg::Bg1ScrollY, s.bg1_scroll_y);
+
+        self.write_reg(PpuReg::WindowEnable, s.window_enabled as u16);
+        self.write_reg(PpuReg::WindowTop, s.window_top);
+        self.write_reg(PpuReg::WindowBottom, s.window_bottom);
+
+        self.write_reg(PpuReg::Bg0Enable, s.bg0_enable as u16);
+        self.write_reg(PpuReg::Bg1Enable, s.bg1_enable as u16);
+        self.write_reg(PpuReg::SpriteEnable, s.sprite_enable as u16);
     }
 
     // === AUREX SDK SURFACE: PPU REGISTER WRITE ===
@@ -157,6 +233,8 @@ impl Ppu {
             PpuReg::WindowEnable => self.window_enabled = value != 0,
             PpuReg::WindowTop => self.window_top = value,
             PpuReg::WindowBottom => self.window_bottom = value,
+            PpuReg::WindowLeft => self.window_left = value,
+            PpuReg::WindowRight => self.window_right = value,
 
             PpuReg::Bg0Enable => self.bg0_enable = value != 0,
             PpuReg::Bg1Enable => self.bg1_enable = value != 0,
@@ -175,6 +253,8 @@ impl Ppu {
             PpuReg::WindowEnable => self.window_enabled as u16,
             PpuReg::WindowTop => self.window_top,
             PpuReg::WindowBottom => self.window_bottom,
+            PpuReg::WindowLeft => self.window_left,
+            PpuReg::WindowRight => self.window_right,
 
             PpuReg::Bg0Enable => self.bg0_enable as u16,
             PpuReg::Bg1Enable => self.bg1_enable as u16,
@@ -286,6 +366,8 @@ impl Ppu {
     }
 
     // === AUREX CORE: FRAME RENDER ENTRY ===
+    // PPU renders strictly from register state.
+    // No TEMP TEST register mutation allowed here.
 
     pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
         // -------------------------------------------------------------------------
@@ -297,38 +379,22 @@ impl Ppu {
         self.sprite_overflow_scanlines = 0;
 
         // -------------------------------------------------------------------------
-        // TEMP TEST — Layer toggles
-        // Remove when register interface exists
+        // Read scroll registers from bus
+        // (PPU does not mutate registers internally)
         // -------------------------------------------------------------------------
-        self.bg0_enable = true;
-        self.bg1_enable = true;
-        self.sprite_enable = true;
-
-        // -------------------------------------------------------------------------
-        // TEMP TEST — Enable vertical window band
-        // Remove when register interface exists
-        // -------------------------------------------------------------------------
-        self.write_addr(PPU_WINDOW_ENABLE, 1);
-        self.write_addr(PPU_WINDOW_TOP, 80);
-        self.write_addr(PPU_WINDOW_BOTTOM, 160);
-
-        // -------------------------------------------------------------------------
-        // TEMP TEST — Auto-scroll BG0 (horizontal)
-        // Remove when CPU register writes exist
-        // -------------------------------------------------------------------------
-        let new_scroll = self.read_addr(PPU_BG0_SCROLL_X).wrapping_add(1);
-        self.write_addr(PPU_BG0_SCROLL_X, new_scroll);
+        let bg0_scroll_x = self.read_addr(PPU_BG0_SCROLL_X);
+        let bg0_scroll_y = self.read_addr(PPU_BG0_SCROLL_Y);
 
         // -------------------------------------------------------------------------
         // Build per-scanline scroll tables (Phase 3)
         // -------------------------------------------------------------------------
         for y in 0..FB_H {
             // BG0: normal scroll
-            self.bg0_scroll_x_line[y] = self.bg0_scroll_x;
+            self.bg0_scroll_x_line[y] = bg0_scroll_x;
 
-            // BG1: parallax + vertical wave distortion
-            let wave = ((y as i32 - 120).abs() as u16) / 8;
-            self.bg1_scroll_x_line[y] = (self.bg0_scroll_x / 2).wrapping_add(wave);
+            // BG1: scroll comes directly from register state
+            let bg1_scroll_x = self.read_addr(PPU_BG1_SCROLL_X);
+            self.bg1_scroll_x_line[y] = bg1_scroll_x;
         }
 
         // -------------------------------------------------------------------------
@@ -507,10 +573,15 @@ impl Ppu {
         // BG1 Rendering
         // -------------------------------------------------------------------------
         // TEMP TEST — Parallax: BG1 scrolls slower than BG0
-        if self.bg1_enable
-            && (!self.window_enabled
-                || (y >= self.window_top as usize && y <= self.window_bottom as usize))
-        {
+        let win_on = self.window_enabled;
+        let win_top = self.window_top as usize;
+        let win_bot = self.window_bottom as usize;
+        let win_left = self.window_left as usize;
+        let win_right = self.window_right as usize;
+
+        let y_in_window = !win_on || (y >= win_top && y <= win_bot);
+
+        if self.bg1_enable && y_in_window {
             let scroll_x = self.bg1_scroll_x_line[y] as usize;
             let scroll_y = (self.bg0_scroll_y as usize) / 2;
             let sy = y.wrapping_add(scroll_y);
@@ -562,9 +633,15 @@ impl Ppu {
                     // -----------------------------------------------------------------------------
                     // Per-scanline BG priority buffer (0 = low, 1 = high)
                     // -----------------------------------------------------------------------------
-                    let mut bg_priority_line = [0u8; FB_W];
                     let dst_x = tx * 8 + px;
                     if dst_x >= FB_W {
+                        continue;
+                    }
+
+                    // -----------------------------------------------------------------
+                    // Horizontal window mask (BG1 only)
+                    // -----------------------------------------------------------------
+                    if win_on && (dst_x < win_left || dst_x > win_right) {
                         continue;
                     }
 

@@ -93,10 +93,6 @@ impl Pdu {
     pub fn end_frame(&mut self) {
         self.frame_index += 1;
 
-        // Temporary heartbeat debug
-        if self.frame_index % 60 == 0 {
-            println!("Frame: {}", self.frame_index);
-        }
         // TEMP DEBUG
         if self.cpu_rejects > 0 {
             println!("CPU budget exceeded {} times this frame", self.cpu_rejects);

@@ -215,4 +215,33 @@ No future system may bypass this structure.
 
 ---
 
+## PPU Phase 6 — VBlank State Simulation (Foundational)
+
+The PPU now exposes a hardware-style `vblank` flag.
+
+### Behavior
+
+- `vblank = false` at start of `render_frame`
+- `vblank = true` after all scanlines are rendered
+- No IRQ or timing granularity yet
+- No behavioral change to rendering
+
+### Purpose
+
+This establishes:
+
+- Future VBlank-safe DMA gating
+- Register update timing discipline
+- Deterministic save-state completeness
+- IRQ simulation foundation
+
+### Scope
+
+- No interrupts implemented
+- No cycle timing
+- No frame timing redesign
+- No change to frame rate or determinism
+
+Architecture remains stable.
+
 END OF CANON
