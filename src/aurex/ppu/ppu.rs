@@ -11,6 +11,34 @@ use super::oam::Oam;
 use super::vram::Vram;
 use crate::aurex::ppu::oam::BlendMode;
 
+// === AUREX HARDWARE: PPU REGISTER ADDRESS MAP ===
+pub const PPU_BG0_SCROLL_X: u16 = 0x0000;
+pub const PPU_BG0_SCROLL_Y: u16 = 0x0002;
+pub const PPU_BG1_SCROLL_X: u16 = 0x0004;
+pub const PPU_BG1_SCROLL_Y: u16 = 0x0006;
+
+pub const PPU_WINDOW_ENABLE: u16 = 0x0010;
+pub const PPU_WINDOW_TOP: u16 = 0x0012;
+pub const PPU_WINDOW_BOTTOM: u16 = 0x0014;
+
+pub const PPU_BG0_ENABLE: u16 = 0x0020;
+pub const PPU_BG1_ENABLE: u16 = 0x0022;
+pub const PPU_SPRITE_ENABLE: u16 = 0x0024;
+
+// === AUREX SDK SURFACE: PPU REGISTER ENUM ===
+pub enum PpuReg {
+    Bg0ScrollX,
+    Bg0ScrollY,
+    Bg1ScrollX,
+    Bg1ScrollY,
+    WindowEnable,
+    WindowTop,
+    WindowBottom,
+    Bg0Enable,
+    Bg1Enable,
+    SpriteEnable,
+}
+
 pub struct Ppu {
     frame_counter: u64,
 
@@ -73,6 +101,84 @@ impl Ppu {
             bg0_enable: true,
             bg1_enable: true,
             sprite_enable: true,
+        }
+    }
+
+    // === AUREX HARDWARE: ADDRESS-BASED REGISTER READ ===
+    pub fn read_addr(&self, addr: u16) -> u16 {
+        match addr {
+            PPU_BG0_SCROLL_X => self.read_reg(PpuReg::Bg0ScrollX),
+            PPU_BG0_SCROLL_Y => self.read_reg(PpuReg::Bg0ScrollY),
+            PPU_BG1_SCROLL_X => self.read_reg(PpuReg::Bg1ScrollX),
+            PPU_BG1_SCROLL_Y => self.read_reg(PpuReg::Bg1ScrollY),
+
+            PPU_WINDOW_ENABLE => self.read_reg(PpuReg::WindowEnable),
+            PPU_WINDOW_TOP => self.read_reg(PpuReg::WindowTop),
+            PPU_WINDOW_BOTTOM => self.read_reg(PpuReg::WindowBottom),
+
+            PPU_BG0_ENABLE => self.read_reg(PpuReg::Bg0Enable),
+            PPU_BG1_ENABLE => self.read_reg(PpuReg::Bg1Enable),
+            PPU_SPRITE_ENABLE => self.read_reg(PpuReg::SpriteEnable),
+
+            _ => 0,
+        }
+    }
+
+    // === AUREX HARDWARE: ADDRESS-BASED REGISTER WRITE ===
+    pub fn write_addr(&mut self, addr: u16, value: u16) {
+        match addr {
+            PPU_BG0_SCROLL_X => self.write_reg(PpuReg::Bg0ScrollX, value),
+            PPU_BG0_SCROLL_Y => self.write_reg(PpuReg::Bg0ScrollY, value),
+            PPU_BG1_SCROLL_X => self.write_reg(PpuReg::Bg1ScrollX, value),
+            PPU_BG1_SCROLL_Y => self.write_reg(PpuReg::Bg1ScrollY, value),
+
+            PPU_WINDOW_ENABLE => self.write_reg(PpuReg::WindowEnable, value),
+            PPU_WINDOW_TOP => self.write_reg(PpuReg::WindowTop, value),
+            PPU_WINDOW_BOTTOM => self.write_reg(PpuReg::WindowBottom, value),
+
+            PPU_BG0_ENABLE => self.write_reg(PpuReg::Bg0Enable, value),
+            PPU_BG1_ENABLE => self.write_reg(PpuReg::Bg1Enable, value),
+            PPU_SPRITE_ENABLE => self.write_reg(PpuReg::SpriteEnable, value),
+
+            _ => {
+                // Unknown register — ignore for now
+            }
+        }
+    }
+
+    // === AUREX SDK SURFACE: PPU REGISTER WRITE ===
+    pub fn write_reg(&mut self, reg: PpuReg, value: u16) {
+        match reg {
+            PpuReg::Bg0ScrollX => self.bg0_scroll_x = value,
+            PpuReg::Bg0ScrollY => self.bg0_scroll_y = value,
+            PpuReg::Bg1ScrollX => self.bg1_scroll_x = value,
+            PpuReg::Bg1ScrollY => self.bg1_scroll_y = value,
+
+            PpuReg::WindowEnable => self.window_enabled = value != 0,
+            PpuReg::WindowTop => self.window_top = value,
+            PpuReg::WindowBottom => self.window_bottom = value,
+
+            PpuReg::Bg0Enable => self.bg0_enable = value != 0,
+            PpuReg::Bg1Enable => self.bg1_enable = value != 0,
+            PpuReg::SpriteEnable => self.sprite_enable = value != 0,
+        }
+    }
+
+    // === AUREX SDK SURFACE: PPU REGISTER READ ===
+    pub fn read_reg(&self, reg: PpuReg) -> u16 {
+        match reg {
+            PpuReg::Bg0ScrollX => self.bg0_scroll_x,
+            PpuReg::Bg0ScrollY => self.bg0_scroll_y,
+            PpuReg::Bg1ScrollX => self.bg1_scroll_x,
+            PpuReg::Bg1ScrollY => self.bg1_scroll_y,
+
+            PpuReg::WindowEnable => self.window_enabled as u16,
+            PpuReg::WindowTop => self.window_top,
+            PpuReg::WindowBottom => self.window_bottom,
+
+            PpuReg::Bg0Enable => self.bg0_enable as u16,
+            PpuReg::Bg1Enable => self.bg1_enable as u16,
+            PpuReg::SpriteEnable => self.sprite_enable as u16,
         }
     }
 
@@ -179,9 +285,8 @@ impl Ppu {
         self.bg0_scroll_y = y;
     }
 
-    // -------------------------------------------------------------------------
-    // FRAME ENTRY
-    // -------------------------------------------------------------------------
+    // === AUREX CORE: FRAME RENDER ENTRY ===
+
     pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
         // -------------------------------------------------------------------------
         // Frame Begin
@@ -203,15 +308,16 @@ impl Ppu {
         // TEMP TEST — Enable vertical window band
         // Remove when register interface exists
         // -------------------------------------------------------------------------
-        self.window_enabled = true;
-        self.window_top = 80;
-        self.window_bottom = 160;
+        self.write_addr(PPU_WINDOW_ENABLE, 1);
+        self.write_addr(PPU_WINDOW_TOP, 80);
+        self.write_addr(PPU_WINDOW_BOTTOM, 160);
 
         // -------------------------------------------------------------------------
         // TEMP TEST — Auto-scroll BG0 (horizontal)
         // Remove when CPU register writes exist
         // -------------------------------------------------------------------------
-        self.bg0_scroll_x = self.bg0_scroll_x.wrapping_add(1);
+        let new_scroll = self.read_addr(PPU_BG0_SCROLL_X).wrapping_add(1);
+        self.write_addr(PPU_BG0_SCROLL_X, new_scroll);
 
         // -------------------------------------------------------------------------
         // Build per-scanline scroll tables (Phase 3)
@@ -236,9 +342,8 @@ impl Ppu {
         self.frame_counter += 1;
     }
 
-    // -------------------------------------------------------------------------
-    // SCANLINE STUB
-    // -------------------------------------------------------------------------
+    // === AUREX HOT PATH: SCANLINE RENDER ===
+
     fn render_scanline(&mut self, vram: &Vram, y: usize, fb: &mut Framebuffer) {
         let pixels = fb.pixels_mut();
 

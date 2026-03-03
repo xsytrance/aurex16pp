@@ -387,3 +387,151 @@ Hardware-constrained
 This is a stable checkpoint.
 
 Future work must extend capability without destabilizing core systems.
+
+PPU Phase 5 — Global Sprite Flip + Layer Enable Control (Stable)
+Status: Locked
+
+Sprite flip behavior has been fully integrated into the PPU pipeline.
+
+Flip Implementation
+
+hflip and vflip apply to entire sprite composite.
+
+Works for:
+
+8×8 sprites
+
+16×16 sprites (2×2 layout)
+
+Flip occurs before tile selection.
+
+Tile memory remains unchanged.
+
+No tile duplication.
+
+Deterministic coordinate remapping.
+
+Sprite Composition Rules
+
+16×16 layout:
+
+[ base base + 1 ]
+[ base + 2 base + 3 ]
+
+Flip logic operates on full 16×16 coordinate space,
+not per individual tile.
+
+API Update
+
+write_sprite now includes:
+
+size_16: bool
+
+hflip: bool
+
+vflip: bool
+
+Direct OAM access is prohibited.
+Sprite state mutation must occur through PPU API only.
+
+Layer Enable Flags
+
+PPU now supports:
+
+bg0_enable
+
+bg1_enable
+
+sprite_enable
+
+These gate rendering blocks inside render_scanline.
+
+Purpose:
+
+Deterministic layer isolation
+
+Debug control
+
+Future register abstraction support
+
+SDK alignment for AI cartridges
+
+Rendering Order (Unchanged)
+
+BG0
+
+BG1 (window-masked)
+
+Sprites (priority-aware)
+
+Additive blending during sprite pass
+
+All compositing remains:
+
+RGB555
+
+Integer-only
+
+Deterministic
+
+Scanline-based
+
+Hardware Integrity
+
+The following remain enforced:
+
+426×240 resolution
+
+8 sprites per scanline cap
+
+Overflow telemetry
+
+200k ops per frame
+
+VRAM partition layout
+
+No floating point in core systems
+
+Architecture remains locked.
+
+## PPU Register Address Bus (Stable)
+
+### Status: Active
+
+PPU now supports address-based register access in addition to enum-based API.
+
+### Address Map Introduced
+
+PPU registers now mapped to 16-bit addresses:
+
+- BG0 scroll
+- BG1 scroll
+- Window enable
+- Window top/bottom
+- Layer enable flags
+
+### New Functions
+
+- `write_addr(addr: u16, value: u16)`
+- `read_addr(addr: u16) -> u16`
+
+These internally forward to `write_reg` / `read_reg`.
+
+### Architectural Change
+
+Rendering code now mutates state via:
+
+`write_addr → write_reg → internal field`
+
+Direct field mutation inside frame logic removed.
+
+This simulates CPU → PPU register traffic.
+
+### Determinism
+
+- No change to rendering order.
+- No change to frame timing.
+- No float usage introduced.
+- No VRAM layout changes.
+
+System remains fully deterministic.

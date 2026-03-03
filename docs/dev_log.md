@@ -6,6 +6,132 @@ Newest entries are always added at the top.
 This file tracks engineering evolution, not canonical hardware state.
 Refer to ai_handoff.md for current hardware truth.
 
+## 2026-03-02 — PPU Register Bus Activated (Address-Based Writes Live)
+
+### Summary
+
+PPU register system elevated from enum-only API to hardware-style address bus.
+
+Rendering logic now mutates state exclusively through address-based register writes.
+
+### What Changed
+
+- Added PPU register address map.
+- Implemented `write_addr(addr, value)` and `read_addr(addr)`.
+- Frame logic now uses address-based writes instead of direct field mutation.
+- Scroll auto-increment now reads from and writes to register bus.
+- Window control now flows through register bus.
+
+### Architectural Impact
+
+Mutation hierarchy is now:
+
+Frame Logic  
+→ Address Bus  
+→ write_reg  
+→ Internal PPU fields
+
+This prepares Aurex for:
+
+- CPU bus emulation
+- Cartridge-driven register writes
+- Save-state stability
+- Deterministic replay
+- Proper hardware layering
+
+No rendering behavior changed.
+
+Pipeline remains deterministic and integer-only.
+
+Stable checkpoint.
+
+2026-03-02 — PPU Phase 5 — Global Sprite Flip + Layer Controls Stabilized
+Summary
+
+Completed full global flip logic for sprites and formalized layer enable controls. Rendering pipeline is now multi-layer capable, composite-safe, and fully deterministic under hardware constraints.
+
+Major Additions
+
+Global hflip and vflip support for:
+
+8×8 sprites
+
+16×16 composite sprites (2×2 tile layout)
+
+Flip applied across full composite before tile selection
+
+No tile memory duplication
+
+Deterministic coordinate remapping
+
+No OAM leakage — flip integrated into PPU API
+
+API Change
+
+write_sprite signature expanded:
+
+write_sprite(
+index,
+x,
+y,
+tile_index,
+palette,
+priority,
+size_16,
+hflip,
+vflip,
+)
+
+Sprite state mutation now occurs only through PPU interface.
+
+Layer Control Stabilized
+
+bg0_enable
+
+bg1_enable
+
+sprite_enable
+
+Allows deterministic layer isolation and debug gating.
+
+Rendering Integrity
+
+RGB555 preserved
+
+Integer-only compositing
+
+8 sprites per scanline enforced
+
+Overflow telemetry preserved
+
+Scanline render order unchanged:
+
+BG0
+
+BG1 (window-masked)
+
+Sprites
+
+Additive blending during sprite pass
+
+Architecture Status
+
+Rendering pipeline is now:
+
+Dual-layer capable
+
+Window-masked
+
+Per-scanline scroll capable
+
+Multi-size sprite capable
+
+Global flip correct
+
+Deterministic under hardware caps
+
+Stable checkpoint.
+
 2026-03-02 — Rendering Elevation Tier Stabilized
 Summary
 

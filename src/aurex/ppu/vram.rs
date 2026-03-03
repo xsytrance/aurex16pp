@@ -27,12 +27,18 @@ const VRAM_TOTAL_BYTES: usize = BG_TILES_BYTES
     + RESERVED_BYTES;
 
 // ============================================================================
+// === AUREX VRAM CANON: DO NOT RESTRUCTURE ==================================
+// ============================================================================
 // AUREX-16++ VRAM MEMORY MAP (LOCKED)
-// ----------------------------------------------------------------------------
+//
 // Total VRAM: 1 MB (0x100000 bytes)
 // Canonical hardware partition — DO NOT RE-ARCHITECT
 // All regions are inclusive ranges.
 // Alignment: 0x4000 (16 KB)
+//
+// This layout is hardware-canonical.
+// Any modification requires explicit user approval.
+// All DMA, PPU, and cartridge logic depend on this map.
 // ============================================================================
 
 pub const VRAM_SIZE: usize = 0x100000; // 1,048,576 bytes

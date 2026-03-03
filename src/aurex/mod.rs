@@ -105,6 +105,8 @@ impl Aurex {
             let x = (frame % 400) as u16;
             let y = 120;
 
+            // === AUREX SDK SURFACE: SPRITE WRITE API ===
+
             self.ppu.write_sprite(
                 0, // sprite index
                 x, y, 0,     // base tile index (top-left of 2x2 block)
