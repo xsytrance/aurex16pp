@@ -179,7 +179,7 @@ impl Ppu {
 
         // ---------------------------------------------------------------------
         // BG0 Bring-up (v0.1)
-        // - Tilemap source: vram.tilemaps (start)
+        // - Tilemap source: vram. bg0_tilemap (start)
         // - Pattern source: vram.bg_tiles (start)
         // - Palette source: vram.palettes (first 256 RGB555 entries, little-endian)
         //
@@ -203,6 +203,12 @@ impl Ppu {
         let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
         let row_in_tile = sy & 7;
 
+        // -----------------------------------------------------------------------------
+        // Per-scanline BG priority buffer (0 = low, 1 = high)
+        // Must live for entire scanline (BG + sprite pass)
+        // -----------------------------------------------------------------------------
+        let mut bg_priority_line = [0u8; FB_W];
+
         // Screen tiles across (ceil)
         let tiles_x = (FB_W + 7) / 8;
 
@@ -215,9 +221,10 @@ impl Ppu {
             let map_byte = map_index * 2;
 
             // Read little-endian u16 entry
-            let lo = vram.tilemaps[map_byte] as u16;
-            let hi = vram.tilemaps[map_byte + 1] as u16;
+            let lo = vram.bg0_tilemap[map_byte] as u16;
+            let hi = vram.bg0_tilemap[map_byte + 1] as u16;
             let entry = lo | (hi << 8);
+            let bg_prio = ((entry >> 14) & 0x1) as u8;
 
             let tile_index = (entry & 0x03FF) as usize;
             let pal_sel = ((entry >> 10) & 0x3) as u8;
@@ -238,6 +245,10 @@ impl Ppu {
 
             // Write 8 pixels
             for px in 0..8 {
+                // -----------------------------------------------------------------------------
+                // Per-scanline BG priority buffer (0 = low, 1 = high)
+                // -----------------------------------------------------------------------------
+                let mut bg_priority_line = [0u8; FB_W];
                 let dst_x = tx * 8 + px;
                 if dst_x >= FB_W {
                     continue;
@@ -264,6 +275,11 @@ impl Ppu {
                     byte & 0x0F
                 };
 
+                // -----------------------------------------------------------------------------
+                // BG transparency tracking (color 0 is transparent)
+                // -----------------------------------------------------------------------------
+                let bg_transparent = pix4 == 0;
+
                 // Palette bank: 0..3 => 0,16,32,48
                 let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
 
@@ -274,9 +290,16 @@ impl Ppu {
                 let rgb555 = plo | (phi << 8);
 
                 let fb_index = y * FB_W + dst_x;
-                use crate::aurex::ppu::oam::BlendMode;
 
-                pixels[fb_index] = rgb555;
+                // -----------------------------------------------------------------------------
+                // Write BG only if non-transparent
+                // -----------------------------------------------------------------------------
+                if !bg_transparent {
+                    pixels[fb_index] = rgb555;
+                    bg_priority_line[dst_x] = bg_prio;
+                } else {
+                    bg_priority_line[dst_x] = 0;
+                }
             }
         }
 
@@ -293,17 +316,51 @@ impl Ppu {
                 let sprite_y = sprite.y as usize;
                 let row_in_sprite = y - sprite_y;
 
-                // 8x8 tile, 4bpp, 32 bytes per tile
-                let tile_base = sprite.tile_index as usize * 32;
+                // -----------------------------------------------------------------------------
+                // Sprite pixel decode (supports 8x8 and 16x16)
+                // 16x16 uses 2x2 tile composition:
+                // [0][1]
+                // [2][3]
+                // -----------------------------------------------------------------------------
 
-                for col in 0..8 {
+                let sprite_size = if sprite.size_16 { 16 } else { 8 };
+
+                for col in 0..sprite_size {
                     let screen_x = sprite.x as usize + col;
 
                     if screen_x >= FB_W {
                         continue;
                     }
 
-                    let byte_index = tile_base + row_in_sprite * 4 + (col / 2);
+                    // Determine source coordinates within sprite
+                    let local_col = if sprite.hflip {
+                        sprite_size - 1 - col
+                    } else {
+                        col
+                    };
+
+                    let local_row = if sprite.vflip {
+                        sprite_size - 1 - row_in_sprite
+                    } else {
+                        row_in_sprite
+                    };
+
+                    // Determine which 8x8 quadrant we are in (for 16x16)
+                    let (tile_offset, src_col, src_row) = if sprite.size_16 {
+                        let quad_x = local_col / 8;
+                        let quad_y = local_row / 8;
+
+                        let tile_offset = quad_y * 2 + quad_x;
+
+                        (tile_offset, local_col % 8, local_row % 8)
+                    } else {
+                        (0, local_col, local_row)
+                    };
+
+                    // Each tile is 32 bytes
+                    let tile_base = (sprite.tile_index as usize + tile_offset) * 32;
+
+                    let byte_index = tile_base + src_row * 4 + (src_col / 2);
 
                     if byte_index >= vram.sprite_tiles.len() {
                         continue;
@@ -311,10 +368,14 @@ impl Ppu {
 
                     let byte = vram.sprite_tiles[byte_index];
 
-                    let color_index = if col % 2 == 0 { byte >> 4 } else { byte & 0x0F };
+                    let color_index = if src_col % 2 == 0 {
+                        (byte >> 4) & 0x0F
+                    } else {
+                        byte & 0x0F
+                    };
 
                     if color_index == 0 {
-                        continue; // transparent pixel
+                        continue; // transparent
                     }
 
                     let palette_offset = sprite.palette as usize * 16;
@@ -329,6 +390,16 @@ impl Ppu {
                     let rgb = lo | (hi << 8);
 
                     let fb_index = y * FB_W + screen_x;
+
+                    // -----------------------------------------------------------------------------
+                    // Sprite vs BG priority resolution
+                    // Rule:
+                    // - High priority BG blocks low priority sprite
+                    // - High priority sprite always wins
+                    // -----------------------------------------------------------------------------
+                    if bg_priority_line[screen_x] == 1 && sprite.priority == 0 {
+                        continue;
+                    }
 
                     match sprite.blend {
                         BlendMode::Normal => {

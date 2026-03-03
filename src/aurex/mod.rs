@@ -209,8 +209,8 @@ fn seed_test_bg0(vram: &mut crate::aurex::ppu::vram::Vram) {
             let tile = if (x + y) % 2 == 0 { 0 } else { 1 };
             let entry: u16 = tile; // pal=0, no flips, pri=0
             let idx = (y * 64 + x) * 2;
-            vram.tilemaps[idx] = (entry & 0xFF) as u8;
-            vram.tilemaps[idx + 1] = (entry >> 8) as u8;
+            vram.bg0_tilemap[idx] = (entry & 0xFF) as u8;
+            vram.bg0_tilemap[idx + 1] = (entry >> 8) as u8;
         }
     }
 

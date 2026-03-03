@@ -16,7 +16,8 @@
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VramRegion {
     BgTiles,
-    Tilemaps,
+    Bg0Tilemap,
+    Bg1Tilemap,
     SpriteTiles,
     Mode7Tex,
     Palettes,

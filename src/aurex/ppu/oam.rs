@@ -24,6 +24,10 @@ pub enum BlendMode {
 // Sprite size is fixed to 8x8 for Phase 1.
 // Later we add size flags.
 #[derive(Clone, Copy, Debug)]
+// -----------------------------------------------------------------------------
+// Sprite (Phase 2)
+// Now supports 8x8 and 16x16 using 2x2 tile composition
+// -----------------------------------------------------------------------------
 pub struct Sprite {
     pub x: u16,
     pub y: u16,
@@ -31,6 +35,12 @@ pub struct Sprite {
     pub palette: u8,
     pub priority: u8,
     pub visible: bool,
+
+    // Flip flags (Phase 2)
+    pub hflip: bool,
+    pub vflip: bool,
+    // Size flag (false = 8x8, true = 16x16)
+    pub size_16: bool,
 
     // ------------------------------------------------------------------------
     // Blend mode (default: Normal)
@@ -47,6 +57,9 @@ impl Default for Sprite {
             palette: 0,
             priority: 0,
             visible: false,
+            hflip: false,
+            vflip: false,
+            size_16: false,
             blend: BlendMode::Normal,
         }
     }
