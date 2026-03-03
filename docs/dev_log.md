@@ -4,7 +4,21 @@ Reverse Chronological Engineering Record
 
 Newest entries are always added at the top.
 This file tracks engineering evolution, not canonical hardware state.
-Refer to ai_handoff.md for current hardware truth.
+Refer to ai_handoff_canon.md for current hardware truth.
+
+## 2026-03-02 — Hardware Register Bus + Mutation Isolation
+
+Register system fully activated and enforced.
+
+- Address-based PPU register writes live.
+- Frame logic now mutates PPU via bus only.
+- Direct field mutation removed.
+- Debug register driver isolated.
+- Rendering pipeline untouched.
+
+System now reflects real hardware layering.
+
+Stable milestone.
 
 ## 2026-03-02 — PPU Register Bus Activated (Address-Based Writes Live)
 

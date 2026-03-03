@@ -126,6 +126,30 @@ Integer-only audio logic required.
 - RGB555 compositing
 - Integer-only PPU core
 
----
+## FILE RESPONSIBILITY LOCK
+
+src/aurex/mod.rs
+
+- Owns frame loop
+- Owns system orchestration
+- Does NOT mutate PPU internals
+
+src/aurex/ppu/ppu.rs
+
+- Owns all PPU state
+- Owns render_frame
+- Owns register writes
+- Owns scanline pipeline
+
+src/aurex/ppu/oam.rs
+
+- Owns sprite storage
+- No rendering logic
+
+src/aurex/ppu/vram.rs
+
+- Owns VRAM layout
+- No rendering logic
+- Canonical memory partition
 
 END OF INDEX

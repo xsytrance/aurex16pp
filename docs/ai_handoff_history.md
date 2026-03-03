@@ -535,3 +535,36 @@ This simulates CPU → PPU register traffic.
 - No VRAM layout changes.
 
 System remains fully deterministic.
+
+## 2026-03-02 — Register Bus Separation + Frame Mutation Isolation
+
+### Summary
+
+PPU mutation logic was elevated from direct field mutation to a structured register bus model.
+
+### Changes
+
+- Added address-based register interface.
+- Converted frame logic to use write_addr / read_addr.
+- Removed direct PPU field mutation from frame logic.
+- Introduced dedicated debug register driver (`update_test_registers`).
+- Separated CPU-like behavior from rendering pipeline.
+
+### Architectural Impact
+
+PPU now behaves like hardware:
+
+Registers are written.
+Rendering consumes state.
+Mutation is layered and explicit.
+
+This prepares Aurex for:
+
+- CPU bus simulation
+- Cartridge-driven register writes
+- Deterministic save states
+- Future memory-mapped register model
+
+No rendering behavior changed.
+
+This marks the transition from “renderer” to “hardware abstraction.”
