@@ -1,6 +1,10 @@
+AUREX-16++ AI HANDOFF DOCUMENT
+
+Canonical Hardware Snapshot
+
 1. Project Identity
 
-Aurex-16++ is a deterministic 2D fantasy console inspired by late 16-bit hardware.
+Aurex-16++ is a deterministic 2D fantasy console inspired by late-era 16-bit hardware.
 
 It is:
 
@@ -14,7 +18,7 @@ Designed for AI-assisted cartridge creation
 
 It is not:
 
-A modern engine
+A modern game engine
 
 A PC abstraction layer
 
@@ -22,27 +26,11 @@ A free-form rendering system
 
 All development must respect hardware canon.
 
-2. Current Stable Milestone
-   ✅ PPU Phase 2 — COMPLETE
+2. Rendering System (Current State)
 
-Rendering pipeline is stable.
+The rendering pipeline is stable and considered canonical.
 
-The following systems are considered functional and safe:
-
-Dual background layers
-
-Sprite flipping
-
-16×16 sprites
-
-Sprite ↔ BG priority
-
-Deterministic compositing
-
-Architecture must not be rewritten.
-
-3. Graphics System
-   3.1 Display
+2.1 Display
 
 Resolution: 426×240 (16:9)
 
@@ -50,16 +38,16 @@ Color format: RGB555
 
 256 on-screen colors max
 
-Deterministic integer math only
+Deterministic integer compositing
 
-60 FPS locked
+Locked 60 FPS
 
-3.2 Background Layers
+2.2 Background System
 Shared Pattern Memory
 
 4bpp packed
 
-32 bytes per tile
+32 bytes per 8×8 tile
 
 Stored in bg_tiles
 
@@ -71,7 +59,7 @@ BG0
 
 8×8 tiles
 
-Tilemap entry: u16 little-endian
+u16 little-endian tile entry
 
 Bit layout:
 
@@ -93,7 +81,11 @@ bg0_scroll_x
 
 bg0_scroll_y
 
-Rendered first.
+Per-scanline scroll table:
+
+bg0_scroll_x_line[FB_H]
+
+BG0 renders first.
 
 BG1
 
@@ -107,13 +99,63 @@ bg1_scroll_x
 
 bg1_scroll_y
 
-Rendered after BG0.
+Per-scanline scroll table:
 
-Overwrites BG0 where non-transparent.
+bg1_scroll_x_line[FB_H]
 
-Priority bit respected in sprite interleave.
+BG1 renders after BG0.
 
-3.3 Sprite System
+Non-transparent BG1 pixels overwrite BG0.
+
+BG priority bit interleaves with sprites.
+
+2.3 Window System
+
+Vertical window masking supported.
+
+Registers:
+
+window_enabled
+
+window_top
+
+window_bottom
+
+Behavior:
+
+BG1 can be masked per scanline
+
+BG0 unaffected
+
+Sprites unaffected
+
+Deterministic
+
+No horizontal windowing yet
+
+2.4 Layer Enable Flags
+
+Per-layer control:
+
+bg0_enable
+
+bg1_enable
+
+sprite_enable
+
+These flags gate rendering blocks inside render_scanline.
+
+Purpose:
+
+Debug isolation
+
+Deterministic compositing control
+
+Future register abstraction
+
+SDK readiness
+
+2.5 Sprite System
 
 Each sprite contains:
 
@@ -147,206 +189,40 @@ Sprite Tile Format
 
 Color index 0 = transparent
 
-16×16 Support
+16×16 Sprite Support
 
 2×2 tile composition
 
 4 consecutive tiles
 
-Flip logic applies across full composite
-
-No duplication of tile memory
-
-Deterministic integer-only decode
-
-## Current State (03-02-2026@1957):
-
-## PPU Phase 2 — Visual Elevation Complete
-
-Dual Background Layers
-
-- BG0: 64×64 tilemap
-- BG1: 64×64 tilemap
-- Shared BG pattern memory
-- Independent scroll registers
-- Independent per-scanline scroll tables
-
-Per-Scanline Scroll (Phase 3)
-
-- bg0_scroll_x_line[FB_H]
-- bg1_scroll_x_line[FB_H]
-- Enables distortion / raster effects
-- Deterministic
-
-Vertical Window System (Phase 4 - Basic)
-
-- window_enabled (bool)
-- window_top (u16)
-- window_bottom (u16)
-- BG1 can be vertically masked per scanline
-- Sprites unaffected
-- Deterministic
-- No per-pixel window yet
-
-Rendering Order (Current)
-
-1. BG0
-2. BG1 (window-masked)
-3. Sprites (priority-aware)
-4. Additive blending (RGB555 integer clamp)
-
-Still Locked
-
-- 426×240
-- 256 on-screen colors
-- 8 sprites per scanline
-- 200k ops cap
-- 1MB VRAM partitioned
-- No floats
-
----
-
-## PPU Phase 5 — Advanced Sprite + Layer Control
-
-Layer Enable Flags
-
-The PPU now supports per-layer enable control:
-
-bg0_enable
-
-bg1_enable
-
-sprite_enable
-
-These flags gate rendering blocks inside render_scanline.
-
-Purpose:
-
-Debug isolation
-
-Deterministic compositing control
-
-Future register abstraction
-
-SDK readiness
-
-No performance regression.
-No architectural changes.
-
-16×16 Sprite Support
-
-Sprites now support two sizes:
-
-8×8 (default)
-
-16×16 (composed of 4 consecutive 8×8 tiles)
-
-Layout for 16×16:
+Layout:
 
 [ base base+1 ]
 [ base+2 base+3 ]
 
-Constraints:
+Flip logic applies across the full composite.
 
-No new VRAM layout
+No tile duplication.
+No new VRAM layout.
+Deterministic integer-only decode.
 
-No tile duplication
-
-Still 4bpp packed
-
-Still 32 bytes per 8×8 tile
-
-Fully deterministic
-
-Sprite size controlled via:
-
-sprite.size_16: bool
-Current Sprite Capabilities
-
-Each sprite supports:
-
-x, y position
-
-tile_index
-
-palette select
-
-priority
-
-visible flag
-
-blend mode (Normal / Additive)
-
-size_16 (8×8 or 16×16)
-
-Scanline rules remain enforced:
-
-8 sprites per scanline max
-
-Overflow latched per frame
-
-Deterministic ordering
-
-Rendering Order (Now)
-
-BG0 (if enabled)
-
-BG1 (if enabled + window test)
-
-Sprites (if enabled)
-
-Additive blending applied during sprite pass
-
-All compositing is:
-
-RGB555
-
-Integer-only
-
-Deterministic
-
-Stability Checkpoint
-
-Rendering pipeline is now:
-
-Dual-layer capable
-
-Window-masked
-
-Per-scanline scroll capable
-
-Multi-size sprite capable
-
-Layer-toggle controlled
-
-Deterministic under hardware caps
-
-Architecture remains locked.
-
-4. Rendering Pipeline
-   4.1 Per-Scanline Order
-
-BG0
-
-BG1
-
-Sprites
-
-4.2 Sprite Scanline Evaluation
+2.6 Sprite Scanline Rules
 
 Evaluated per scanline
 
-Max 8 sprites per scanline
+Maximum 8 sprites per scanline
 
-Overflow triggers telemetry
+Overflow telemetry tracked
 
-Overflow Tracking
+Overflow telemetry:
 
-sprite_overflow_latched (bool per frame)
+sprite_overflow_latched
 
-sprite_overflow_scanlines (u32 per frame)
+sprite_overflow_scanlines
 
-4.3 Priority Rules
+Deterministic ordering enforced.
+
+2.7 Priority Rules
 BG Priority
 
 Per-tile priority bit (bit 14)
@@ -355,7 +231,7 @@ Transparent BG pixels do not block sprites
 
 Sprite Priority
 
-Resolution rule:
+Resolution rules:
 
 High-priority BG blocks low-priority sprite
 
@@ -363,9 +239,9 @@ High-priority sprite always wins
 
 Transparent BG never blocks sprite
 
-4.4 Blending
+2.8 Blending
 
-Supported blend modes:
+Supported modes:
 
 Normal
 
@@ -381,7 +257,21 @@ Integer-only
 
 Implemented via add_rgb555
 
-5. Core Hardware Constraints (Locked)
+2.9 Rendering Order
+
+Per scanline:
+
+BG0 (if enabled)
+
+BG1 (if enabled + window pass)
+
+Sprites (if enabled)
+
+Additive blending applied during sprite pass
+
+All compositing is deterministic and integer-only.
+
+3. Core Hardware Constraints (Locked)
    VM-32
 
 200,000 ops per frame (hard cap)
@@ -410,7 +300,7 @@ Immediate rejection if exceeded
 
 No silent forgiveness
 
-6. Systems Operational
+4. Systems Operational
 
 Deterministic frame lifecycle
 
@@ -420,23 +310,33 @@ CPU cap enforcement
 
 DMA enforcement
 
-Sprite overflow telemetry
-
 Dual BG layering
+
+Per-scanline scroll effects
+
+Vertical window masking
+
+Layer enable gating
 
 Sprite flipping
 
 16×16 sprite decode
 
-BG priority interleave
+BG ↔ Sprite priority interleave
 
-7. Known Limitations (Intentional)
+Additive blending
+
+Rendering pipeline is stable.
+
+5. Known Limitations (Intentional)
 
 Not yet implemented:
 
-Mode 7
+Horizontal window clipping
 
-Window layers
+Sprite window masking
+
+Mode 7
 
 Alpha blending
 
@@ -444,13 +344,13 @@ Per-layer blending modes
 
 Sub-scanline effects
 
-Mosaic / distortion
+Mosaic / distortion hardware
 
-Parallax registers
+Register abstraction layer (scroll/window via CPU)
 
 All future features must preserve determinism.
 
-8. Architectural Guardrails
+6. Architectural Guardrails
 
 Do NOT:
 
@@ -460,7 +360,7 @@ Break 60 FPS determinism
 
 Remove sprite scanline cap
 
-Remove overflow tracking
+Remove overflow telemetry
 
 Introduce unlimited VRAM access
 
@@ -470,30 +370,20 @@ Ignore hardware limits silently
 
 All expansions must feel like hardware.
 
-9. Next Recommended Milestones
+7. Development Status
 
-BG1 actual render duplication (if not completed)
+Rendering architecture is:
 
-Parallax per scanline
+Clean
 
-Window masking
+Deterministic
 
-Mode 7 deterministic implementation
+Layered
 
-Performance validation passes
+Composable
 
-VRAM DMA stress testing
+Hardware-constrained
 
-All upgrades must be incremental.
-
-No sweeping rewrites.
-
-10. Development Status
-
-Rendering pipeline is stable.
-
-Architecture is clean.
-
-This is a safe checkpoint.
+This is a stable checkpoint.
 
 Future work must extend capability without destabilizing core systems.

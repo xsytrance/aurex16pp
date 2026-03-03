@@ -154,6 +154,8 @@ impl Ppu {
         palette: u8,
         priority: u8,
         size_16: bool,
+        hflip: bool,
+        vflip: bool,
     ) {
         if let Some(sprite) = self.oam.sprite_mut(index) {
             sprite.x = x;
@@ -164,6 +166,8 @@ impl Ppu {
             sprite.visible = true;
             sprite.blend = BlendMode::Additive;
             sprite.size_16 = size_16;
+            sprite.hflip = hflip;
+            sprite.vflip = vflip;
         }
     }
 
@@ -525,75 +529,92 @@ impl Ppu {
             for sprite_index in sorted_indices {
                 if let Some(sprite) = self.oam.sprite(sprite_index) {
                     // -------------------------------------------------------------------------
-                    // Sprite Rendering (8x8 or 16x16)
+                    // Sprite Rendering (8x8 / 16x16) + Global Flip Support
                     // -------------------------------------------------------------------------
 
+                    let sprite_x = sprite.x as usize;
                     let sprite_y = sprite.y as usize;
-                    let row_in_sprite = y - sprite_y;
 
-                    // Determine sprite size
                     let sprite_size = if sprite.size_16 { 16 } else { 8 };
 
-                    // Reject if outside vertical bounds
-                    if row_in_sprite >= sprite_size {
+                    // Skip scanlines outside sprite vertically
+                    if y < sprite_y || y >= sprite_y + sprite_size {
                         continue;
                     }
 
-                    // 16x16 = 2x2 tile block
+                    let row_in_sprite = y - sprite_y;
+
                     let tiles_per_row = if sprite.size_16 { 2 } else { 1 };
 
-                    // Determine which tile row we are in (0 or 1 for 16x16)
-                    let tile_row = row_in_sprite / 8;
-                    let row_in_tile = row_in_sprite % 8;
+                    // Iterate across full sprite width (8 or 16)
+                    for screen_dx in 0..sprite_size {
+                        let screen_x = sprite_x + screen_dx;
 
-                    for tile_col in 0..tiles_per_row {
+                        if screen_x >= FB_W {
+                            continue;
+                        }
+
+                        // Apply full-sprite flip logic
+                        let src_x = if sprite.hflip {
+                            sprite_size - 1 - screen_dx
+                        } else {
+                            screen_dx
+                        };
+
+                        let src_y = if sprite.vflip {
+                            sprite_size - 1 - row_in_sprite
+                        } else {
+                            row_in_sprite
+                        };
+
+                        let tile_col = src_x / 8;
+                        let tile_row = src_y / 8;
+
+                        let col_in_tile = src_x & 7;
+                        let row_in_tile = src_y & 7;
+
                         let tile_index_offset = tile_row * tiles_per_row + tile_col;
                         let tile_index = sprite.tile_index as usize + tile_index_offset;
 
                         let tile_base = tile_index * 32;
+                        let byte_index = tile_base + row_in_tile * 4 + (col_in_tile / 2);
 
-                        for col in 0..8 {
-                            let screen_x = sprite.x as usize + tile_col * 8 + col;
+                        if byte_index >= vram.sprite_tiles.len() {
+                            continue;
+                        }
 
-                            if screen_x >= FB_W {
-                                continue;
+                        let byte = vram.sprite_tiles[byte_index];
+
+                        let color_index = if col_in_tile % 2 == 0 {
+                            byte >> 4
+                        } else {
+                            byte & 0x0F
+                        };
+
+                        if color_index == 0 {
+                            continue;
+                        }
+
+                        let palette_offset = sprite.palette as usize * 16;
+                        let palette_index = palette_offset + color_index as usize;
+
+                        if palette_index * 2 + 1 >= vram.palettes.len() {
+                            continue;
+                        }
+
+                        let lo = vram.palettes[palette_index * 2] as u16;
+                        let hi = vram.palettes[palette_index * 2 + 1] as u16;
+                        let rgb = lo | (hi << 8);
+
+                        let fb_index = y * FB_W + screen_x;
+
+                        match sprite.blend {
+                            BlendMode::Normal => {
+                                pixels[fb_index] = rgb;
                             }
-
-                            let byte_index = tile_base + row_in_tile * 4 + (col / 2);
-
-                            if byte_index >= vram.sprite_tiles.len() {
-                                continue;
-                            }
-
-                            let byte = vram.sprite_tiles[byte_index];
-
-                            let color_index = if col % 2 == 0 { byte >> 4 } else { byte & 0x0F };
-
-                            if color_index == 0 {
-                                continue;
-                            }
-
-                            let palette_offset = sprite.palette as usize * 16;
-                            let palette_index = palette_offset + color_index as usize;
-
-                            if palette_index * 2 + 1 >= vram.palettes.len() {
-                                continue;
-                            }
-
-                            let lo = vram.palettes[palette_index * 2] as u16;
-                            let hi = vram.palettes[palette_index * 2 + 1] as u16;
-                            let rgb = lo | (hi << 8);
-
-                            let fb_index = y * FB_W + screen_x;
-
-                            match sprite.blend {
-                                BlendMode::Normal => {
-                                    pixels[fb_index] = rgb;
-                                }
-                                BlendMode::Additive => {
-                                    let dst = pixels[fb_index];
-                                    pixels[fb_index] = Self::add_rgb555(dst, rgb);
-                                }
+                            BlendMode::Additive => {
+                                let dst = pixels[fb_index];
+                                pixels[fb_index] = Self::add_rgb555(dst, rgb);
                             }
                         }
                     }

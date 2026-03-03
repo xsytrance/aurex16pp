@@ -107,10 +107,12 @@ impl Aurex {
 
             self.ppu.write_sprite(
                 0, // sprite index
-                x, y, 0,    // base tile index (top-left of 2x2 block)
-                0,    // palette
-                0,    // priority
-                true, // 16x16 enabled
+                x, y, 0,     // base tile index (top-left of 2x2 block)
+                0,     // palette
+                0,     // priority
+                true,  // 16x16 enabled
+                true,  // hflip
+                false, // vflip
             );
         }
 
