@@ -159,6 +159,51 @@ No duplication of tile memory
 
 Deterministic integer-only decode
 
+## Current State (03-02-2026@1957):
+
+## PPU Phase 2 — Visual Elevation Complete
+
+Dual Background Layers
+
+- BG0: 64×64 tilemap
+- BG1: 64×64 tilemap
+- Shared BG pattern memory
+- Independent scroll registers
+- Independent per-scanline scroll tables
+
+Per-Scanline Scroll (Phase 3)
+
+- bg0_scroll_x_line[FB_H]
+- bg1_scroll_x_line[FB_H]
+- Enables distortion / raster effects
+- Deterministic
+
+Vertical Window System (Phase 4 - Basic)
+
+- window_enabled (bool)
+- window_top (u16)
+- window_bottom (u16)
+- BG1 can be vertically masked per scanline
+- Sprites unaffected
+- Deterministic
+- No per-pixel window yet
+
+Rendering Order (Current)
+
+1. BG0
+2. BG1 (window-masked)
+3. Sprites (priority-aware)
+4. Additive blending (RGB555 integer clamp)
+
+Still Locked
+
+- 426×240
+- 256 on-screen colors
+- 8 sprites per scanline
+- 200k ops cap
+- 1MB VRAM partitioned
+- No floats
+
 4. Rendering Pipeline
    4.1 Per-Scanline Order
 
