@@ -204,6 +204,125 @@ Still Locked
 - 1MB VRAM partitioned
 - No floats
 
+---
+
+## PPU Phase 5 — Advanced Sprite + Layer Control
+
+Layer Enable Flags
+
+The PPU now supports per-layer enable control:
+
+bg0_enable
+
+bg1_enable
+
+sprite_enable
+
+These flags gate rendering blocks inside render_scanline.
+
+Purpose:
+
+Debug isolation
+
+Deterministic compositing control
+
+Future register abstraction
+
+SDK readiness
+
+No performance regression.
+No architectural changes.
+
+16×16 Sprite Support
+
+Sprites now support two sizes:
+
+8×8 (default)
+
+16×16 (composed of 4 consecutive 8×8 tiles)
+
+Layout for 16×16:
+
+[ base base+1 ]
+[ base+2 base+3 ]
+
+Constraints:
+
+No new VRAM layout
+
+No tile duplication
+
+Still 4bpp packed
+
+Still 32 bytes per 8×8 tile
+
+Fully deterministic
+
+Sprite size controlled via:
+
+sprite.size_16: bool
+Current Sprite Capabilities
+
+Each sprite supports:
+
+x, y position
+
+tile_index
+
+palette select
+
+priority
+
+visible flag
+
+blend mode (Normal / Additive)
+
+size_16 (8×8 or 16×16)
+
+Scanline rules remain enforced:
+
+8 sprites per scanline max
+
+Overflow latched per frame
+
+Deterministic ordering
+
+Rendering Order (Now)
+
+BG0 (if enabled)
+
+BG1 (if enabled + window test)
+
+Sprites (if enabled)
+
+Additive blending applied during sprite pass
+
+All compositing is:
+
+RGB555
+
+Integer-only
+
+Deterministic
+
+Stability Checkpoint
+
+Rendering pipeline is now:
+
+Dual-layer capable
+
+Window-masked
+
+Per-scanline scroll capable
+
+Multi-size sprite capable
+
+Layer-toggle controlled
+
+Deterministic under hardware caps
+
+Architecture remains locked.
+
 4. Rendering Pipeline
    4.1 Per-Scanline Order
 
