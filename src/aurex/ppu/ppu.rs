@@ -18,6 +18,25 @@ pub struct Ppu {
     bg0_scroll_x: u16,
     bg0_scroll_y: u16,
 
+    // -----------------------------------------------------------------------------
+    // BG1 scroll registers
+    // -----------------------------------------------------------------------------
+    pub bg1_scroll_x: u16,
+    pub bg1_scroll_y: u16,
+
+    // -----------------------------------------------------------------------------
+    // Simple window system (Phase 4)
+    // -----------------------------------------------------------------------------
+    pub window_enabled: bool,
+    pub window_top: u16,
+    pub window_bottom: u16,
+
+    // -----------------------------------------------------------------------------
+    // Per-scanline scroll tables (Phase 3 - scanline effects)
+    // -----------------------------------------------------------------------------
+    pub bg0_scroll_x_line: [u16; FB_H],
+    pub bg1_scroll_x_line: [u16; FB_H],
+
     // Sprite memory
     oam: Oam,
 
@@ -34,9 +53,16 @@ impl Ppu {
             frame_counter: 0,
             bg0_scroll_x: 0,
             bg0_scroll_y: 0,
+            bg1_scroll_x: 0,
+            bg1_scroll_y: 0,
+            bg0_scroll_x_line: [0; FB_H],
+            bg1_scroll_x_line: [0; FB_H],
             oam: Oam::new(),
             sprite_overflow_latched: false,
             sprite_overflow_scanlines: 0,
+            window_enabled: false,
+            window_top: 0,
+            window_bottom: 0,
         }
     }
 
@@ -141,16 +167,48 @@ impl Ppu {
     // FRAME ENTRY
     // -------------------------------------------------------------------------
     pub fn render_frame(&mut self, vram: &Vram, fb: &mut Framebuffer) {
+        // -------------------------------------------------------------------------
+        // Frame Begin
+        // -------------------------------------------------------------------------
+
         // Reset sprite overflow telemetry for this frame
         self.sprite_overflow_latched = false;
         self.sprite_overflow_scanlines = 0;
-        // TEMP TEST: auto-scroll BG0 horizontally
-        // Removal: delete once CPU register writes exist
 
+        // -------------------------------------------------------------------------
+        // TEMP TEST — Enable vertical window band
+        // Remove when register interface exists
+        // -------------------------------------------------------------------------
+        self.window_enabled = true;
+        self.window_top = 80;
+        self.window_bottom = 160;
+
+        // -------------------------------------------------------------------------
+        // TEMP TEST — Auto-scroll BG0 (horizontal)
+        // Remove when CPU register writes exist
+        // -------------------------------------------------------------------------
+        self.bg0_scroll_x = self.bg0_scroll_x.wrapping_add(1);
+
+        // -------------------------------------------------------------------------
+        // Build per-scanline scroll tables (Phase 3)
+        // -------------------------------------------------------------------------
+        for y in 0..FB_H {
+            // BG0: normal scroll
+            self.bg0_scroll_x_line[y] = self.bg0_scroll_x;
+
+            // BG1: parallax + vertical wave distortion
+            let wave = ((y as i32 - 120).abs() as u16) / 8;
+            self.bg1_scroll_x_line[y] = (self.bg0_scroll_x / 2).wrapping_add(wave);
+        }
+
+        // -------------------------------------------------------------------------
+        // Render all scanlines
+        // -------------------------------------------------------------------------
         for y in 0..FB_H {
             self.render_scanline(vram, y, fb);
         }
 
+        // Frame counter
         self.frame_counter += 1;
     }
 
@@ -197,7 +255,10 @@ impl Ppu {
         // ---------------------------------------------------------------------
 
         // TEMP: Scroll registers (until PPU regs exist)
-        let scroll_x = self.bg0_scroll_x as usize;
+        // -------------------------------------------------------------------------
+        // BG0 Rendering
+        // -------------------------------------------------------------------------
+        let scroll_x = self.bg0_scroll_x_line[y] as usize;
         let scroll_y = self.bg0_scroll_y as usize;
         let sy = y.wrapping_add(scroll_y);
         let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
@@ -208,6 +269,13 @@ impl Ppu {
         // Must live for entire scanline (BG + sprite pass)
         // -----------------------------------------------------------------------------
         let mut bg_priority_line = [0u8; FB_W];
+
+        // -----------------------------------------------------------------------------
+        // Window check (vertical clip)
+        // -----------------------------------------------------------------------------
+        let window_active = self.window_enabled
+            && (y as u16) >= self.window_top
+            && (y as u16) <= self.window_bottom;
 
         // Screen tiles across (ceil)
         let tiles_x = (FB_W + 7) / 8;
@@ -299,6 +367,121 @@ impl Ppu {
                     bg_priority_line[dst_x] = bg_prio;
                 } else {
                     bg_priority_line[dst_x] = 0;
+                }
+            }
+        }
+
+        // TEMP: Scroll registers (until PPU regs exist)
+        // -------------------------------------------------------------------------
+        // BG1 Rendering
+        // -------------------------------------------------------------------------
+        // TEMP TEST — Parallax: BG1 scrolls slower than BG0
+        if !self.window_enabled
+            || (y >= self.window_top as usize && y <= self.window_bottom as usize)
+        {
+            let scroll_x = self.bg1_scroll_x_line[y] as usize;
+            let scroll_y = (self.bg0_scroll_y as usize) / 2;
+            let sy = y.wrapping_add(scroll_y);
+            let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
+            let row_in_tile = sy & 7;
+
+            // -----------------------------------------------------------------------------
+            // Per-scanline BG priority buffer (0 = low, 1 = high)
+            // Must live for entire scanline (BG + sprite pass)
+            // -----------------------------------------------------------------------------
+            let mut bg_priority_line = [0u8; FB_W];
+
+            // Screen tiles across (ceil)
+            let tiles_x = (FB_W + 7) / 8;
+
+            for tx in 0..tiles_x {
+                let sx = (tx * 8).wrapping_add(scroll_x);
+                let tile_x = (sx / 8) & 63;
+
+                // Tilemap index in entries (64x64)
+                let map_index = tile_y * 64 + tile_x;
+                let map_byte = map_index * 2;
+
+                // Read little-endian u16 entry
+                let lo = vram.bg1_tilemap[map_byte] as u16;
+                let hi = vram.bg1_tilemap[map_byte + 1] as u16;
+                let entry = lo | (hi << 8);
+                let bg_prio = ((entry >> 14) & 0x1) as u8;
+
+                let tile_index = (entry & 0x03FF) as usize;
+                let pal_sel = ((entry >> 10) & 0x3) as u8;
+                let hflip = ((entry >> 12) & 0x1) != 0;
+                let vflip = ((entry >> 13) & 0x1) != 0;
+
+                let row = if vflip { 7 - row_in_tile } else { row_in_tile };
+
+                // Pattern base: 32 bytes per tile
+                let tile_base = tile_index * 32;
+                let row_base = tile_base + row * 4;
+
+                // Fetch 4 packed bytes for this row
+                let b0 = vram.bg_tiles[row_base];
+                let b1 = vram.bg_tiles[row_base + 1];
+                let b2 = vram.bg_tiles[row_base + 2];
+                let b3 = vram.bg_tiles[row_base + 3];
+
+                // Write 8 pixels
+                for px in 0..8 {
+                    // -----------------------------------------------------------------------------
+                    // Per-scanline BG priority buffer (0 = low, 1 = high)
+                    // -----------------------------------------------------------------------------
+                    let mut bg_priority_line = [0u8; FB_W];
+                    let dst_x = tx * 8 + px;
+                    if dst_x >= FB_W {
+                        continue;
+                    }
+
+                    // Determine source pixel index with optional hflip
+                    let src_px = if hflip { 7 - px } else { px };
+
+                    // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
+                    let (byte, shift_hi) = match src_px {
+                        0 => (b0, true),
+                        1 => (b0, false),
+                        2 => (b1, true),
+                        3 => (b1, false),
+                        4 => (b2, true),
+                        5 => (b2, false),
+                        6 => (b3, true),
+                        _ => (b3, false),
+                    };
+
+                    let pix4 = if shift_hi {
+                        (byte >> 4) & 0x0F
+                    } else {
+                        byte & 0x0F
+                    };
+
+                    // -----------------------------------------------------------------------------
+                    // BG transparency tracking (color 0 is transparent)
+                    // -----------------------------------------------------------------------------
+                    let bg_transparent = pix4 == 0;
+
+                    // Palette bank: 0..3 => 0,16,32,48
+                    let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
+
+                    // Palette lookup: first 256 entries are RGB555 u16 LE
+                    let pal_ofs = color_index * 2;
+                    let plo = vram.palettes[pal_ofs] as u16;
+                    let phi = vram.palettes[pal_ofs + 1] as u16;
+                    let rgb555 = plo | (phi << 8);
+
+                    let fb_index = y * FB_W + dst_x;
+
+                    // -----------------------------------------------------------------------------
+                    // Write BG only if non-transparent
+                    // -----------------------------------------------------------------------------
+                    if !bg_transparent {
+                        pixels[fb_index] = rgb555;
+                        bg_priority_line[dst_x] = bg_prio;
+                    } else {
+                        bg_priority_line[dst_x] = 0;
+                    }
                 }
             }
         }

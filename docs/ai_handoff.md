@@ -1,34 +1,69 @@
-AUREX-16++ AI HANDOFF DOCUMENT
-Milestone: PPU Phase 1 Complete
-Project Identity
+1. Project Identity
 
-Project: Aurex-16++
-Repository: aurex16pp
-Location: C:\Users\ageno\Apps\aurex16pp
+Aurex-16++ is a deterministic 2D fantasy console inspired by late 16-bit hardware.
 
-Aurex-16++ is a deterministic 2D fantasy console inspired by late 16-bit hardware, built with strict hardware-style constraints and AI-assisted cartridge creation in mind.
+It is:
 
-It is not a modern engine.
-It is not a PC abstraction.
-It is a constrained fantasy console.
+Hardware-constrained
 
-All work must respect hardware canon.
+Deterministic
 
-Current Stable Milestone
-PPU Phase 1 — COMPLETE
+Integer-only in core systems
 
-The rendering pipeline is stable and considered frozen at this milestone.
+Designed for AI-assisted cartridge creation
 
-Graphics System — Current State
-Display
+It is not:
+
+A modern engine
+
+A PC abstraction layer
+
+A free-form rendering system
+
+All development must respect hardware canon.
+
+2. Current Stable Milestone
+   ✅ PPU Phase 2 — COMPLETE
+
+Rendering pipeline is stable.
+
+The following systems are considered functional and safe:
+
+Dual background layers
+
+Sprite flipping
+
+16×16 sprites
+
+Sprite ↔ BG priority
+
+Deterministic compositing
+
+Architecture must not be rewritten.
+
+3. Graphics System
+   3.1 Display
 
 Resolution: 426×240 (16:9)
 
-RGB555 (5:5:5)
+Color format: RGB555
 
 256 on-screen colors max
 
 Deterministic integer math only
+
+60 FPS locked
+
+3.2 Background Layers
+Shared Pattern Memory
+
+4bpp packed
+
+32 bytes per tile
+
+Stored in bg_tiles
+
+Shared by BG0 and BG1
 
 BG0
 
@@ -36,9 +71,9 @@ BG0
 
 8×8 tiles
 
-4bpp packed (32 bytes per tile)
-
 Tilemap entry: u16 little-endian
+
+Bit layout:
 
 bits 0–9: tile index
 
@@ -48,9 +83,9 @@ bit 12: hflip
 
 bit 13: vflip
 
-bits 14–15: reserved
+bit 14: priority bit
 
-Rendered first each scanline.
+bit 15: reserved
 
 Scroll registers:
 
@@ -58,7 +93,27 @@ bg0_scroll_x
 
 bg0_scroll_y
 
-Sprite System
+Rendered first.
+
+BG1
+
+64×64 tilemap (wrap)
+
+Same format as BG0
+
+Independent scroll registers:
+
+bg1_scroll_x
+
+bg1_scroll_y
+
+Rendered after BG0.
+
+Overwrites BG0 where non-transparent.
+
+Priority bit respected in sprite interleave.
+
+3.3 Sprite System
 
 Each sprite contains:
 
@@ -74,9 +129,15 @@ priority (u8)
 
 visible (bool)
 
+hflip (bool)
+
+vflip (bool)
+
+size_16 (bool)
+
 blend (BlendMode)
 
-Sprite tile format:
+Sprite Tile Format
 
 8×8
 
@@ -86,14 +147,34 @@ Sprite tile format:
 
 Color index 0 = transparent
 
-Sprite Pipeline
-Scanline Evaluation
+16×16 Support
+
+2×2 tile composition
+
+4 consecutive tiles
+
+Flip logic applies across full composite
+
+No duplication of tile memory
+
+Deterministic integer-only decode
+
+4. Rendering Pipeline
+   4.1 Per-Scanline Order
+
+BG0
+
+BG1
+
+Sprites
+
+4.2 Sprite Scanline Evaluation
 
 Evaluated per scanline
 
 Max 8 sprites per scanline
 
-Additional sprites trigger overflow
+Overflow triggers telemetry
 
 Overflow Tracking
 
@@ -101,13 +182,24 @@ sprite_overflow_latched (bool per frame)
 
 sprite_overflow_scanlines (u32 per frame)
 
-Sorting
+4.3 Priority Rules
+BG Priority
 
-Sprites sorted by priority (low first)
+Per-tile priority bit (bit 14)
 
-Composited after BG0
+Transparent BG pixels do not block sprites
 
-Blending
+Sprite Priority
+
+Resolution rule:
+
+High-priority BG blocks low-priority sprite
+
+High-priority sprite always wins
+
+Transparent BG never blocks sprite
+
+4.4 Blending
 
 Supported blend modes:
 
@@ -117,39 +209,32 @@ Additive
 
 Additive blending:
 
-Channel-wise RGB555 add
+Channel-wise RGB555 addition
 
-Clamp per channel (0–31)
-
-Deterministic
+Per-channel clamp (0–31)
 
 Integer-only
 
-No floating point
-
 Implemented via add_rgb555
 
-Engine Core Constraints (Locked)
+5. Core Hardware Constraints (Locked)
+   VM-32
 
-VM-32:
-
-200,000 ops per frame
-
-Hard cap
+200,000 ops per frame (hard cap)
 
 CPU reject tracking active
 
-Memory:
+Memory
 
 512 KB WRAM (locked)
 
-1 MB VRAM (partitioned)
+1 MB VRAM (partitioned, canonical layout)
 
 256 KB Audio RAM
 
-No cross-routing allowed
+No cross-routing
 
-DMA:
+DMA
 
 4 commands per frame max
 
@@ -157,11 +242,11 @@ DMA:
 
 16 KB audio upload per frame max
 
-Reject immediately if exceeded
+Immediate rejection if exceeded
 
-No silent forgiveness.
+No silent forgiveness
 
-Systems Operational
+6. Systems Operational
 
 Deterministic frame lifecycle
 
@@ -173,17 +258,17 @@ DMA enforcement
 
 Sprite overflow telemetry
 
-Additive blending compositing
-
-Known Limitations (Intentional)
-
-Not yet implemented:
+Dual BG layering
 
 Sprite flipping
 
-16×16 sprites
+16×16 sprite decode
 
-Multi-layer BG
+BG priority interleave
+
+7. Known Limitations (Intentional)
+
+Not yet implemented:
 
 Mode 7
 
@@ -191,11 +276,17 @@ Window layers
 
 Alpha blending
 
-Per-layer priority mixing
+Per-layer blending modes
 
-These are future expansions and must preserve determinism.
+Sub-scanline effects
 
-Architectural Guardrails
+Mosaic / distortion
+
+Parallax registers
+
+All future features must preserve determinism.
+
+8. Architectural Guardrails
 
 Do NOT:
 
@@ -211,31 +302,34 @@ Introduce unlimited VRAM access
 
 Add deferred DMA
 
-Silently ignore hardware limits
+Ignore hardware limits silently
 
-All expansions must respect hardware fantasy constraints.
+All expansions must feel like hardware.
 
-Next Recommended Milestones
+9. Next Recommended Milestones
 
-Sprite flipping (hflip/vflip)
+BG1 actual render duplication (if not completed)
 
-16×16 sprite support
+Parallax per scanline
 
-Register abstraction for scroll
+Window masking
 
-Additional BG layers
+Mode 7 deterministic implementation
 
 Performance validation passes
 
-VRAM DMA correctness testing
+VRAM DMA stress testing
 
-Each should be incremental.
+All upgrades must be incremental.
+
 No sweeping rewrites.
 
-Development Status
+10. Development Status
 
 Rendering pipeline is stable.
 
+Architecture is clean.
+
 This is a safe checkpoint.
 
-Future work must extend capability without destabilizing architecture.
+Future work must extend capability without destabilizing core systems.
