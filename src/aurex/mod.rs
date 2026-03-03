@@ -107,9 +107,10 @@ impl Aurex {
 
             self.ppu.write_sprite(
                 0, // sprite index
-                x, y, 0, // tile index
-                0, // palette
-                0, // priority
+                x, y, 0,    // base tile index (top-left of 2x2 block)
+                0,    // palette
+                0,    // priority
+                true, // 16x16 enabled
             );
         }
 
@@ -214,16 +215,42 @@ fn seed_test_bg0(vram: &mut crate::aurex::ppu::vram::Vram) {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Seed sprite tile 0 (8x8 solid color index 1)
-    // ---------------------------------------------------------------------
+    // -----------------------------------------------------------------------------
+    // TEMP TEST — Build 16x16 sprite (tiles 0–3)
+    // Layout:
+    // [0][1]
+    // [2][3]
+    // -----------------------------------------------------------------------------
+
+    // Tile 0 (top-left) — color index 1
     for row in 0..8 {
-        let base = row * 4; // 4 bytes per row
+        let base = row * 4;
         for i in 0..4 {
-            if base + i < vram.sprite_tiles.len() {
-                vram.sprite_tiles[base + i] = 0x11;
-                // both pixels = color index 1
-            }
+            vram.sprite_tiles[base + i] = 0x11;
+        }
+    }
+
+    // Tile 1 (top-right) — color index 2
+    for row in 0..8 {
+        let base = 32 + row * 4;
+        for i in 0..4 {
+            vram.sprite_tiles[base + i] = 0x22;
+        }
+    }
+
+    // Tile 2 (bottom-left) — color index 3
+    for row in 0..8 {
+        let base = 64 + row * 4;
+        for i in 0..4 {
+            vram.sprite_tiles[base + i] = 0x33;
+        }
+    }
+
+    // Tile 3 (bottom-right) — color index 4
+    for row in 0..8 {
+        let base = 96 + row * 4;
+        for i in 0..4 {
+            vram.sprite_tiles[base + i] = 0x44;
         }
     }
 

@@ -32,6 +32,13 @@ pub struct Ppu {
     pub window_bottom: u16,
 
     // -----------------------------------------------------------------------------
+    // Layer enable flags (Phase 5)
+    // -----------------------------------------------------------------------------
+    pub bg0_enable: bool,
+    pub bg1_enable: bool,
+    pub sprite_enable: bool,
+
+    // -----------------------------------------------------------------------------
     // Per-scanline scroll tables (Phase 3 - scanline effects)
     // -----------------------------------------------------------------------------
     pub bg0_scroll_x_line: [u16; FB_H],
@@ -63,6 +70,9 @@ impl Ppu {
             window_enabled: false,
             window_top: 0,
             window_bottom: 0,
+            bg0_enable: true,
+            bg1_enable: true,
+            sprite_enable: true,
         }
     }
 
@@ -143,6 +153,7 @@ impl Ppu {
         tile: u16,
         palette: u8,
         priority: u8,
+        size_16: bool,
     ) {
         if let Some(sprite) = self.oam.sprite_mut(index) {
             sprite.x = x;
@@ -152,6 +163,7 @@ impl Ppu {
             sprite.priority = priority;
             sprite.visible = true;
             sprite.blend = BlendMode::Additive;
+            sprite.size_16 = size_16;
         }
     }
 
@@ -174,6 +186,14 @@ impl Ppu {
         // Reset sprite overflow telemetry for this frame
         self.sprite_overflow_latched = false;
         self.sprite_overflow_scanlines = 0;
+
+        // -------------------------------------------------------------------------
+        // TEMP TEST — Layer toggles
+        // Remove when register interface exists
+        // -------------------------------------------------------------------------
+        self.bg0_enable = true;
+        self.bg1_enable = true;
+        self.sprite_enable = true;
 
         // -------------------------------------------------------------------------
         // TEMP TEST — Enable vertical window band
@@ -258,115 +278,117 @@ impl Ppu {
         // -------------------------------------------------------------------------
         // BG0 Rendering
         // -------------------------------------------------------------------------
-        let scroll_x = self.bg0_scroll_x_line[y] as usize;
-        let scroll_y = self.bg0_scroll_y as usize;
-        let sy = y.wrapping_add(scroll_y);
-        let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
-        let row_in_tile = sy & 7;
+        if self.bg0_enable {
+            let scroll_x = self.bg0_scroll_x_line[y] as usize;
+            let scroll_y = self.bg0_scroll_y as usize;
+            let sy = y.wrapping_add(scroll_y);
+            let tile_y = (sy / 8) & 63; // 64-tile wrap (tilemap is treated as 64x64)
+            let row_in_tile = sy & 7;
 
-        // -----------------------------------------------------------------------------
-        // Per-scanline BG priority buffer (0 = low, 1 = high)
-        // Must live for entire scanline (BG + sprite pass)
-        // -----------------------------------------------------------------------------
-        let mut bg_priority_line = [0u8; FB_W];
+            // -----------------------------------------------------------------------------
+            // Per-scanline BG priority buffer (0 = low, 1 = high)
+            // Must live for entire scanline (BG + sprite pass)
+            // -----------------------------------------------------------------------------
+            let mut bg_priority_line = [0u8; FB_W];
 
-        // -----------------------------------------------------------------------------
-        // Window check (vertical clip)
-        // -----------------------------------------------------------------------------
-        let window_active = self.window_enabled
-            && (y as u16) >= self.window_top
-            && (y as u16) <= self.window_bottom;
+            // -----------------------------------------------------------------------------
+            // Window check (vertical clip)
+            // -----------------------------------------------------------------------------
+            let window_active = self.window_enabled
+                && (y as u16) >= self.window_top
+                && (y as u16) <= self.window_bottom;
 
-        // Screen tiles across (ceil)
-        let tiles_x = (FB_W + 7) / 8;
+            // Screen tiles across (ceil)
+            let tiles_x = (FB_W + 7) / 8;
 
-        for tx in 0..tiles_x {
-            let sx = (tx * 8).wrapping_add(scroll_x);
-            let tile_x = (sx / 8) & 63;
+            for tx in 0..tiles_x {
+                let sx = (tx * 8).wrapping_add(scroll_x);
+                let tile_x = (sx / 8) & 63;
 
-            // Tilemap index in entries (64x64)
-            let map_index = tile_y * 64 + tile_x;
-            let map_byte = map_index * 2;
+                // Tilemap index in entries (64x64)
+                let map_index = tile_y * 64 + tile_x;
+                let map_byte = map_index * 2;
 
-            // Read little-endian u16 entry
-            let lo = vram.bg0_tilemap[map_byte] as u16;
-            let hi = vram.bg0_tilemap[map_byte + 1] as u16;
-            let entry = lo | (hi << 8);
-            let bg_prio = ((entry >> 14) & 0x1) as u8;
+                // Read little-endian u16 entry
+                let lo = vram.bg0_tilemap[map_byte] as u16;
+                let hi = vram.bg0_tilemap[map_byte + 1] as u16;
+                let entry = lo | (hi << 8);
+                let bg_prio = ((entry >> 14) & 0x1) as u8;
 
-            let tile_index = (entry & 0x03FF) as usize;
-            let pal_sel = ((entry >> 10) & 0x3) as u8;
-            let hflip = ((entry >> 12) & 0x1) != 0;
-            let vflip = ((entry >> 13) & 0x1) != 0;
+                let tile_index = (entry & 0x03FF) as usize;
+                let pal_sel = ((entry >> 10) & 0x3) as u8;
+                let hflip = ((entry >> 12) & 0x1) != 0;
+                let vflip = ((entry >> 13) & 0x1) != 0;
 
-            let row = if vflip { 7 - row_in_tile } else { row_in_tile };
+                let row = if vflip { 7 - row_in_tile } else { row_in_tile };
 
-            // Pattern base: 32 bytes per tile
-            let tile_base = tile_index * 32;
-            let row_base = tile_base + row * 4;
+                // Pattern base: 32 bytes per tile
+                let tile_base = tile_index * 32;
+                let row_base = tile_base + row * 4;
 
-            // Fetch 4 packed bytes for this row
-            let b0 = vram.bg_tiles[row_base];
-            let b1 = vram.bg_tiles[row_base + 1];
-            let b2 = vram.bg_tiles[row_base + 2];
-            let b3 = vram.bg_tiles[row_base + 3];
+                // Fetch 4 packed bytes for this row
+                let b0 = vram.bg_tiles[row_base];
+                let b1 = vram.bg_tiles[row_base + 1];
+                let b2 = vram.bg_tiles[row_base + 2];
+                let b3 = vram.bg_tiles[row_base + 3];
 
-            // Write 8 pixels
-            for px in 0..8 {
-                // -----------------------------------------------------------------------------
-                // Per-scanline BG priority buffer (0 = low, 1 = high)
-                // -----------------------------------------------------------------------------
-                let mut bg_priority_line = [0u8; FB_W];
-                let dst_x = tx * 8 + px;
-                if dst_x >= FB_W {
-                    continue;
-                }
+                // Write 8 pixels
+                for px in 0..8 {
+                    // -----------------------------------------------------------------------------
+                    // Per-scanline BG priority buffer (0 = low, 1 = high)
+                    // -----------------------------------------------------------------------------
+                    let mut bg_priority_line = [0u8; FB_W];
+                    let dst_x = tx * 8 + px;
+                    if dst_x >= FB_W {
+                        continue;
+                    }
 
-                // Determine source pixel index with optional hflip
-                let src_px = if hflip { 7 - px } else { px };
+                    // Determine source pixel index with optional hflip
+                    let src_px = if hflip { 7 - px } else { px };
 
-                // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
-                let (byte, shift_hi) = match src_px {
-                    0 => (b0, true),
-                    1 => (b0, false),
-                    2 => (b1, true),
-                    3 => (b1, false),
-                    4 => (b2, true),
-                    5 => (b2, false),
-                    6 => (b3, true),
-                    _ => (b3, false),
-                };
+                    // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
+                    let (byte, shift_hi) = match src_px {
+                        0 => (b0, true),
+                        1 => (b0, false),
+                        2 => (b1, true),
+                        3 => (b1, false),
+                        4 => (b2, true),
+                        5 => (b2, false),
+                        6 => (b3, true),
+                        _ => (b3, false),
+                    };
 
-                let pix4 = if shift_hi {
-                    (byte >> 4) & 0x0F
-                } else {
-                    byte & 0x0F
-                };
+                    let pix4 = if shift_hi {
+                        (byte >> 4) & 0x0F
+                    } else {
+                        byte & 0x0F
+                    };
 
-                // -----------------------------------------------------------------------------
-                // BG transparency tracking (color 0 is transparent)
-                // -----------------------------------------------------------------------------
-                let bg_transparent = pix4 == 0;
+                    // -----------------------------------------------------------------------------
+                    // BG transparency tracking (color 0 is transparent)
+                    // -----------------------------------------------------------------------------
+                    let bg_transparent = pix4 == 0;
 
-                // Palette bank: 0..3 => 0,16,32,48
-                let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
+                    // Palette bank: 0..3 => 0,16,32,48
+                    let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
 
-                // Palette lookup: first 256 entries are RGB555 u16 LE
-                let pal_ofs = color_index * 2;
-                let plo = vram.palettes[pal_ofs] as u16;
-                let phi = vram.palettes[pal_ofs + 1] as u16;
-                let rgb555 = plo | (phi << 8);
+                    // Palette lookup: first 256 entries are RGB555 u16 LE
+                    let pal_ofs = color_index * 2;
+                    let plo = vram.palettes[pal_ofs] as u16;
+                    let phi = vram.palettes[pal_ofs + 1] as u16;
+                    let rgb555 = plo | (phi << 8);
 
-                let fb_index = y * FB_W + dst_x;
+                    let fb_index = y * FB_W + dst_x;
 
-                // -----------------------------------------------------------------------------
-                // Write BG only if non-transparent
-                // -----------------------------------------------------------------------------
-                if !bg_transparent {
-                    pixels[fb_index] = rgb555;
-                    bg_priority_line[dst_x] = bg_prio;
-                } else {
-                    bg_priority_line[dst_x] = 0;
+                    // -----------------------------------------------------------------------------
+                    // Write BG only if non-transparent
+                    // -----------------------------------------------------------------------------
+                    if !bg_transparent {
+                        pixels[fb_index] = rgb555;
+                        bg_priority_line[dst_x] = bg_prio;
+                    } else {
+                        bg_priority_line[dst_x] = 0;
+                    }
                 }
             }
         }
@@ -376,8 +398,9 @@ impl Ppu {
         // BG1 Rendering
         // -------------------------------------------------------------------------
         // TEMP TEST — Parallax: BG1 scrolls slower than BG0
-        if !self.window_enabled
-            || (y >= self.window_top as usize && y <= self.window_bottom as usize)
+        if self.bg1_enable
+            && (!self.window_enabled
+                || (y >= self.window_top as usize && y <= self.window_bottom as usize))
         {
             let scroll_x = self.bg1_scroll_x_line[y] as usize;
             let scroll_y = (self.bg0_scroll_y as usize) / 2;
@@ -487,110 +510,91 @@ impl Ppu {
         }
 
         // -------------------------------------------------------------------------
-        // Sprite Rendering (Phase 1 - no priority, overwrite BG)
-        // -------------------------------------------------------------------------
-        // Sort visible sprites by priority (low first)
-        let mut sorted_indices = _sprite_indices[.._sprite_count].to_vec();
+        // Layer enable: Sprites
+        // -----------------------------------------------------------------------------
+        if self.sprite_enable {
+            // -------------------------------------------------------------------------
+            // Sprite Rendering (Phase 1 - no priority, overwrite BG)
+            // -------------------------------------------------------------------------
+            // Sort visible sprites by priority (low first)
+            let mut sorted_indices = _sprite_indices[.._sprite_count].to_vec();
 
-        sorted_indices.sort_by_key(|&idx| self.oam.sprite(idx).map(|s| s.priority).unwrap_or(0));
+            sorted_indices
+                .sort_by_key(|&idx| self.oam.sprite(idx).map(|s| s.priority).unwrap_or(0));
 
-        for sprite_index in sorted_indices {
-            if let Some(sprite) = self.oam.sprite(sprite_index) {
-                let sprite_y = sprite.y as usize;
-                let row_in_sprite = y - sprite_y;
+            for sprite_index in sorted_indices {
+                if let Some(sprite) = self.oam.sprite(sprite_index) {
+                    // -------------------------------------------------------------------------
+                    // Sprite Rendering (8x8 or 16x16)
+                    // -------------------------------------------------------------------------
 
-                // -----------------------------------------------------------------------------
-                // Sprite pixel decode (supports 8x8 and 16x16)
-                // 16x16 uses 2x2 tile composition:
-                // [0][1]
-                // [2][3]
-                // -----------------------------------------------------------------------------
+                    let sprite_y = sprite.y as usize;
+                    let row_in_sprite = y - sprite_y;
 
-                let sprite_size = if sprite.size_16 { 16 } else { 8 };
+                    // Determine sprite size
+                    let sprite_size = if sprite.size_16 { 16 } else { 8 };
 
-                for col in 0..sprite_size {
-                    let screen_x = sprite.x as usize + col;
-
-                    if screen_x >= FB_W {
+                    // Reject if outside vertical bounds
+                    if row_in_sprite >= sprite_size {
                         continue;
                     }
 
-                    // Determine source coordinates within sprite
-                    let local_col = if sprite.hflip {
-                        sprite_size - 1 - col
-                    } else {
-                        col
-                    };
+                    // 16x16 = 2x2 tile block
+                    let tiles_per_row = if sprite.size_16 { 2 } else { 1 };
 
-                    let local_row = if sprite.vflip {
-                        sprite_size - 1 - row_in_sprite
-                    } else {
-                        row_in_sprite
-                    };
+                    // Determine which tile row we are in (0 or 1 for 16x16)
+                    let tile_row = row_in_sprite / 8;
+                    let row_in_tile = row_in_sprite % 8;
 
-                    // Determine which 8x8 quadrant we are in (for 16x16)
-                    let (tile_offset, src_col, src_row) = if sprite.size_16 {
-                        let quad_x = local_col / 8;
-                        let quad_y = local_row / 8;
+                    for tile_col in 0..tiles_per_row {
+                        let tile_index_offset = tile_row * tiles_per_row + tile_col;
+                        let tile_index = sprite.tile_index as usize + tile_index_offset;
 
-                        let tile_offset = quad_y * 2 + quad_x;
+                        let tile_base = tile_index * 32;
 
-                        (tile_offset, local_col % 8, local_row % 8)
-                    } else {
-                        (0, local_col, local_row)
-                    };
+                        for col in 0..8 {
+                            let screen_x = sprite.x as usize + tile_col * 8 + col;
 
-                    // Each tile is 32 bytes
-                    let tile_base = (sprite.tile_index as usize + tile_offset) * 32;
+                            if screen_x >= FB_W {
+                                continue;
+                            }
 
-                    let byte_index = tile_base + src_row * 4 + (src_col / 2);
+                            let byte_index = tile_base + row_in_tile * 4 + (col / 2);
 
-                    if byte_index >= vram.sprite_tiles.len() {
-                        continue;
-                    }
+                            if byte_index >= vram.sprite_tiles.len() {
+                                continue;
+                            }
 
-                    let byte = vram.sprite_tiles[byte_index];
+                            let byte = vram.sprite_tiles[byte_index];
 
-                    let color_index = if src_col % 2 == 0 {
-                        (byte >> 4) & 0x0F
-                    } else {
-                        byte & 0x0F
-                    };
+                            let color_index = if col % 2 == 0 { byte >> 4 } else { byte & 0x0F };
 
-                    if color_index == 0 {
-                        continue; // transparent
-                    }
+                            if color_index == 0 {
+                                continue;
+                            }
 
-                    let palette_offset = sprite.palette as usize * 16;
-                    let palette_index = palette_offset + color_index as usize;
+                            let palette_offset = sprite.palette as usize * 16;
+                            let palette_index = palette_offset + color_index as usize;
 
-                    if palette_index * 2 + 1 >= vram.palettes.len() {
-                        continue;
-                    }
+                            if palette_index * 2 + 1 >= vram.palettes.len() {
+                                continue;
+                            }
 
-                    let lo = vram.palettes[palette_index * 2] as u16;
-                    let hi = vram.palettes[palette_index * 2 + 1] as u16;
-                    let rgb = lo | (hi << 8);
+                            let lo = vram.palettes[palette_index * 2] as u16;
+                            let hi = vram.palettes[palette_index * 2 + 1] as u16;
+                            let rgb = lo | (hi << 8);
 
-                    let fb_index = y * FB_W + screen_x;
+                            let fb_index = y * FB_W + screen_x;
 
-                    // -----------------------------------------------------------------------------
-                    // Sprite vs BG priority resolution
-                    // Rule:
-                    // - High priority BG blocks low priority sprite
-                    // - High priority sprite always wins
-                    // -----------------------------------------------------------------------------
-                    if bg_priority_line[screen_x] == 1 && sprite.priority == 0 {
-                        continue;
-                    }
-
-                    match sprite.blend {
-                        BlendMode::Normal => {
-                            pixels[fb_index] = rgb;
-                        }
-                        BlendMode::Additive => {
-                            let dst = pixels[fb_index];
-                            pixels[fb_index] = Self::add_rgb555(dst, rgb);
+                            match sprite.blend {
+                                BlendMode::Normal => {
+                                    pixels[fb_index] = rgb;
+                                }
+                                BlendMode::Additive => {
+                                    let dst = pixels[fb_index];
+                                    pixels[fb_index] = Self::add_rgb555(dst, rgb);
+                                }
+                            }
                         }
                     }
                 }
