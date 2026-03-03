@@ -28,6 +28,8 @@ pub const PPU_SPRITE_ENABLE: u16 = 0x0024;
 pub const PPU_WINDOW_LEFT: u16 = 0x0016;
 pub const PPU_WINDOW_RIGHT: u16 = 0x0018;
 
+pub const PPU_STATUS: u16 = 0x0026;
+
 // === AUREX SDK SURFACE: PPU REGISTER ENUM ===
 pub enum PpuReg {
     Bg0ScrollX,
@@ -111,6 +113,11 @@ pub struct Ppu {
     // -----------------------------------------------------------------
     sprite_overflow_latched: bool,
     sprite_overflow_scanlines: u32,
+
+    // -----------------------------------------------------------------
+    // VBlank flag (Phase 6 - foundational)
+    // -----------------------------------------------------------------
+    vblank: bool,
 }
 
 impl Ppu {
@@ -126,6 +133,9 @@ impl Ppu {
             oam: Oam::new(),
             sprite_overflow_latched: false,
             sprite_overflow_scanlines: 0,
+
+            // Phase 6 - VBlank initial state
+            vblank: false,
             window_enabled: false,
             window_top: 0,
             window_bottom: 0,
@@ -154,6 +164,25 @@ impl Ppu {
             PPU_BG0_ENABLE => self.read_reg(PpuReg::Bg0Enable),
             PPU_BG1_ENABLE => self.read_reg(PpuReg::Bg1Enable),
             PPU_SPRITE_ENABLE => self.read_reg(PpuReg::SpriteEnable),
+
+            // ---------------------------------------------------------
+            // Phase 6: PPU STATUS (read-only)
+            // bit0: vblank
+            // bit1: sprite_overflow_latched
+            // ---------------------------------------------------------
+            PPU_STATUS => {
+                let mut status = 0u16;
+
+                if self.vblank {
+                    status |= 1 << 0;
+                }
+
+                if self.sprite_overflow_latched {
+                    status |= 1 << 1;
+                }
+
+                status
+            }
 
             _ => 0,
         }
@@ -374,6 +403,12 @@ impl Ppu {
         // Frame Begin
         // -------------------------------------------------------------------------
 
+        // Phase 6: VBlank simulation (foundational)
+        // - vblank=false at start of render_frame
+        // - vblank=true after all scanlines render
+        // - no IRQ/timing granularity yet
+        self.vblank = false;
+
         // Reset sprite overflow telemetry for this frame
         self.sprite_overflow_latched = false;
         self.sprite_overflow_scanlines = 0;
@@ -403,6 +438,11 @@ impl Ppu {
         for y in 0..FB_H {
             self.render_scanline(vram, y, fb);
         }
+
+        // -------------------------------------------------------------------------
+        // Enter VBlank (Phase 6 - foundational)
+        // -------------------------------------------------------------------------
+        self.vblank = true;
 
         // Frame counter
         self.frame_counter += 1;

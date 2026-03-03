@@ -6,6 +6,24 @@ Newest entries are always added at the top.
 This file tracks engineering evolution, not canonical hardware state.
 Refer to ai_handoff_canon.md for current hardware truth.
 
+## [YYYY-MM-DD] — Boot DMA + Sprite Format Validation
+
+- Implemented PrimeIgnition boot module.
+- Verified DMA request() → apply() → VBlank gating path.
+- Confirmed sprite tiles use 4bpp linear nibble-packed format.
+- Corrected earlier planar assumption.
+- Successfully rendered first DMA-uploaded glyph tile.
+- Identified palette initialization as next required visual foundation step.
+
+2026-03-02
+PPU Phase 6.5 — VBlank Gating for VRAM DMA
+
+- DMA apply() now requires vblank=true
+- Outside VBlank, writes are silently rejected
+- No timing granularity added
+- No IRQ added
+- Determinism preserved
+
 ## 2026-03-02 — PPU VBlank Simulation Introduced
 
 Added a hardware-style `vblank` boolean to the PPU.

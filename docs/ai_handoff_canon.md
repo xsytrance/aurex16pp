@@ -146,6 +146,11 @@ All frame mutation must occur through register interface.
 
 No direct field mutation outside PPU.
 
+- VRAM DMA writes are gated by VBlank.
+  - If not in VBlank, DMA apply() performs no writes.
+  - Deterministic silent rejection.
+  - No IRQ or stall behavior yet.
+
 ---
 
 # 7. Determinism Guarantees
@@ -241,6 +246,26 @@ This establishes:
 - No cycle timing
 - No frame timing redesign
 - No change to frame rate or determinism
+
+## Phase 6.5 — Boot Validation & Sprite Tile Format Confirmation
+
+- Sprite tile format confirmed:
+  - 4bpp
+  - 8×8
+  - 32 bytes per tile
+  - Linear nibble-packed (NOT planar)
+  - 4 bytes per row
+  - High nibble = left pixel
+  - Low nibble = right pixel
+
+- 16×16 sprites composed of 2×2 8×8 tiles
+  - Base tile index = top-left tile
+  - Tile index offset applied per quadrant
+
+- DMA sprite tile upload validated via PrimeIgnition boot module.
+- VBlank gating confirmed functional.
+- Palette memory currently uninitialized (visual artifacts expected).
+- No direct VRAM mutation used — DMA-only writes preserved.
 
 Architecture remains stable.
 

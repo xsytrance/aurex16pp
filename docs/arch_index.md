@@ -152,4 +152,7 @@ src/aurex/ppu/vram.rs
 - No rendering logic
 - Canonical memory partition
 
+boot/
+prime_ignition.rs - Boot cinematic sequence - DMA glyph upload - Temporary visual validation logic
+
 END OF INDEX

@@ -151,7 +151,16 @@ impl DmaController {
         false
     }
 
-    pub fn apply(&mut self, wram: &Wram, vram: &mut Vram) {
+    pub fn apply(&mut self, wram: &Wram, vram: &mut Vram, vblank: bool) {
+        // -------------------------------------------------------------
+        // Phase 6: VBlank gating
+        // VRAM writes are only allowed during VBlank.
+        // Deterministic rejection if outside VBlank.
+        // -------------------------------------------------------------
+        if !vblank {
+            return;
+        }
+
         for cmd in &self.queue {
             let src = &wram.memory()[cmd.src_offset..cmd.src_offset + cmd.bytes];
 

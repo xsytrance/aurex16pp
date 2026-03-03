@@ -1,3 +1,4 @@
+pub mod boot;
 pub mod clock;
 pub mod dma;
 pub mod pdu;
@@ -5,7 +6,9 @@ pub mod ppu;
 pub mod vm32;
 pub mod wram;
 
+use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
+use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
 use pdu::Pdu;
@@ -22,6 +25,7 @@ pub struct Aurex {
     vram: Vram,
     fb: ppu::framebuffer::Framebuffer,
     ppu: Ppu,
+    boot: PrimeIgnition,
 }
 
 impl Aurex {
@@ -35,6 +39,7 @@ impl Aurex {
             vram: Vram::new(),
             fb: ppu::framebuffer::Framebuffer::new(),
             ppu: Ppu::new(),
+            boot: PrimeIgnition::new(),
         };
 
         // =====================================================================
@@ -88,43 +93,13 @@ impl Aurex {
 
         // CPU execution for this frame
         self.vm.run_frame(&mut self.pdu);
-
-        // =====================================================================
-        // TEMP TEST: Moving test sprite
-        // Removal: replace with cartridge logic later
-        // =====================================================================
-        #[cfg(debug_assertions)]
-        {
-            let frame = self.pdu.frame_index() as u16;
-
-            let x = (frame % 400) as u16;
-            let y = 120;
-
-            // === AUREX SDK SURFACE: SPRITE WRITE API ===
-
-            self.ppu.write_sprite(
-                0, // sprite index
-                x, y, 0,     // base tile index (top-left of 2x2 block)
-                0,     // palette
-                0,     // priority
-                true,  // 16x16 enabled
-                true,  // hflip
-                false, // vflip
-            );
-        }
-
-        // =====================================================================
-        // TEMP TEST: CPU writes to PPU scroll register
-        // Removal: replace with proper memory-mapped register writes
-        // =====================================================================
-        #[cfg(debug_assertions)]
-        {
-            let scroll = (self.pdu.frame_index() as u16).wrapping_mul(1);
-            self.ppu.set_bg0_scroll(scroll, 0);
-        }
+        // Prime Ignition Boot Demo
+        self.boot
+            .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
 
         // Apply accepted DMA transfers to hardware memory
-        self.dma.apply(&self.wram, &mut self.vram);
+        let vblank = self.ppu.read_addr(PPU_STATUS) & 0x1 != 0;
+        self.dma.apply(&self.wram, &mut self.vram, vblank);
 
         // Aggregate telemetry into PDU
         self.pdu.ingest_dma(
