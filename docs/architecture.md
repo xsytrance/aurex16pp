@@ -170,3 +170,81 @@ Aurex-16++ aims to:
 - Encourage creative constraint
 - Support LLM-generated cartridges under hardware-style limits
 - Prioritize readability, determinism, and performance
+
+
+---
+
+## Library Runtime Domain (2026-03-08 update)
+
+A dedicated title-profile domain now drives the library scene:
+
+- `TitleProfile` = title text + audio track id + color theme + icon kind.
+- Library selection is now a stateful domain event source.
+- Selection changes emit `AudioCue::SelectTrack(track_id)`.
+- Audio runtime resolves per-title songs by `track_id` (6 title-specific patterns).
+
+This keeps UI theming and soundtrack policy data-driven instead of hardcoded across unrelated modules.
+
+
+## Boot Gate Architecture (2026-03-08)
+
+Boot flow is now strictly non-interruptible:
+- Phase 1: Timed boot cinematic (`FlowPhase::Boot`).
+- Phase 2: Gate screen on same boot scene (`FlowPhase::AwaitStart`).
+- Phase 3: Library runtime (`FlowPhase::Game`).
+
+Input is ignored for scene transitions during timed boot and only accepted in `AwaitStart` for an explicit Start press.
+
+
+## Runtime Event Bus (2026-03-08)
+
+A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
+
+- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
+- This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
+
+
+## Event Queue Component (2026-03-08)
+
+Runtime events now flow through a dedicated queue object (`RuntimeEventQueue`) instead of raw vectors in core state.
+
+- Queue owns event buffering and drain semantics.
+- `Aurex` emits intents to queue.
+- Host loop drains queue and executes side effects.
+
+This formalizes event transport as a reusable core component for future channels.
+
+
+## Runtime Dispatch Primitive (2026-03-08)
+
+A runtime-level dispatch helper now applies side effects from drained events:
+
+- `dispatch_runtime_events(AudioEngine, &[RuntimeEvent])`
+
+This centralizes host-side dispatch policy and keeps the main loop focused on lifecycle orchestration.
+
+
+## Scene Transition Telemetry (2026-03-08)
+
+Runtime now emits explicit scene transition events via the event bus:
+
+- `RuntimeEvent::SceneChanged(SceneId)`
+- Current scenes:
+  - `SceneId::Boot`
+  - `SceneId::Library`
+
+Core emits transition intent; host loop may log/route diagnostics or future UI overlays without touching scene internals.
+
+## Handoff-Ready Runtime Boundaries
+
+Current boundaries are now explicit and suitable for team/agent handoff:
+
+1. **Flow Policy** (`FlowController`)
+   - Owns transition timing and gates.
+2. **Scene Simulation** (`Aurex` core)
+   - Owns deterministic frame update/render.
+3. **Event Transport** (`RuntimeEventQueue`)
+   - Owns event buffering and draining semantics.
+4. **Host Dispatch** (`dispatch_runtime_events`)
+   - Owns side effects from emitted runtime intents.

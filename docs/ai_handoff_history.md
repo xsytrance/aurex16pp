@@ -568,3 +568,21 @@ This prepares Aurex for:
 No rendering behavior changed.
 
 This marks the transition from “renderer” to “hardware abstraction.”
+
+
+---
+
+Update: 2026-03-08
+- Added per-title profile architecture in library scene (theme/icon/track metadata).
+- Added per-title music routing via `AudioCue::SelectTrack`.
+- Strengthened runtime coupling through data model instead of ad-hoc per-module constants.
+
+
+Update: 2026-03-08 (Event Bus Slice)
+- Added typed runtime event channel (`RuntimeEvent`) and replaced direct audio-cue polling with event drain dispatch.
+
+
+Update: 2026-03-08 (Scene Transition Telemetry)
+- Added `SceneId` and `RuntimeEvent::SceneChanged` to make scene lifecycle externally observable.
+- Added `Aurex::current_scene()` helper for state introspection during handoff/debug.
+- Maintained event-bus side-effect separation in host loop.

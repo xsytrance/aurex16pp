@@ -362,3 +362,21 @@ PPU Phase 1: COMPLETE
 The rendering pipeline is stable, deterministic, and hardware-consistent.
 
 Future work must extend capability without breaking architectural constraints.
+
+
+## Current Runtime Direction (2026-03-08)
+
+- Continue data-driven library-first runtime architecture.
+- Title metadata should remain centralized (theme/icon/music mapping in one profile source).
+- New features should integrate via profile/domain events before touching low-level runtime code.
+
+
+## Handoff Preparation Priorities (2026-03-08)
+
+- Preserve explicit runtime contracts:
+  - flow transition policy,
+  - scene simulation ownership,
+  - event queue transport,
+  - host dispatch side effects.
+- Prefer additive event variants over direct cross-module calls.
+- Keep scene transition telemetry available for diagnostics and future menu/router work.

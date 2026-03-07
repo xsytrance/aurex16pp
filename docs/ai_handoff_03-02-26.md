@@ -428,3 +428,16 @@ No window layers
 No per-layer priority
 
 No transparency blend modes other than additive
+
+
+---
+
+2026-03-08 follow-up:
+- Added data-driven library title profiles.
+- Selection now drives both visual theme and per-title music track.
+
+
+2026-03-08 handoff-prep follow-up:
+- Runtime now exposes scene transition telemetry events (`SceneChanged`).
+- Host side is responsible for dispatch/logging of runtime intents.
+- Architecture boundary now documented as Flow Policy -> Scene Simulation -> Event Transport -> Host Dispatch.

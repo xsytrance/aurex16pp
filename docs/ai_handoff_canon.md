@@ -287,3 +287,38 @@ This establishes:
 Architecture remains stable.
 
 END OF CANON
+
+
+---
+
+# Library Profile Canon (Current)
+
+- Runtime scene: Boot → Library.
+- Library entries are represented by profile data:
+  - title string
+  - track id
+  - color theme
+  - icon kind
+- Selection emits `AudioCue::SelectTrack`.
+- Audio engine uses track id mapping for deterministic per-title song playback.
+
+
+- Runtime event boundary active:
+  - Simulation emits typed runtime events
+  - Host loop drains and dispatches side effects
+
+
+## Runtime Handoff Contract (Current)
+
+Scene lifecycle contract:
+- Boot scene remains deterministic and non-interruptible until flow gate opens.
+- Start gate transition is explicit (`AwaitStart`).
+- Entering library emits a scene transition event.
+
+Event contract:
+- `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
+- `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
+
+Host contract:
+- Drain runtime events every frame after `run_frame`.
+- Route side effects in host/runtime dispatch layer, not inside scene simulation logic.
