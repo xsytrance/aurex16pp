@@ -662,3 +662,20 @@ Continued architecture hardening by introducing a typed runtime event bus and re
 
 ### Rationale
 This creates a clean boundary where core frame simulation emits intent and host orchestration performs side effects. It enables faster feature growth without increasing cross-module coupling.
+
+
+## 2026-03-08 01:20:00Z — Event Queue Component + Flow Tests
+
+### Summary
+Converted runtime event buffering to a dedicated queue component and added deterministic flow-state tests for boot/start gating behavior.
+
+### Changes
+- Added `RuntimeEventQueue` (`push`, `drain_to`) in runtime event module.
+- Rewired `Aurex` to use queue component instead of raw `Vec<RuntimeEvent>`.
+- Added `FlowController` unit tests:
+  - boot non-skippable before timer end,
+  - timer transition to `AwaitStart`,
+  - explicit start requirement for `Game`.
+
+### Rationale
+Improves component boundaries and gives fast regression safety for flow semantics while architecture expands.

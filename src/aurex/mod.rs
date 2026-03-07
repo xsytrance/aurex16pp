@@ -10,7 +10,7 @@ pub mod wram;
 
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
-use crate::aurex::runtime::RuntimeEvent;
+use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue};
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
@@ -37,7 +37,7 @@ pub struct Aurex {
     boot: PrimeIgnition,
     library: LibraryScreen,
     mode: RunMode,
-    events: Vec<RuntimeEvent>,
+    events: RuntimeEventQueue,
     ui_frame: u64,
 }
 
@@ -58,7 +58,7 @@ impl Aurex {
             boot: PrimeIgnition::new(),
             library,
             mode: RunMode::Boot,
-            events: Vec::with_capacity(8),
+            events: RuntimeEventQueue::with_capacity(8),
             ui_frame: 0,
         }
     }
@@ -130,7 +130,7 @@ impl Aurex {
     }
 
     pub fn drain_events(&mut self, out: &mut Vec<RuntimeEvent>) {
-        out.extend(self.events.drain(..));
+        self.events.drain_to(out);
     }
 
     pub fn framebuffer(&self) -> &crate::aurex::ppu::framebuffer::Framebuffer {

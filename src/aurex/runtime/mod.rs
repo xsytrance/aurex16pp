@@ -15,4 +15,4 @@ pub use render::present_frame;
 
 pub use frame_pacer::FramePacer;
 
-pub use event::RuntimeEvent;
+pub use event::{RuntimeEvent, RuntimeEventQueue};

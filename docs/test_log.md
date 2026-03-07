@@ -175,3 +175,14 @@ Validation focus:
 - Library selection still triggers per-title audio track changes through event dispatch.
 - Boot->start->library transition still primes selected title audio event.
 - No direct `take_audio_cue` polling path remains in main loop.
+
+
+## 2026-03-08 — Event Queue + Flow Unit Tests
+- ✅ `cargo fmt -- --check`
+- ⚠️ `cargo test runtime::flow::tests -- --nocapture` (linker warning in this environment: missing native `-lSDL2`)
+- ✅ `cargo check`
+
+Validation focus:
+- Flow remains non-interruptible during timed boot.
+- Transition contract `Boot -> AwaitStart -> Game` remains stable.
+- Runtime event queue path compiles clean with host drain dispatch.
