@@ -1,43 +1,44 @@
 mod aurex;
 
 use aurex::ppu::framebuffer::{FB_H, FB_W};
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use std::time::{Duration, Instant};
-
-fn rgb555_to_argb8888(c: u16) -> u32 {
-    // c is 0b0_RRRRR_GGGGG_BBBBB (15-bit)
-    let r5 = ((c >> 10) & 0x1F) as u32;
-    let g5 = ((c >> 5) & 0x1F) as u32;
-    let b5 = (c & 0x1F) as u32;
-
-    // Expand 5-bit to 8-bit (bit replication)
-    let r8 = (r5 << 3) | (r5 >> 2);
-    let g8 = (g5 << 3) | (g5 >> 2);
-    let b8 = (b5 << 3) | (b5 >> 2);
-
-    // ARGB8888
-    (0xFF << 24) | (r8 << 16) | (g8 << 8) | b8
-}
+use aurex::runtime::{
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, poll_input, present_frame,
+};
+use sdl2::audio::AudioSpecDesired;
+use sdl2::controller::GameController;
+use std::time::Duration;
 
 fn main() {
-    // SDL host (monitor cable)
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
+    let audio = sdl.audio().expect("SDL audio init failed");
+    let game_controller = sdl
+        .game_controller()
+        .expect("SDL game controller init failed");
 
-    let scale: u32 = 3; // change to 2/3/4 as you like
-    let win_w = (FB_W as u32) * scale;
-    let win_h = (FB_H as u32) * scale;
+    let desired = AudioSpecDesired {
+        freq: Some(44_100),
+        channels: Some(1),
+        samples: Some(1024),
+    };
 
+    let queue = audio
+        .open_queue::<i16, _>(None, &desired)
+        .expect("audio queue open failed");
+
+    let mut synth = AudioEngine::new(queue.spec().freq as u32);
+    queue.resume();
+
+    let scale: u32 = 3;
     let window = video
-        .window("Aurex-16++", win_w, win_h)
+        .window("Aurex-16++", (FB_W as u32) * scale, (FB_H as u32) * scale)
         .position_centered()
         .build()
         .expect("window build failed");
 
     let mut canvas = window
         .into_canvas()
-        .present_vsync() // host pacing only; core determinism remains internal
+        .present_vsync()
         .build()
         .expect("canvas build failed");
 
@@ -51,62 +52,67 @@ fn main() {
         .expect("texture create failed");
 
     let mut pump = sdl.event_pump().expect("event pump failed");
+    let mut controller: Option<GameController> = None;
+    for id in 0..game_controller.num_joysticks().unwrap_or(0) {
+        if !game_controller.is_game_controller(id) {
+            continue;
+        }
+        if let Ok(c) = game_controller.open(id) {
+            println!("Controller connected: {}", c.name());
+            controller = Some(c);
+            break;
+        }
+    }
 
     let mut system = aurex::Aurex::new();
+    let mut flow = FlowController::new();
 
-    // Simple host pacing (60Hz-ish). Not part of core determinism.
-    let target = Duration::from_nanos(16_666_667);
-    let mut last = Instant::now();
+    let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
 
     'running: loop {
-        for e in pump.poll_iter() {
-            match e {
-                Event::Quit { .. } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                _ => {}
-            }
+        // NOTE: We intentionally avoid SDL event enum decoding here because some
+        // controller firmwares/drivers can emit unknown event tags that older
+        // rust-sdl2 releases fail to decode safely (panic on invalid enum value).
+        // We pump events for SDL internals, then consume keyboard/controller state.
+        pump.pump_events();
+
+        if flow.tick() {
+            system.start_game();
+            println!("Snake demo loaded");
         }
 
-        // Run exactly one console frame
-        system.run_frame();
+        system.set_boot_confirming(flow.boot_confirming());
 
-        // Upload framebuffer to texture
+        let audio_mode = match flow.phase() {
+            FlowPhase::Boot => AudioMode::Boot,
+            FlowPhase::Confirming => AudioMode::Confirm,
+            FlowPhase::Game => AudioMode::Game,
+        };
+
+        if queue.size() < 16_384 {
+            let mut block = [0i16; 2048];
+            synth.render_block(audio_mode, &mut block);
+            let _ = queue.queue_audio(&block);
+        }
+
+        let polled = poll_input(&pump, controller.as_ref(), flow.game_active());
+
+        if polled.quit_requested {
+            break 'running;
+        }
+
+        if polled.start_pressed && flow.register_start_request() {
+            synth.trigger_confirm();
+        }
+
+        let input = polled.gameplay;
+
+        system.run_frame(input);
+        synth.trigger_cue(system.take_audio_cue());
+
         let src = system.framebuffer().pixels();
+        present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
 
-        texture
-            .with_lock(None, |dst: &mut [u8], pitch: usize| {
-                for y in 0..FB_H {
-                    let row = &src[y * FB_W..(y + 1) * FB_W];
-                    let out = &mut dst[y * pitch..y * pitch + FB_W * 4];
-
-                    for (x, &c) in row.iter().enumerate() {
-                        let argb = rgb555_to_argb8888(c);
-                        let o = x * 4;
-                        // SDL ARGB8888 byte order in memory is platform-dependent,
-                        // but SDL expects the buffer in the texture's native format.
-                        out[o + 0] = (argb & 0xFF) as u8; // B
-                        out[o + 1] = ((argb >> 8) & 0xFF) as u8; // G
-                        out[o + 2] = ((argb >> 16) & 0xFF) as u8; // R
-                        out[o + 3] = ((argb >> 24) & 0xFF) as u8; // A
-                    }
-                }
-            })
-            .expect("texture lock failed");
-
-        canvas.clear();
-        canvas
-            .copy(&texture, None, None)
-            .expect("canvas copy failed");
-        canvas.present();
-
-        // Host pacing (optional)
-        let elapsed = last.elapsed();
-        if elapsed < target {
-            std::thread::sleep(target - elapsed);
-        }
-        last = Instant::now();
+        pacer.wait_next_frame();
     }
 }

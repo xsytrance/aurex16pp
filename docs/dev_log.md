@@ -1,3 +1,202 @@
+## 2026-03-07 19:26:20Z — Dark Theme Pass + Frame Pacer Architecture
+
+### Summary
+Applied requested visibility update by darkening the snake playfield theme and continued architecture separation by extracting frame pacing logic from `main`.
+
+### Graphics Changes
+- Reworked game palette to a darker near-black blue board for stronger contrast and less visual washout.
+- Preserved bright snake/head/food accents against darker background for readability.
+
+### Architecture Changes
+- Added `runtime::frame_pacer` module with `FramePacer` helper.
+- Replaced manual sleep/elapsed timing math in `main.rs` with `FramePacer::wait_next_frame()`.
+- Keeps main loop focused on orchestrating runtime subsystems (flow/input/audio/render/pacing).
+
+### Progress Report
+Current subsystem status:
+- ✅ Flow state machine extracted (`runtime::flow`).
+- ✅ Audio synthesis extracted (`runtime::audio`).
+- ✅ Input polling extracted (`runtime::input`).
+- ✅ Render presentation extracted (`runtime::render`).
+- ✅ Frame pacing extracted (`runtime::frame_pacer`).
+- ✅ Snake AV polish stack active (glow body, corner glints, subtle drift, richer audio layers).
+
+Next recommended architecture steps:
+1. Add a `Scene` trait + `SceneManager` to formalize boot/game transitions.
+2. Introduce a typed event bus for audio cues/telemetry.
+3. Move hardcoded gameplay constants into config structs to support rapid theme/game swaps.
+
+## 2026-03-07 18:58:48Z — Render Pipeline Extraction + Audio/Visual Motion Tune
+
+### Summary
+Continued architecture cleanup while improving presentation quality by extracting host presentation code and adding subtle motion/tonal character improvements.
+
+### Architecture Changes
+- Added `runtime::render` module with `present_frame(...)` for framebuffer conversion + SDL present path.
+- Removed framebuffer conversion/present boilerplate from `main.rs` and switched to runtime render API.
+- Keeps `main` focused on orchestration (flow, audio queue, input polling) rather than pixel conversion internals.
+
+### Graphics/Sound Improvements
+- Added subtle BG horizontal drift in gameplay for living-scene feel while preserving readability.
+- Added light vibrato in game lead synthesis path for arcade character.
+- Preserved border glints + snake glow animation stack.
+
+### Notes
+This pass further applies the anti-regression strategy: isolate subsystems to reduce conflicting edits in `main.rs`.
+
+## 2026-03-07 18:53:29Z — Runtime Input Module Extraction + Motion FX Pass
+
+### Summary
+Continued architecture hardening and AV polish by extracting input polling logic from the main loop and adding subtle border/glint motion accents.
+
+### Architecture Changes
+- Added `runtime::input` module with a typed `poll_input(...)` interface returning `quit/start/gameplay` state.
+- Removed duplicated keyboard/controller polling logic from `main.rs` and switched to runtime-owned input orchestration.
+- Kept defensive SDL strategy (state-polling only; no panic-prone event/scancode iteration paths).
+
+### Graphics/Sound Improvements
+- Added animated corner glint sprites along arena border for clearer visual activity.
+- Preserved extracted audio-engine path and deterministic synthesis behavior.
+
+### Lessons Applied
+This pass explicitly reduces large single-loop risk by moving input policy into a subsystem module, mirroring the prior flow/audio extraction pattern.
+
+## 2026-03-07 18:04:07Z — Audio Architecture Extraction + Snake Visual FX Pass
+
+### Summary
+Continued architecture and AV polish by extracting synthesis logic from `main.rs` into a dedicated runtime audio module and adding richer in-game visual/audio motion cues.
+
+### Architecture Changes
+- Added `runtime::audio` module with `AudioEngine` + `AudioMode`.
+- Moved music/SFX synthesis and cue handling out of `main.rs` to reduce loop complexity and improve subsystem boundaries.
+- Updated runtime module exports so `main` consumes audio through a clean runtime API.
+
+### Graphics/Sound Improvements
+- Added snake body glow animation tile and alternating body-segment visual cadence.
+- Added arpeggiated game layer to synth for a denser arcade mix while preserving deterministic generation.
+
+### Notes
+This follows a “separate policy from plumbing” approach to prevent repeat regressions from large monolithic loop logic.
+
+## 2026-03-07 17:56:26Z — Keyboard Scancode Panic Mitigation
+
+### Summary
+Addressed another Windows panic source (`scancode.rs` invalid enum value) by removing dynamic scancode iteration from the input path.
+
+### Technical Changes
+- Replaced `keyboard_state().pressed_scancodes()` usage with an explicit, curated set of safe `is_scancode_pressed(...)` checks for start keys.
+- Kept Escape handling and gameplay directional polling unchanged.
+- Added inline note documenting the defensive strategy for rust-sdl2 enum conversion edge cases.
+
+### Impact
+- Eliminates the reported keyboard-scancode conversion panic path while preserving expected start/menu and gameplay controls.
+
+## 2026-03-07 17:41:58Z — SDL Event Robustness Fix + Warning Cleanup
+
+### Summary
+Addressed a Windows runtime panic path from SDL event decoding (`invalid enum value 0x607`) and reduced warning noise for known intentional placeholders.
+
+### Technical Changes
+- Reworked main-loop input handling to avoid `poll_iter()` enum decoding on every event.
+- Switched to `pump_events()` + keyboard/controller state polling for robust cross-device input handling.
+- Added explicit comment documenting why raw event enum decoding was avoided.
+- Renamed internal temporary PPU locals to underscore-prefixed forms to silence noisy unused-variable warnings.
+
+### Impact
+- Prevents crash path observed with certain controllers/drivers emitting event values not decoded by the current rust-sdl2 release.
+- Keeps existing gameplay/input behavior while improving runtime resilience.
+
+## 2026-03-07 17:29:13Z — Visual/Sound Polish Pass (Snake Scene)
+
+### Summary
+Continued forward with player-facing polish by improving in-game visual quality and audio texture while preserving deterministic behavior.
+
+### Visual Changes
+- Introduced a styled BG tilemap board (dark/light checker playfield + cyan border frame).
+- Enabled BG rendering in game mode with fixed zero-scroll board presentation.
+- Added animated/pulsing food visuals via alternating sprite tiles.
+- Tightened playfield bounds to match visible framed arena and improved HUD pip spacing.
+
+### Audio Changes
+- Added deterministic hat/noise texture into music pattern synthesis for fuller mix.
+- Refined eat SFX into a short descending chirp for clearer arcade feedback.
+
+### Technical Note
+This pass prioritized immediate presentation quality without architecture churn.
+
+## 2026-03-07 17:12:20Z — Runtime Flow Controller Architecture Pass
+
+### Summary
+Advanced architecture by extracting boot/confirm/game transition policy from `main.rs` into a dedicated runtime controller module.
+
+### Technical Changes
+- Added `aurex::runtime` module with `FlowController` and `FlowPhase`.
+- Moved phase-transition responsibilities (`Boot -> Confirming -> Game`) into the controller.
+- Converted `main.rs` to consume controller APIs (`register_start_request`, `tick`, `phase`, `game_active`).
+- Synced boot overlay confirmation state from central flow policy each frame.
+
+### Why this helps
+- Improves separation of concerns (input/audio loop no longer owns transition policy details).
+- Provides a reusable control point for future scene/state expansion.
+- Reduces duplicated transition condition logic across input pathways.
+
+## 2026-03-07 17:00:47Z — Boot Prompt Centering + Transition Handoff + Snake Demo Pass
+
+### Summary
+Addressed final boot/demo UX polish requests: centered/fixed continue prompt text, explicit audio/state handoff from boot into game, and replaced the prior platformer demo with a compact snake-style clone.
+
+### Technical Changes
+- Centered bottom prompt using measured text width.
+- Fixed missing glyph support in the boot pixel font (`I`, plus additional prompt/loading characters).
+- Added a boot confirmation/loading handoff state so input triggers a short confirm phase before game start.
+- Added explicit boot confirmation visual (`LOADING...`) while the handoff is active.
+- Split audio behavior into flow-aware modes: boot music, confirmation sound, and separate game music.
+- Added game SFX cue path for snake events (eat/fail) and wired it through core->main audio trigger handling.
+- Replaced previous tech demo with a simple snake clone (grid movement, growth, food spawn, death/reset loop).
+
+### Notes
+Scope intentionally kept lightweight for iteration speed while fixing requested UX/audio transitions.
+
+## 2026-03-07 16:26:34Z — Boot Visual/Flow Refinement
+
+### Summary
+Improved boot presentation and transition flow: larger/crisper logo treatment, explicit on-screen continue prompt, and retained boot music pipeline before entering the tech demo.
+
+### Technical Changes
+- Added a crisp 5x7 pixel-font overlay renderer for boot text, drawn directly onto the framebuffer for sharp edges.
+- Increased perceived logo size by rendering `AUREX-16++` at scale 4 with drop-shadow.
+- Added blinking `PRESS ANY BUTTON TO CONTINUE` prompt at scale 2.
+- Kept the existing "press any key/button" transition path into `start_game()`.
+- Preserved continuous audio queue feeding for boot music playback.
+
+### Constraints Check
+- Determinism preserved: yes.
+- Hardware caps preserved: yes.
+- No float usage introduced: yes.
+- No architecture rewrite: yes.
+
+## 2026-03-07 16:05:00Z — Boot-to-Game Start Gate and Input Flow Fix
+
+### Summary
+Resolved a boot flow issue where the program could appear stuck on the logo/boot scene by introducing an explicit run mode gate and a clear transition into gameplay.
+
+### Technical Changes
+- Added an explicit `RunMode` state machine (`Boot` and `Game`) in `Aurex`.
+- Added `start_game()` on `Aurex` to perform an explicit mode transition.
+- Routed `Aurex::tick(...)` through boot logic in `Boot` mode and gameplay logic in `Game` mode.
+- Updated event/input handling to trigger start on keyboard and controller button events.
+- Added controller state polling fallback so analog activity can also trigger the transition.
+- Preserved per-frame audio queue feeding to avoid regressions in audio generation cadence.
+
+### Constraints Check
+- Determinism preserved: yes (mode transition is explicit and monotonic per start event).
+- Hardware caps preserved: yes.
+- No float usage introduced in core paths: yes.
+- No architectural rewrite: yes (incremental state-gate fix only).
+
+### Notes
+This addresses the observed user-facing symptom of appearing to remain on boot/logo indefinitely when start input was not being accepted robustly across input paths.
+
 AUREX-16++ DEVELOPMENT LOG
 
 Reverse Chronological Engineering Record
