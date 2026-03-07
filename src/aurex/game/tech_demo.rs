@@ -264,7 +264,9 @@ impl TechDemo {
         ppu.write_addr(PPU_BG0_ENABLE, 1);
         ppu.write_addr(PPU_BG1_ENABLE, 0);
         ppu.write_addr(PPU_SPRITE_ENABLE, 1);
-        ppu.write_addr(PPU_BG0_SCROLL_X, 0);
+        // Tiny scan drift to keep board feeling alive without affecting gameplay readability.
+        let drift_x = ((self.frame / 20) & 1) as u16;
+        ppu.write_addr(PPU_BG0_SCROLL_X, drift_x);
         ppu.write_addr(PPU_BG0_SCROLL_Y, 0);
 
         for i in 0..128 {

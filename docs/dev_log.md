@@ -1,3 +1,21 @@
+## 2026-03-07 18:58:48Z — Render Pipeline Extraction + Audio/Visual Motion Tune
+
+### Summary
+Continued architecture cleanup while improving presentation quality by extracting host presentation code and adding subtle motion/tonal character improvements.
+
+### Architecture Changes
+- Added `runtime::render` module with `present_frame(...)` for framebuffer conversion + SDL present path.
+- Removed framebuffer conversion/present boilerplate from `main.rs` and switched to runtime render API.
+- Keeps `main` focused on orchestration (flow, audio queue, input polling) rather than pixel conversion internals.
+
+### Graphics/Sound Improvements
+- Added subtle BG horizontal drift in gameplay for living-scene feel while preserving readability.
+- Added light vibrato in game lead synthesis path for arcade character.
+- Preserved border glints + snake glow animation stack.
+
+### Notes
+This pass further applies the anti-regression strategy: isolate subsystems to reduce conflicting edits in `main.rs`.
+
 ## 2026-03-07 18:53:29Z — Runtime Input Module Extraction + Motion FX Pass
 
 ### Summary

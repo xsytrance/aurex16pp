@@ -1,3 +1,13 @@
+## 2026-03-07 18:58:48Z — Render Extraction + Motion Tune Validation
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment due to missing native SDL2 linker library: `-lSDL2`)
+
+Verification focus:
+- Main loop now calls runtime `present_frame(...)` for host presentation.
+- Gameplay board drift and existing motion FX remain visible and stable.
+- Audio engine game path includes vibrato/arp layering without flow regressions.
+
 ## 2026-03-07 18:53:29Z — Runtime Input Module + Motion FX Validation
 - ✅ `cargo fmt --all`
 - ✅ `cargo check -q`

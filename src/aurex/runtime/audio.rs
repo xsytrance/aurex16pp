@@ -111,7 +111,15 @@ impl AudioEngine {
         let lead_wave = if lead_hz == 0 {
             0
         } else {
-            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(lead_hz));
+            // Subtle deterministic vibrato in game mode for a more arcade character.
+            let vib = if with_arp {
+                let lfo = ((self.sample_clock >> 10) & 0x0F) as i32 - 8;
+                lfo * 3
+            } else {
+                0
+            };
+            let hz = (lead_hz as i32 + vib).max(40) as u32;
+            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz));
             let pulse = if (self.lead_phase >> 28) < 6 {
                 lead_amp
             } else {
