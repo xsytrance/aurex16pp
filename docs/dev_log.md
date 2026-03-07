@@ -1,3 +1,20 @@
+## 2026-03-07 18:04:07Z — Audio Architecture Extraction + Snake Visual FX Pass
+
+### Summary
+Continued architecture and AV polish by extracting synthesis logic from `main.rs` into a dedicated runtime audio module and adding richer in-game visual/audio motion cues.
+
+### Architecture Changes
+- Added `runtime::audio` module with `AudioEngine` + `AudioMode`.
+- Moved music/SFX synthesis and cue handling out of `main.rs` to reduce loop complexity and improve subsystem boundaries.
+- Updated runtime module exports so `main` consumes audio through a clean runtime API.
+
+### Graphics/Sound Improvements
+- Added snake body glow animation tile and alternating body-segment visual cadence.
+- Added arpeggiated game layer to synth for a denser arcade mix while preserving deterministic generation.
+
+### Notes
+This follows a “separate policy from plumbing” approach to prevent repeat regressions from large monolithic loop logic.
+
 ## 2026-03-07 17:56:26Z — Keyboard Scancode Panic Mitigation
 
 ### Summary

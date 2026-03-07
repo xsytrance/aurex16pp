@@ -23,6 +23,7 @@ const TILE_BORDER: u16 = 2;
 
 const TILE_HEAD: u16 = 32;
 const TILE_BODY: u16 = 33;
+const TILE_BODY_GLOW: u16 = 36;
 const TILE_FOOD_A: u16 = 34;
 const TILE_FOOD_B: u16 = 35;
 
@@ -158,6 +159,7 @@ impl TechDemo {
     fn upload_sprites(&self, vram: &mut Vram) {
         Self::fill_sprite_tile(vram, TILE_HEAD as usize, 5);
         Self::fill_sprite_tile(vram, TILE_BODY as usize, 4);
+        Self::fill_sprite_tile(vram, TILE_BODY_GLOW as usize, 8);
         Self::fill_sprite_tile(vram, TILE_FOOD_A as usize, 6);
         Self::fill_sprite_tile(vram, TILE_FOOD_B as usize, 7);
 
@@ -165,6 +167,14 @@ impl TechDemo {
         let head = TILE_HEAD as usize * 32;
         for x in 0..4 {
             vram.sprite_tiles[head + x] = 0x99;
+        }
+
+        // Body glow tile inner stripe.
+        let body_glow = TILE_BODY_GLOW as usize * 32;
+        for row in 2..6 {
+            let o = body_glow + row * 4;
+            vram.sprite_tiles[o + 1] = 0x88;
+            vram.sprite_tiles[o + 2] = 0x88;
         }
 
         // Food A center sparkle.
@@ -325,7 +335,13 @@ impl TechDemo {
         );
 
         for (i, seg) in self.snake.iter().take(120).enumerate() {
-            let tile = if i == 0 { TILE_HEAD } else { TILE_BODY };
+            let tile = if i == 0 {
+                TILE_HEAD
+            } else if ((self.frame / 6) + i as u64).is_multiple_of(2) {
+                TILE_BODY
+            } else {
+                TILE_BODY_GLOW
+            };
             ppu.write_sprite(
                 1 + i,
                 (seg.x * CELL) as u16,

@@ -1,8 +1,8 @@
 mod aurex;
 
-use aurex::game::{AudioCue, InputState};
+use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
-use aurex::runtime::{FlowController, FlowPhase};
+use aurex::runtime::{AudioEngine, AudioMode, FlowController, FlowPhase};
 use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::{Axis, Button, GameController};
 use sdl2::keyboard::Scancode;
@@ -214,7 +214,7 @@ fn main() {
         .open_queue::<i16, _>(None, &desired)
         .expect("audio queue open failed");
 
-    let mut synth = RetroSynth::new(queue.spec().freq as u32);
+    let mut synth = AudioEngine::new(queue.spec().freq as u32);
     queue.resume();
 
     let scale: u32 = 3;
