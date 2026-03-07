@@ -32,6 +32,11 @@ impl FlowController {
         self.phase == FlowPhase::Confirming
     }
 
+    pub fn force_game(&mut self) {
+        self.phase = FlowPhase::Game;
+        self.confirm_frames_left = 0;
+    }
+
     pub fn register_start_request(&mut self) -> bool {
         if self.phase != FlowPhase::Boot {
             return false;

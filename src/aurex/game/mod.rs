@@ -14,4 +14,6 @@ pub enum AudioCue {
     None,
     Eat,
     Fail,
+    TrackNext,
+    TrackPrev,
 }

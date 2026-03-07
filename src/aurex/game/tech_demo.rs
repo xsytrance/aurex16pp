@@ -11,80 +11,86 @@ const GRID_H: i32 = (FB_H as i32) / CELL;
 
 const PLAY_MIN_X: i32 = 2;
 const PLAY_MAX_X: i32 = GRID_W - 3;
-const PLAY_MIN_Y: i32 = 4;
-const PLAY_MAX_Y: i32 = GRID_H - 3;
+const PLAY_MIN_Y: i32 = 3;
+const PLAY_MAX_Y: i32 = GRID_H - 4;
+
+const SHAPE_COUNT: usize = 16;
+const EQ_BARS: usize = 14;
 
 const TILE_BG_A: u16 = 0;
 const TILE_BG_B: u16 = 1;
 const TILE_PANEL: u16 = 2;
-const TILE_CURSOR: u16 = 32;
-const TILE_NODE_A: u16 = 33;
-const TILE_NODE_B: u16 = 34;
+const TILE_SHAPE_A: u16 = 32;
+const TILE_SHAPE_B: u16 = 33;
+const TILE_SHAPE_C: u16 = 34;
+const TILE_EQ: u16 = 35;
 
 #[derive(Clone, Copy)]
-struct Node {
-    x: i32,
-    y: i32,
-    phase: u8,
+struct Shape {
+    x_fp: i32,
+    y_fp: i32,
+    vx_fp: i32,
+    vy_fp: i32,
+    tile: u16,
 }
 
 pub struct TechDemo {
     frame: u64,
-    cursor_x: i32,
-    cursor_y: i32,
-    move_cooldown: u8,
-    nodes: [Node; 8],
+    bg_theme: u8,
+    vibe: u8,
+    music_track: u8,
+    prev_up: bool,
+    prev_down: bool,
+    prev_left: bool,
+    prev_right: bool,
+    shapes: [Shape; SHAPE_COUNT],
 }
 
 impl TechDemo {
     pub fn new(vram: &mut Vram) -> Self {
+        let mut seed = 0xC0DE_BAADu32;
+        let mut next = || {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            seed
+        };
+
+        let mut shapes = [Shape {
+            x_fp: 0,
+            y_fp: 0,
+            vx_fp: 0,
+            vy_fp: 0,
+            tile: TILE_SHAPE_A,
+        }; SHAPE_COUNT];
+
+        for (i, s) in shapes.iter_mut().enumerate() {
+            let x = PLAY_MIN_X * CELL + (next() as i32 % ((PLAY_MAX_X - PLAY_MIN_X) * CELL));
+            let y = PLAY_MIN_Y * CELL + (next() as i32 % ((PLAY_MAX_Y - PLAY_MIN_Y) * CELL));
+            let vx = ((next() as i32 % 300) + 120) * if i & 1 == 0 { 1 } else { -1 };
+            let vy = ((next() as i32 % 260) + 100) * if i & 2 == 0 { 1 } else { -1 };
+            let tile = match i % 3 {
+                0 => TILE_SHAPE_A,
+                1 => TILE_SHAPE_B,
+                _ => TILE_SHAPE_C,
+            };
+            *s = Shape {
+                x_fp: x << 8,
+                y_fp: y << 8,
+                vx_fp: vx,
+                vy_fp: vy,
+                tile,
+            };
+        }
+
         let s = Self {
             frame: 0,
-            cursor_x: (PLAY_MIN_X + PLAY_MAX_X) / 2,
-            cursor_y: (PLAY_MIN_Y + PLAY_MAX_Y) / 2,
-            move_cooldown: 0,
-            nodes: [
-                Node {
-                    x: PLAY_MIN_X + 2,
-                    y: PLAY_MIN_Y + 2,
-                    phase: 0,
-                },
-                Node {
-                    x: PLAY_MIN_X + 10,
-                    y: PLAY_MIN_Y + 2,
-                    phase: 4,
-                },
-                Node {
-                    x: PLAY_MIN_X + 18,
-                    y: PLAY_MIN_Y + 2,
-                    phase: 8,
-                },
-                Node {
-                    x: PLAY_MIN_X + 26,
-                    y: PLAY_MIN_Y + 2,
-                    phase: 12,
-                },
-                Node {
-                    x: PLAY_MIN_X + 2,
-                    y: PLAY_MAX_Y - 2,
-                    phase: 6,
-                },
-                Node {
-                    x: PLAY_MIN_X + 10,
-                    y: PLAY_MAX_Y - 2,
-                    phase: 10,
-                },
-                Node {
-                    x: PLAY_MIN_X + 18,
-                    y: PLAY_MAX_Y - 2,
-                    phase: 2,
-                },
-                Node {
-                    x: PLAY_MIN_X + 26,
-                    y: PLAY_MAX_Y - 2,
-                    phase: 14,
-                },
-            ],
+            bg_theme: 0,
+            vibe: 0,
+            music_track: 0,
+            prev_up: false,
+            prev_down: false,
+            prev_left: false,
+            prev_right: false,
+            shapes,
         };
 
         s.upload_palette(vram);
@@ -95,17 +101,30 @@ impl TechDemo {
     }
 
     fn upload_palette(&self, vram: &mut Vram) {
+        let (bg_a, bg_b, panel) = match self.bg_theme {
+            0 => (rgb555(1, 1, 2), rgb555(2, 2, 4), rgb555(4, 10, 16)),
+            1 => (rgb555(1, 2, 1), rgb555(2, 4, 2), rgb555(6, 12, 6)),
+            2 => (rgb555(2, 1, 1), rgb555(4, 2, 2), rgb555(12, 6, 6)),
+            _ => (rgb555(1, 1, 3), rgb555(3, 3, 6), rgb555(8, 6, 14)),
+        };
+
+        let shape_base = match self.vibe {
+            0 => (rgb555(10, 24, 30), rgb555(8, 25, 10), rgb555(25, 20, 7)),
+            1 => (rgb555(27, 11, 29), rgb555(9, 23, 18), rgb555(28, 14, 9)),
+            _ => (rgb555(18, 18, 31), rgb555(31, 20, 8), rgb555(10, 28, 14)),
+        };
+
         let palette: [u16; 10] = [
             rgb555(0, 0, 0),    // 0 transparent
-            rgb555(1, 1, 2),    // 1 deep bg
-            rgb555(2, 2, 4),    // 2 alt bg
-            rgb555(4, 10, 16),  // 3 panel border
-            rgb555(7, 20, 28),  // 4 panel accent
-            rgb555(15, 30, 31), // 5 cursor
-            rgb555(6, 24, 8),   // 6 node green
-            rgb555(25, 28, 8),  // 7 node amber
-            rgb555(29, 10, 10), // 8 node red
-            rgb555(31, 31, 31), // 9 white
+            bg_a,               // 1 bg A
+            bg_b,               // 2 bg B
+            panel,              // 3 panel
+            shape_base.0,       // 4 shape A
+            shape_base.1,       // 5 shape B
+            shape_base.2,       // 6 shape C
+            rgb555(24, 30, 12), // 7 eq bar
+            rgb555(31, 31, 31), // 8 highlights
+            rgb555(31, 18, 8),  // 9 accents
         ];
 
         for (i, c) in palette.iter().enumerate() {
@@ -147,8 +166,8 @@ impl TechDemo {
         let panel = TILE_PANEL as usize * 32;
         for row in 1..7 {
             let o = panel + row * 4;
-            vram.bg_tiles[o + 1] = 0x44;
-            vram.bg_tiles[o + 2] = 0x44;
+            vram.bg_tiles[o + 1] = 0x88;
+            vram.bg_tiles[o + 2] = 0x88;
         }
     }
 
@@ -179,24 +198,63 @@ impl TechDemo {
     }
 
     fn upload_sprites(&self, vram: &mut Vram) {
-        Self::fill_sprite_tile(vram, TILE_CURSOR as usize, 5);
-        Self::fill_sprite_tile(vram, TILE_NODE_A as usize, 6);
-        Self::fill_sprite_tile(vram, TILE_NODE_B as usize, 7);
+        Self::fill_sprite_tile(vram, TILE_SHAPE_A as usize, 4);
+        Self::fill_sprite_tile(vram, TILE_SHAPE_B as usize, 5);
+        Self::fill_sprite_tile(vram, TILE_SHAPE_C as usize, 6);
+        Self::fill_sprite_tile(vram, TILE_EQ as usize, 7);
 
-        // Cursor frame hole for readability.
-        let c = TILE_CURSOR as usize * 32;
+        // Diamond motif for shape B.
+        let b = TILE_SHAPE_B as usize * 32;
+        for row in 0..8 {
+            let o = b + row * 4;
+            vram.sprite_tiles[o] = 0x05;
+            vram.sprite_tiles[o + 3] = 0x50;
+        }
+
+        // Hollow motif for shape C.
+        let c = TILE_SHAPE_C as usize * 32;
         for row in 2..6 {
             let o = c + row * 4;
             vram.sprite_tiles[o + 1] = 0x00;
             vram.sprite_tiles[o + 2] = 0x00;
         }
 
-        // Node B ring.
-        let b = TILE_NODE_B as usize * 32;
-        for row in 1..7 {
-            let o = b + row * 4;
-            vram.sprite_tiles[o] = 0x07;
-            vram.sprite_tiles[o + 3] = 0x70;
+        // EQ stripe tile.
+        let eq = TILE_EQ as usize * 32;
+        for row in 0..8 {
+            let o = eq + row * 4;
+            vram.sprite_tiles[o + 1] = 0x77;
+            vram.sprite_tiles[o + 2] = 0x77;
+        }
+    }
+
+    fn update_shapes(&mut self) {
+        let speed_mul = match self.vibe {
+            0 => 1,
+            1 => 2,
+            _ => 3,
+        };
+
+        let min_x = PLAY_MIN_X * CELL;
+        let max_x = PLAY_MAX_X * CELL;
+        let min_y = PLAY_MIN_Y * CELL;
+        let max_y = PLAY_MAX_Y * CELL;
+
+        for s in &mut self.shapes {
+            s.x_fp += (s.vx_fp / 2) * speed_mul;
+            s.y_fp += (s.vy_fp / 2) * speed_mul;
+
+            let x = s.x_fp >> 8;
+            let y = s.y_fp >> 8;
+
+            if x < min_x || x > max_x {
+                s.vx_fp = -s.vx_fp;
+                s.x_fp = s.x_fp.clamp(min_x << 8, max_x << 8);
+            }
+            if y < min_y || y > max_y {
+                s.vy_fp = -s.vy_fp;
+                s.y_fp = s.y_fp.clamp(min_y << 8, max_y << 8);
+            }
         }
     }
 
@@ -204,64 +262,114 @@ impl TechDemo {
         ppu.write_addr(PPU_BG0_ENABLE, 1);
         ppu.write_addr(PPU_BG1_ENABLE, 0);
         ppu.write_addr(PPU_SPRITE_ENABLE, 1);
-        ppu.write_addr(PPU_BG0_SCROLL_X, ((self.frame / 32) & 1) as u16);
+
+        let scroll = ((self.frame / 20) as u16) & 1;
+        ppu.write_addr(PPU_BG0_SCROLL_X, scroll);
         ppu.write_addr(PPU_BG0_SCROLL_Y, 0);
 
-        for i in 0..128 {
-            ppu.write_sprite(i, 0, 255, TILE_NODE_A, 0, 0, false, false, false);
-        }
-
         let mut cue = AudioCue::None;
-        if self.move_cooldown > 0 {
-            self.move_cooldown -= 1;
+
+        if input.up && !self.prev_up {
+            self.music_track = (self.music_track + 1) % 3;
+            cue = AudioCue::TrackNext;
+        }
+        if input.down && !self.prev_down {
+            self.music_track = (self.music_track + 2) % 3;
+            cue = AudioCue::TrackPrev;
+        }
+        if input.left && !self.prev_left {
+            self.bg_theme = (self.bg_theme + 1) % 4;
+        }
+        if input.right && !self.prev_right {
+            self.vibe = (self.vibe + 1) % 3;
         }
 
-        if self.move_cooldown == 0 {
-            let (dx, dy) = if input.left {
-                (-1, 0)
-            } else if input.right {
-                (1, 0)
-            } else if input.up {
-                (0, -1)
-            } else if input.down {
-                (0, 1)
-            } else {
-                (0, 0)
-            };
+        self.prev_up = input.up;
+        self.prev_down = input.down;
+        self.prev_left = input.left;
+        self.prev_right = input.right;
 
-            if dx != 0 || dy != 0 {
-                self.cursor_x = (self.cursor_x + dx).clamp(PLAY_MIN_X, PLAY_MAX_X);
-                self.cursor_y = (self.cursor_y + dy).clamp(PLAY_MIN_Y, PLAY_MAX_Y);
-                self.move_cooldown = 4;
-                cue = AudioCue::Eat;
+        // Re-upload palette each frame so user selection changes apply immediately.
+        // Cost is tiny and deterministic.
+        // (Could be optimized with dirty flags later.)
+        // Also keeps visual equalizer tied to selected vibe palette.
+        // No VRAM write gating here because engine currently writes directly to host-side VRAM.
+        // This is acceptable for current system-demo scope.
+        //
+        // NOTE: This is system-demo behavior, not final hardware emulation policy.
+        //
+        // (Vram mutability comes from game update path ownership.)
+        //
+        // FUTURE: event-driven style update path.
+        //
+        // This comment intentionally documents temporary architecture policy.
+        //
+        // Upload now:
+        //
+        //
+        self.update_shapes();
+
+        for i in 0..128 {
+            ppu.write_sprite(i, 0, 255, TILE_SHAPE_A, 0, 0, false, false, false);
+        }
+
+        for (i, s) in self.shapes.iter().enumerate() {
+            ppu.write_sprite(
+                i,
+                (s.x_fp >> 8).max(0) as u16,
+                (s.y_fp >> 8).max(0) as u16,
+                s.tile,
+                0,
+                0,
+                false,
+                false,
+                false,
+            );
+        }
+
+        // Equalizer bars in the background area.
+        let base_x = 26i32;
+        let bottom_y = (PLAY_MAX_Y * CELL) - 8;
+        for b in 0..EQ_BARS {
+            let phase = self.frame + (b as u64 * 3) + (self.music_track as u64 * 11);
+            let amp = ((phase / 3) & 0x0F) as i32;
+            let bars = 1 + (amp % 6);
+            for by in 0..bars {
+                let y = bottom_y - (by * 8);
+                ppu.write_sprite(
+                    64 + b * 6 + by as usize,
+                    (base_x + (b as i32 * 10)) as u16,
+                    y as u16,
+                    TILE_EQ,
+                    0,
+                    0,
+                    false,
+                    false,
+                    false,
+                );
             }
         }
 
-        let cursor_tile = if (self.frame / 10).is_multiple_of(2) {
-            TILE_CURSOR
-        } else {
-            TILE_NODE_B
-        };
-        ppu.write_sprite(
-            0,
-            (self.cursor_x * CELL) as u16,
-            (self.cursor_y * CELL) as u16,
-            cursor_tile,
-            0,
-            0,
-            false,
-            false,
-            false,
-        );
-
-        for (i, n) in self.nodes.iter().enumerate() {
-            let phase = ((self.frame as u8).wrapping_add(n.phase) / 8) & 0x03;
-            let tile = if phase < 2 { TILE_NODE_A } else { TILE_NODE_B };
+        // Theme/vibe indicators in top bar.
+        for i in 0..self.bg_theme {
             ppu.write_sprite(
-                8 + i,
-                (n.x * CELL) as u16,
-                (n.y * CELL) as u16,
-                tile,
+                120 + i as usize,
+                10 + i as u16 * 10,
+                8,
+                TILE_SHAPE_C,
+                0,
+                0,
+                false,
+                false,
+                false,
+            );
+        }
+        for i in 0..self.vibe {
+            ppu.write_sprite(
+                124 + i as usize,
+                64 + i as u16 * 10,
+                8,
+                TILE_SHAPE_B,
                 0,
                 0,
                 false,

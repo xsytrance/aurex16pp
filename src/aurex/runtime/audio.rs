@@ -17,6 +17,7 @@ pub struct AudioEngine {
     eat_samples_left: u32,
     fail_samples_left: u32,
     noise_state: u32,
+    track_index: usize,
 }
 
 impl AudioEngine {
@@ -31,6 +32,7 @@ impl AudioEngine {
             eat_samples_left: 0,
             fail_samples_left: 0,
             noise_state: 0xA5A5_1357,
+            track_index: 0,
         }
     }
 
@@ -46,6 +48,14 @@ impl AudioEngine {
         match cue {
             AudioCue::Eat => self.eat_samples_left = self.sample_rate / 9,
             AudioCue::Fail => self.fail_samples_left = self.sample_rate / 4,
+            AudioCue::TrackNext => {
+                self.track_index = (self.track_index + 1) % 3;
+                self.confirm_samples_left = self.sample_rate / 10;
+            }
+            AudioCue::TrackPrev => {
+                self.track_index = (self.track_index + 2) % 3;
+                self.confirm_samples_left = self.sample_rate / 10;
+            }
             AudioCue::None => {}
         }
     }
@@ -76,14 +86,38 @@ impl AudioEngine {
     }
 
     fn game_sample(&mut self) -> i32 {
-        const BPM: u32 = 148;
-        const BASS: [u32; 16] = [
-            82, 82, 110, 82, 98, 98, 123, 98, 82, 82, 110, 82, 73, 73, 98, 73,
-        ];
-        const LEAD: [u32; 16] = [
-            330, 392, 440, 392, 349, 392, 523, 392, 330, 392, 440, 392, 294, 330, 392, 330,
-        ];
-        self.pattern_sample(BPM, &BASS, &LEAD, 7000, 5000, true)
+        match self.track_index {
+            0 => {
+                const BPM: u32 = 132;
+                const BASS: [u32; 16] = [
+                    65, 65, 73, 65, 82, 82, 73, 65, 55, 55, 65, 55, 49, 49, 55, 49,
+                ];
+                const LEAD: [u32; 16] = [
+                    262, 330, 392, 330, 294, 330, 440, 330, 262, 330, 392, 330, 247, 294, 330, 294,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 7000, 5000, true)
+            }
+            1 => {
+                const BPM: u32 = 148;
+                const BASS: [u32; 16] = [
+                    82, 82, 110, 82, 98, 98, 123, 98, 82, 82, 110, 82, 73, 73, 98, 73,
+                ];
+                const LEAD: [u32; 16] = [
+                    330, 392, 440, 392, 349, 392, 523, 392, 330, 392, 440, 392, 294, 330, 392, 330,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 7000, 5000, true)
+            }
+            _ => {
+                const BPM: u32 = 160;
+                const BASS: [u32; 16] = [
+                    98, 98, 123, 98, 110, 110, 147, 110, 98, 98, 123, 98, 82, 82, 110, 82,
+                ];
+                const LEAD: [u32; 16] = [
+                    392, 494, 523, 494, 440, 494, 659, 494, 392, 494, 523, 494, 349, 392, 494, 392,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 6800, 5600, true)
+            }
+        }
     }
 
     fn pattern_sample(
@@ -111,7 +145,6 @@ impl AudioEngine {
         let lead_wave = if lead_hz == 0 {
             0
         } else {
-            // Subtle deterministic vibrato in game mode for a more arcade character.
             let vib = if with_arp {
                 let lfo = ((self.sample_clock >> 10) & 0x0F) as i32 - 8;
                 lfo * 3

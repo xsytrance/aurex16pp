@@ -67,6 +67,8 @@ fn main() {
 
     let mut system = aurex::Aurex::new();
     let mut flow = FlowController::new();
+    flow.force_game();
+    system.start_game();
 
     let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
 
