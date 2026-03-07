@@ -1,3 +1,25 @@
+## 2026-03-07 16:26:34Z — Boot Visual Prompt + Start Flow Check
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment: missing native SDL2 linker library `-lSDL2`)
+
+Verification focus:
+- Boot logo renders larger with crisp pixel edges.
+- Boot prompt "PRESS ANY BUTTON TO CONTINUE" is visible and blinking.
+- Keyboard/controller input transitions from boot to tech demo.
+- Audio queue remains active during boot.
+
+## 2026-03-07 16:05:00Z — Boot Flow Regression Check
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment because native SDL2 linker library is unavailable: `-lSDL2`)
+
+Focus of verification:
+- Boot scene advances into gameplay when any keyboard input is received.
+- Boot scene advances into gameplay when controller button input is received.
+- Controller polling fallback can trigger start transition.
+- Audio queueing path remains active.
+
 
 ## Phase 4.5
 - Implemented framebuffer TEMP TEST pattern

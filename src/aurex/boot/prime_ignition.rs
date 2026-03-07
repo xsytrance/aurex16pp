@@ -1,6 +1,6 @@
 use crate::aurex::DmaController;
 use crate::aurex::dma::command::{DmaCommand, VramRegion};
-use crate::aurex::ppu::framebuffer::FB_W;
+use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
 use crate::aurex::ppu::ppu::{
     PPU_BG0_ENABLE, PPU_BG0_SCROLL_X, PPU_BG0_SCROLL_Y, PPU_BG1_ENABLE, Ppu,
 };
@@ -278,6 +278,17 @@ impl PrimeIgnition {
             dma.request(palette_cmd, wram, vram);
         }
 
+        fn tri64(v: u32) -> i16 {
+            let x = (v & 63) as i16;
+            if x < 16 {
+                x * 2
+            } else if x < 48 {
+                64 - (x * 2)
+            } else {
+                (x * 2) - 128
+            }
+        }
+
         let frame = self.frame;
 
         // -------------------------------------------------------------
@@ -357,6 +368,40 @@ impl PrimeIgnition {
         }
 
         // -------------------------------------------------------------
+        // Orbiting techno shards (robotic moving pieces)
+        // -------------------------------------------------------------
+        let shard_count = 12;
+        for si in 0..shard_count {
+            let base_phase = frame.wrapping_mul(2).wrapping_add((si as u32) * 5);
+            let rx = 44 + ((si % 3) * 8) as i16;
+            let ry = 26 + ((si % 4) * 5) as i16;
+
+            let ox = (tri64(base_phase) * rx) / 32;
+            let oy = (tri64(base_phase.wrapping_add(16)) * ry) / 32;
+
+            let total_width = letters as i16 * spacing;
+            let center_logo_x = center_x - (total_width / 2) + (total_width / 2);
+            let center_logo_y = base_y;
+
+            let shard_x = (center_logo_x + ox - 8).max(0) as u16;
+            let shard_y = (center_logo_y + oy - 8).max(0) as u16;
+
+            // Use '+' glyph as a synthetic shard motif.
+            let shard_tile_index = (8 * 4) as u16;
+            ppu.write_sprite(
+                80 + si as usize,
+                shard_x,
+                shard_y,
+                shard_tile_index,
+                1,
+                (si % 3) as u8,
+                true,
+                (si & 1) == 0,
+                (si & 2) == 0,
+            );
+        }
+
+        // -------------------------------------------------------------
         // Cinematic Drop Spike
         // -------------------------------------------------------------
         if frame == 360 {
@@ -366,5 +411,86 @@ impl PrimeIgnition {
         }
 
         self.frame = self.frame.wrapping_add(1);
+    }
+
+    pub fn draw_overlay(&self, fb: &mut Framebuffer) {
+        let logo_color = rgb555(31, 31, 31);
+        let shadow_color = rgb555(4, 6, 10);
+        let prompt_color = rgb555(20, 29, 31);
+
+        self.draw_text(fb, "AUREX-16++", 42, 48, 4, shadow_color);
+        self.draw_text(fb, "AUREX-16++", 40, 46, 4, logo_color);
+
+        if (self.frame / 20).is_multiple_of(2) {
+            self.draw_text(fb, "PRESS ANY BUTTON TO CONTINUE", 85, 190, 2, prompt_color);
+        }
+    }
+
+    fn draw_text(
+        &self,
+        fb: &mut Framebuffer,
+        text: &str,
+        x: i32,
+        y: i32,
+        scale: usize,
+        color: u16,
+    ) {
+        let mut cursor_x = x;
+        for ch in text.chars() {
+            self.draw_glyph(fb, ch, cursor_x, y, scale, color);
+            cursor_x += (6 * scale) as i32;
+        }
+    }
+
+    fn draw_glyph(&self, fb: &mut Framebuffer, ch: char, x: i32, y: i32, scale: usize, color: u16) {
+        let glyph = glyph_5x7(ch);
+        let pixels = fb.pixels_mut();
+
+        for (row, bits) in glyph.iter().enumerate() {
+            for col in 0..5usize {
+                if bits & (1 << (4 - col)) == 0 {
+                    continue;
+                }
+
+                for sy in 0..scale {
+                    let py = y + (row * scale + sy) as i32;
+                    if !(0..FB_H as i32).contains(&py) {
+                        continue;
+                    }
+
+                    for sx in 0..scale {
+                        let px = x + (col * scale + sx) as i32;
+                        if !(0..FB_W as i32).contains(&px) {
+                            continue;
+                        }
+                        pixels[py as usize * FB_W + px as usize] = color;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn glyph_5x7(ch: char) -> [u8; 7] {
+    match ch {
+        'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
+        'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
+        'C' => [0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F],
+        'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
+        'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
+        'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
+        'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11],
+        'S' => [0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E],
+        'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
+        'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
+        'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
+        '1' => [0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
+        '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
+        '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
+        ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+        _ => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
     }
 }
