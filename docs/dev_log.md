@@ -1,3 +1,32 @@
+## 2026-03-07 20:09:06Z — Snake Retirement + System Sandbox Bring-up
+
+### Summary
+Per creative direction, snake-specific gameplay progress was retired and replaced with a system-focused sandbox scene to continue core platform development.
+
+### Functional Changes
+- Replaced snake loop with a lightweight system sandbox:
+  - dark board/panel backdrop
+  - movable cursor
+  - animated status nodes
+- Kept deterministic input-driven cursor movement with bounded grid constraints.
+- Kept audio cue path alive (`AudioCue::Eat`) on cursor movement to preserve input/audio integration checks.
+
+### Architecture Rationale
+This shifts focus from game mechanics to platform validation loops (input → state update → render → audio cue), which is more aligned with system maturation goals.
+
+### Progress Report
+System architecture currently modularized into runtime subsystems:
+- Flow control (`runtime::flow`)
+- Input polling (`runtime::input`)
+- Audio engine (`runtime::audio`)
+- Render presenter (`runtime::render`)
+- Frame pacing (`runtime::frame_pacer`)
+
+Recommended next system steps:
+1. Scene trait + SceneManager for explicit scene lifecycle boundaries.
+2. Unified runtime event channel for typed cues (audio/UI/telemetry).
+3. Hot-reloadable config blocks for visuals/audio parameters.
+
 ## 2026-03-07 19:26:20Z — Dark Theme Pass + Frame Pacer Architecture
 
 ### Summary
