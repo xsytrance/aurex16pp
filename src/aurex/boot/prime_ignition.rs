@@ -1,38 +1,27 @@
 use crate::aurex::DmaController;
 use crate::aurex::dma::command::{DmaCommand, VramRegion};
-use crate::aurex::ppu::framebuffer::FB_W;
-use crate::aurex::ppu::ppu::Ppu;
+use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
+use crate::aurex::ppu::ppu::{
+    PPU_BG0_ENABLE, PPU_BG0_SCROLL_X, PPU_BG0_SCROLL_Y, PPU_BG1_ENABLE, Ppu,
+};
 use crate::aurex::ppu::vram::Vram;
 use crate::aurex::wram::Wram;
 
-// -------------------------------------------------------------
-// PRIME IGNITION SPRITE TILE DATA
-// 4bpp planar, 32 bytes per tile
-// Using palette index 1 only
-// -------------------------------------------------------------
-
-const TILE_A_0: [u8; 32] = [
-    0b00011000, 0, 0, 0, 0b00111100, 0, 0, 0, 0b01100110, 0, 0, 0, 0b01100110, 0, 0, 0, 0b01111110,
-    0, 0, 0, 0b01100110, 0, 0, 0, 0b01100110, 0, 0, 0, 0b00000000, 0, 0, 0,
-];
-
-const TILE_A_1: [u8; 32] = TILE_A_0;
-const TILE_A_2: [u8; 32] = TILE_A_0;
-const TILE_A_3: [u8; 32] = TILE_A_0;
-
 pub struct PrimeIgnition {
     frame: u32,
+    confirming: bool,
 }
 
 impl PrimeIgnition {
     pub fn new() -> Self {
-        Self { frame: 0 }
+        Self {
+            frame: 0,
+            confirming: false,
+        }
     }
 
     pub fn update(&mut self, ppu: &mut Ppu, dma: &mut DmaController, wram: &mut Wram, vram: &Vram) {
         if self.frame == 0 {
-            let base_wram_offset = 0x0000;
-
             let base_wram_offset = 0x0000;
 
             // 9 glyphs * 4 tiles each = 36 tiles
@@ -259,7 +248,7 @@ impl PrimeIgnition {
             // PALETTE INITIALIZATION (Palette 0)
             // -------------------------------------------------------------
 
-            let palette_wram_offset = 0x0100; // separate from tile staging
+            let palette_wram_offset = 0x0800; // keep separate from tile staging (TOTAL_BYTES can exceed 0x0100)
 
             let palette_data: [u8; 64] = [
                 // ---------------------------
@@ -291,12 +280,17 @@ impl PrimeIgnition {
             );
 
             dma.request(palette_cmd, wram, vram);
+        }
 
-            // Copy to WRAM
-
-            let cmd = DmaCommand::new(VramRegion::SpriteTiles, base_wram_offset, 0, 128);
-
-            dma.request(cmd, wram, vram);
+        fn tri64(v: u32) -> i16 {
+            let x = (v & 63) as i16;
+            if x < 16 {
+                x * 2
+            } else if x < 48 {
+                64 - (x * 2)
+            } else {
+                (x * 2) - 128
+            }
         }
 
         let frame = self.frame;
@@ -304,14 +298,15 @@ impl PrimeIgnition {
         // -------------------------------------------------------------
         // Disable background layers for clean boot screen
         // -------------------------------------------------------------
-        ppu.bg0_enable = false;
-        ppu.bg1_enable = false;
+        ppu.write_addr(PPU_BG0_ENABLE, 0);
+        ppu.write_addr(PPU_BG1_ENABLE, 0);
 
         // -------------------------------------------------------------
         // Background Scroll (slow cosmic drift)
         // -------------------------------------------------------------
         let scroll = (frame / 4) as u16;
-        ppu.set_bg0_scroll(scroll, 0);
+        ppu.write_addr(PPU_BG0_SCROLL_X, scroll);
+        ppu.write_addr(PPU_BG0_SCROLL_Y, 0);
 
         // -------------------------------------------------------------
         // Logo Drop Logic
@@ -334,18 +329,19 @@ impl PrimeIgnition {
             let y = if frame < appear_frame {
                 start_y
             } else {
-                let t = (frame - appear_frame) as f32;
+                let t = (frame - appear_frame).min(40);
+                let p = t as i32;
+                let dur = 40i32;
 
-                let duration = 40.0;
-                let progress = (t / duration).min(1.0);
+                // Integer smoothstep in fixed-point [0, 1024].
+                // s = p^2 * (3d - 2p) / d^3
+                let num = p * p * (3 * dur - 2 * p) * 1024;
+                let den = dur * dur * dur;
+                let eased_fp = num / den;
 
-                // smoothstep easing
-                let eased = progress * progress * (3.0 - 2.0 * progress);
-
-                (start_y as f32 + (base_y - start_y) as f32 * eased) as i16
+                let dy = (base_y - start_y) as i32;
+                (start_y as i32 + (dy * eased_fp) / 1024) as i16
             };
-
-            let tile_index = (i * 4) as u16;
 
             let tile_index = (i * 4) as u16;
 
@@ -376,13 +372,158 @@ impl PrimeIgnition {
         }
 
         // -------------------------------------------------------------
+        // Orbiting techno shards (robotic moving pieces)
+        // -------------------------------------------------------------
+        let shard_count = 12;
+        for si in 0..shard_count {
+            let base_phase = frame.wrapping_mul(2).wrapping_add((si as u32) * 5);
+            let rx = 44 + ((si % 3) * 8) as i16;
+            let ry = 26 + ((si % 4) * 5) as i16;
+
+            let ox = (tri64(base_phase) * rx) / 32;
+            let oy = (tri64(base_phase.wrapping_add(16)) * ry) / 32;
+
+            let total_width = letters as i16 * spacing;
+            let center_logo_x = center_x - (total_width / 2) + (total_width / 2);
+            let center_logo_y = base_y;
+
+            let shard_x = (center_logo_x + ox - 8).max(0) as u16;
+            let shard_y = (center_logo_y + oy - 8).max(0) as u16;
+
+            // Use '+' glyph as a synthetic shard motif.
+            let shard_tile_index = (8 * 4) as u16;
+            ppu.write_sprite(
+                80 + si as usize,
+                shard_x,
+                shard_y,
+                shard_tile_index,
+                1,
+                (si % 3) as u8,
+                true,
+                (si & 1) == 0,
+                (si & 2) == 0,
+            );
+        }
+
+        // -------------------------------------------------------------
         // Cinematic Drop Spike
         // -------------------------------------------------------------
         if frame == 360 {
             let spike = scroll.wrapping_mul(4);
-            ppu.set_bg0_scroll(spike, 0);
+            ppu.write_addr(PPU_BG0_SCROLL_X, spike);
+            ppu.write_addr(PPU_BG0_SCROLL_Y, 0);
         }
 
         self.frame = self.frame.wrapping_add(1);
+    }
+
+    pub fn set_confirming(&mut self, confirming: bool) {
+        self.confirming = confirming;
+    }
+
+    pub fn draw_overlay(&self, fb: &mut Framebuffer) {
+        let logo_color = rgb555(31, 31, 31);
+        let shadow_color = rgb555(4, 6, 10);
+        let prompt_color = rgb555(20, 29, 31);
+
+        let title = "AUREX-16++";
+        let title_w = self.text_width(title, 4);
+        let title_x = ((FB_W as i32 - title_w) / 2).max(0);
+
+        self.draw_text(fb, title, title_x + 2, 48, 4, shadow_color);
+        self.draw_text(fb, title, title_x, 46, 4, logo_color);
+
+        let prompt = if self.confirming {
+            "LOADING..."
+        } else {
+            "PRESS ANY BUTTON TO CONTINUE"
+        };
+        let prompt_w = self.text_width(prompt, 2);
+        let prompt_x = ((FB_W as i32 - prompt_w) / 2).max(0);
+
+        if self.confirming || (self.frame / 20).is_multiple_of(2) {
+            self.draw_text(fb, prompt, prompt_x, 212, 2, prompt_color);
+        }
+    }
+
+    fn draw_text(
+        &self,
+        fb: &mut Framebuffer,
+        text: &str,
+        x: i32,
+        y: i32,
+        scale: usize,
+        color: u16,
+    ) {
+        let mut cursor_x = x;
+        for ch in text.chars() {
+            self.draw_glyph(fb, ch, cursor_x, y, scale, color);
+            cursor_x += (6 * scale) as i32;
+        }
+    }
+
+    fn text_width(&self, text: &str, scale: usize) -> i32 {
+        let chars = text.chars().count() as i32;
+        if chars == 0 {
+            0
+        } else {
+            chars * (6 * scale) as i32 - scale as i32
+        }
+    }
+
+    fn draw_glyph(&self, fb: &mut Framebuffer, ch: char, x: i32, y: i32, scale: usize, color: u16) {
+        let glyph = glyph_5x7(ch);
+        let pixels = fb.pixels_mut();
+
+        for (row, bits) in glyph.iter().enumerate() {
+            for col in 0..5usize {
+                if bits & (1 << (4 - col)) == 0 {
+                    continue;
+                }
+
+                for sy in 0..scale {
+                    let py = y + (row * scale + sy) as i32;
+                    if !(0..FB_H as i32).contains(&py) {
+                        continue;
+                    }
+
+                    for sx in 0..scale {
+                        let px = x + (col * scale + sx) as i32;
+                        if !(0..FB_W as i32).contains(&px) {
+                            continue;
+                        }
+                        pixels[py as usize * FB_W + px as usize] = color;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn glyph_5x7(ch: char) -> [u8; 7] {
+    match ch {
+        'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
+        'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
+        'C' => [0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F],
+        'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
+        'G' => [0x0F, 0x10, 0x10, 0x13, 0x11, 0x11, 0x0F],
+        'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F],
+        'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
+        'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
+        'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11],
+        'S' => [0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E],
+        'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
+        'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
+        'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
+        '1' => [0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
+        '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
+        '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
+        '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x06],
+        ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+        _ => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
     }
 }
