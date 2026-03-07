@@ -633,3 +633,18 @@ Implemented per-title song selection, per-title color themes, and tiny title gra
 
 ### Architecture Rationale
 This starts a reusable “content profile” architecture for future cartridge metadata integration: one profile drives both visual and audio presentation from a single selection state.
+
+
+## 2026-03-08 00:30:00Z — Boot Gating + Start Handshake Refactor
+
+### Summary
+Implemented a strict boot gate so the intro can never be interrupted, then added explicit `PRESS START TO CONTINUE` handshake before entering library mode.
+
+### Architecture Changes
+- Extended flow state machine to `Boot -> AwaitStart -> Game`.
+- Added `waiting_for_start` propagation from runtime flow to boot renderer.
+- Boot overlay now displays start prompt only in gate phase.
+- Input-driven scene transition now only allowed in `AwaitStart`.
+
+### Rationale
+This creates a stable pre-runtime handshake point for future boot options/settings/debug menus while preserving deterministic boot timing.

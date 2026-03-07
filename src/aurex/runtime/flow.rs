@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FlowPhase {
     Boot,
+    AwaitStart,
     Game,
 }
 
@@ -27,20 +28,31 @@ impl FlowController {
         self.phase == FlowPhase::Game
     }
 
-    pub fn tick(&mut self, skip_requested: bool) -> bool {
-        if self.phase == FlowPhase::Game {
-            return false;
-        }
+    pub fn waiting_for_start(&self) -> bool {
+        self.phase == FlowPhase::AwaitStart
+    }
 
-        if self.boot_frames_left > 0 {
-            self.boot_frames_left -= 1;
-        }
+    pub fn tick(&mut self, start_pressed: bool) -> bool {
+        match self.phase {
+            FlowPhase::Boot => {
+                if self.boot_frames_left > 0 {
+                    self.boot_frames_left -= 1;
+                }
 
-        if self.boot_frames_left == 0 || skip_requested {
-            self.phase = FlowPhase::Game;
-            return true;
+                if self.boot_frames_left == 0 {
+                    self.phase = FlowPhase::AwaitStart;
+                }
+                false
+            }
+            FlowPhase::AwaitStart => {
+                if start_pressed {
+                    self.phase = FlowPhase::Game;
+                    true
+                } else {
+                    false
+                }
+            }
+            FlowPhase::Game => false,
         }
-
-        false
     }
 }

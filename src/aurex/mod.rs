@@ -141,6 +141,10 @@ impl Aurex {
         self.ui_frame = self.ui_frame.wrapping_add(1);
     }
 
+    pub fn set_boot_waiting_for_start(&mut self, waiting: bool) {
+        self.boot.set_waiting_for_start(waiting);
+    }
+
     pub fn take_audio_cue(&mut self) -> AudioCue {
         let cue = self.audio_cue;
         self.audio_cue = AudioCue::None;

@@ -155,3 +155,13 @@ Validation focus:
 - Audio engine maps six track IDs to six unique game patterns.
 - Library visuals vary by selected profile (backdrop tint, card accent, icon rendering).
 - Start-of-library transition emits current title track cue.
+
+
+## 2026-03-08 — Boot Gating Validation
+- ✅ `cargo fmt -- --check`
+- ✅ `cargo check`
+
+Validation focus:
+- Boot cinematic cannot be skipped by input.
+- Prompt appears after boot timeline completes.
+- Only Start input transitions from gate state to library mode.

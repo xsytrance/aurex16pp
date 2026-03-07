@@ -98,8 +98,10 @@ fn main() {
             println!("Library ready");
         }
 
+        system.set_boot_waiting_for_start(flow.waiting_for_start());
+
         let audio_mode = match flow.phase() {
-            FlowPhase::Boot => AudioMode::Boot,
+            FlowPhase::Boot | FlowPhase::AwaitStart => AudioMode::Boot,
             FlowPhase::Game => AudioMode::Game,
         };
 

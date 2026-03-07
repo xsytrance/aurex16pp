@@ -6,15 +6,19 @@ use crate::aurex::wram::Wram;
 
 pub struct PrimeIgnition {
     frame: u32,
-    confirming: bool,
+    waiting_for_start: bool,
 }
 
 impl PrimeIgnition {
     pub fn new() -> Self {
         Self {
             frame: 0,
-            confirming: false,
+            waiting_for_start: false,
         }
+    }
+
+    pub fn set_waiting_for_start(&mut self, waiting_for_start: bool) {
+        self.waiting_for_start = waiting_for_start;
     }
 
     pub fn update(
@@ -63,7 +67,18 @@ impl PrimeIgnition {
             );
         }
 
-        if (220..300).contains(&t) && (t / 10) % 2 == 0 {
+        if self.waiting_for_start {
+            if (self.frame / 16) % 2 == 0 {
+                draw_text(
+                    fb,
+                    "PRESS START TO CONTINUE",
+                    98,
+                    210,
+                    2,
+                    rgb555(18, 26, 30),
+                );
+            }
+        } else if (220..300).contains(&t) && (t / 10) % 2 == 0 {
             draw_text(fb, "BOOTING LIBRARY...", 122, 210, 2, rgb555(14, 22, 28));
         }
     }
@@ -79,7 +94,6 @@ impl PrimeIgnition {
             }
         }
 
-        // Top and bottom framing bars.
         fill_rect(fb, 0, 0, FB_W as i32, 18, rgb555(1, 5, 10));
         fill_rect(
             fb,
