@@ -679,3 +679,16 @@ Converted runtime event buffering to a dedicated queue component and added deter
 
 ### Rationale
 Improves component boundaries and gives fast regression safety for flow semantics while architecture expands.
+
+
+## 2026-03-08 01:40:00Z — Runtime Event Dispatch Helper
+
+### Summary
+Extracted host-side runtime event dispatch into a dedicated helper to keep `main` orchestration slimmer and reduce repeated event matching boilerplate.
+
+### Changes
+- Added `dispatch_runtime_events(engine, events)` to runtime module.
+- Main loop now delegates runtime event handling through this helper.
+
+### Rationale
+Improves iteration speed by making side-effect dispatch a reusable runtime primitive as additional event types are introduced.

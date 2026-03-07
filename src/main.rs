@@ -3,7 +3,8 @@ mod aurex;
 use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
-    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, poll_input, present_frame,
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, dispatch_runtime_events,
+    poll_input, present_frame,
 };
 use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
@@ -117,11 +118,7 @@ fn main() {
         system.run_frame(input);
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
-        for event in &runtime_events {
-            match event {
-                aurex::runtime::RuntimeEvent::Audio(cue) => synth.trigger_cue(*cue),
-            }
-        }
+        dispatch_runtime_events(&mut synth, &runtime_events);
 
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");

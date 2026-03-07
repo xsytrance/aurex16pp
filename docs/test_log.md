@@ -186,3 +186,12 @@ Validation focus:
 - Flow remains non-interruptible during timed boot.
 - Transition contract `Boot -> AwaitStart -> Game` remains stable.
 - Runtime event queue path compiles clean with host drain dispatch.
+
+
+## 2026-03-08 — Runtime Dispatch Helper Validation
+- ✅ `cargo fmt -- --check`
+- ✅ `cargo check`
+
+Validation focus:
+- Event dispatch still triggers audio cue routing after `run_frame`.
+- Main loop no longer owns manual per-event match boilerplate.

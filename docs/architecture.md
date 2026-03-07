@@ -214,3 +214,12 @@ Runtime events now flow through a dedicated queue object (`RuntimeEventQueue`) i
 - Host loop drains queue and executes side effects.
 
 This formalizes event transport as a reusable core component for future channels.
+
+
+## Runtime Dispatch Primitive (2026-03-08)
+
+A runtime-level dispatch helper now applies side effects from drained events:
+
+- `dispatch_runtime_events(AudioEngine, &[RuntimeEvent])`
+
+This centralizes host-side dispatch policy and keeps the main loop focused on lifecycle orchestration.
