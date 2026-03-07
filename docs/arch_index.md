@@ -189,3 +189,30 @@ Responsibilities:
 - Own title metadata (theme/icon/track)
 - Emit title-selection cues to runtime audio
 - Render placeholder library UI with per-title styling
+
+
+## RUNTIME EVENT BUS
+
+Files:
+- `src/aurex/runtime/event.rs`
+- `src/aurex/mod.rs`
+- `src/main.rs`
+
+Core objects:
+- `RuntimeEvent`
+- `Aurex::drain_events(...)`
+
+Responsibilities:
+- Decouple simulation output from host side effects
+- Provide typed dispatch boundary for future runtime channels
+
+
+## FLOW CONTROLLER TESTS
+
+File:
+- `src/aurex/runtime/flow.rs`
+
+Coverage:
+- Boot non-skip guard
+- Boot timer expiry transition
+- Await-start handshake transition

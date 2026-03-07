@@ -194,3 +194,23 @@ Boot flow is now strictly non-interruptible:
 - Phase 3: Library runtime (`FlowPhase::Game`).
 
 Input is ignored for scene transitions during timed boot and only accepted in `AwaitStart` for an explicit Start press.
+
+
+## Runtime Event Bus (2026-03-08)
+
+A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
+
+- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
+- This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
+
+
+## Event Queue Component (2026-03-08)
+
+Runtime events now flow through a dedicated queue object (`RuntimeEventQueue`) instead of raw vectors in core state.
+
+- Queue owns event buffering and drain semantics.
+- `Aurex` emits intents to queue.
+- Host loop drains queue and executes side effects.
+
+This formalizes event transport as a reusable core component for future channels.

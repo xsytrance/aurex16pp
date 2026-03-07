@@ -301,3 +301,8 @@ END OF CANON
   - icon kind
 - Selection emits `AudioCue::SelectTrack`.
 - Audio engine uses track id mapping for deterministic per-title song playback.
+
+
+- Runtime event boundary active:
+  - Simulation emits typed runtime events
+  - Host loop drains and dispatches side effects

@@ -648,3 +648,34 @@ Implemented a strict boot gate so the intro can never be interrupted, then added
 
 ### Rationale
 This creates a stable pre-runtime handshake point for future boot options/settings/debug menus while preserving deterministic boot timing.
+
+
+## 2026-03-08 01:00:00Z — Typed Runtime Event Bus Slice
+
+### Summary
+Continued architecture hardening by introducing a typed runtime event bus and replacing direct audio cue polling with event draining.
+
+### Changes
+- Added `runtime::event::RuntimeEvent`.
+- `Aurex` now buffers and emits runtime events (currently `Audio`).
+- Main loop now drains event queue and dispatches by event type.
+
+### Rationale
+This creates a clean boundary where core frame simulation emits intent and host orchestration performs side effects. It enables faster feature growth without increasing cross-module coupling.
+
+
+## 2026-03-08 01:20:00Z — Event Queue Component + Flow Tests
+
+### Summary
+Converted runtime event buffering to a dedicated queue component and added deterministic flow-state tests for boot/start gating behavior.
+
+### Changes
+- Added `RuntimeEventQueue` (`push`, `drain_to`) in runtime event module.
+- Rewired `Aurex` to use queue component instead of raw `Vec<RuntimeEvent>`.
+- Added `FlowController` unit tests:
+  - boot non-skippable before timer end,
+  - timer transition to `AwaitStart`,
+  - explicit start requirement for `Game`.
+
+### Rationale
+Improves component boundaries and gives fast regression safety for flow semantics while architecture expands.

@@ -74,6 +74,7 @@ fn main() {
     let mut flow = FlowController::new();
 
     let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
+    let mut runtime_events = Vec::with_capacity(8);
 
     'running: loop {
         pump.pump_events();
@@ -114,7 +115,13 @@ fn main() {
         let input = polled.gameplay;
 
         system.run_frame(input);
-        synth.trigger_cue(system.take_audio_cue());
+        runtime_events.clear();
+        system.drain_events(&mut runtime_events);
+        for event in &runtime_events {
+            match event {
+                aurex::runtime::RuntimeEvent::Audio(cue) => synth.trigger_cue(*cue),
+            }
+        }
 
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");

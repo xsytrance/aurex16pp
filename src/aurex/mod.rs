@@ -10,6 +10,7 @@ pub mod wram;
 
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
+use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue};
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
@@ -36,7 +37,7 @@ pub struct Aurex {
     boot: PrimeIgnition,
     library: LibraryScreen,
     mode: RunMode,
-    audio_cue: AudioCue,
+    events: RuntimeEventQueue,
     ui_frame: u64,
 }
 
@@ -45,7 +46,7 @@ impl Aurex {
         let vram = Vram::new();
         let library = LibraryScreen::new();
 
-        let s = Self {
+        Self {
             clock: Clock::new(),
             pdu: Pdu::new(),
             wram: Wram::new(),
@@ -57,11 +58,15 @@ impl Aurex {
             boot: PrimeIgnition::new(),
             library,
             mode: RunMode::Boot,
-            audio_cue: AudioCue::None,
+            events: RuntimeEventQueue::with_capacity(8),
             ui_frame: 0,
-        };
+        }
+    }
 
-        s
+    pub fn start_game(&mut self) {
+        self.mode = RunMode::Game;
+        self.events
+            .push(RuntimeEvent::Audio(self.library.current_audio_cue()));
     }
 
     pub fn start_game(&mut self) {
@@ -81,15 +86,8 @@ impl Aurex {
 
         use crate::aurex::ppu::framebuffer::rgb555;
 
-        // Clear to black each frame (v0.1)
         self.fb.clear(rgb555(0, 0, 0));
-
-        // ---------------------------------------------------------------------
-        // DMA + CPU + GAME UPDATE
-        // ---------------------------------------------------------------------
         self.dma.begin_frame();
-
-        // CPU execution for this frame
         self.vm.run_frame(&mut self.pdu);
 
         match self.mode {
@@ -98,13 +96,13 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                self.audio_cue = self.library.update(input);
+                let cue = self.library.update(input);
+                if !matches!(cue, AudioCue::None) {
+                    self.events.push(RuntimeEvent::Audio(cue));
+                }
             }
         }
 
-        // ---------------------------------------------------------------------
-        // PPU FRAME RENDER
-        // ---------------------------------------------------------------------
         self.ppu.render_frame(&self.vram, &mut self.fb);
 
         match self.mode {
@@ -112,27 +110,18 @@ impl Aurex {
             RunMode::Game => self.library.draw(&mut self.fb, self.ui_frame),
         }
 
-        // =====================================================================
-        // PPU → PDU TELEMETRY BRIDGE
-        // ---------------------------------------------------------------------
-        // The PPU latches hardware events during rendering (e.g. sprite overflow).
-        // The PDU collects per-frame telemetry for debugging / future SDK hooks.
-        // This keeps rendering logic isolated from diagnostics logic.
-        // =====================================================================
         self.pdu.ingest_ppu(
             self.ppu.sprite_overflow_latched(),
             self.ppu.sprite_overflow_scanlines(),
         );
 
-        // Apply accepted DMA transfers to hardware memory
         let vblank = self.ppu.read_addr(PPU_STATUS) & 0x1 != 0;
         self.dma.apply(&self.wram, &mut self.vram, vblank);
 
-        // Aggregate telemetry into PDU
         self.pdu.ingest_dma(
             self.dma.commands_used(),
             self.dma.vram_bytes_used(),
-            0, // audio not implemented yet
+            0,
             self.dma.rejects_this_frame(),
         );
 
@@ -145,11 +134,10 @@ impl Aurex {
         self.boot.set_waiting_for_start(waiting);
     }
 
-    pub fn take_audio_cue(&mut self) -> AudioCue {
-        let cue = self.audio_cue;
-        self.audio_cue = AudioCue::None;
-        cue
+    pub fn drain_events(&mut self, out: &mut Vec<RuntimeEvent>) {
+        self.events.drain_to(out);
     }
+
     pub fn framebuffer(&self) -> &crate::aurex::ppu::framebuffer::Framebuffer {
         &self.fb
     }
