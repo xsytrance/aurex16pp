@@ -1,3 +1,13 @@
+## 2026-03-07 18:53:29Z — Runtime Input Module + Motion FX Validation
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment due to missing native SDL2 linker library: `-lSDL2`)
+
+Verification focus:
+- Main loop now consumes runtime-polled input object instead of ad-hoc key/pad blocks.
+- Start/quit/gameplay paths still function through unified input polling.
+- Corner glint motion is rendered in-game without affecting flow/audio behavior.
+
 ## 2026-03-07 18:04:07Z — Audio Module Extraction + AV Polish Validation
 - ✅ `cargo fmt --all`
 - ✅ `cargo check -q`

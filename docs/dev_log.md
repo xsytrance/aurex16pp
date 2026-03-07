@@ -1,3 +1,20 @@
+## 2026-03-07 18:53:29Z — Runtime Input Module Extraction + Motion FX Pass
+
+### Summary
+Continued architecture hardening and AV polish by extracting input polling logic from the main loop and adding subtle border/glint motion accents.
+
+### Architecture Changes
+- Added `runtime::input` module with a typed `poll_input(...)` interface returning `quit/start/gameplay` state.
+- Removed duplicated keyboard/controller polling logic from `main.rs` and switched to runtime-owned input orchestration.
+- Kept defensive SDL strategy (state-polling only; no panic-prone event/scancode iteration paths).
+
+### Graphics/Sound Improvements
+- Added animated corner glint sprites along arena border for clearer visual activity.
+- Preserved extracted audio-engine path and deterministic synthesis behavior.
+
+### Lessons Applied
+This pass explicitly reduces large single-loop risk by moving input policy into a subsystem module, mirroring the prior flow/audio extraction pattern.
+
 ## 2026-03-07 18:04:07Z — Audio Architecture Extraction + Snake Visual FX Pass
 
 ### Summary

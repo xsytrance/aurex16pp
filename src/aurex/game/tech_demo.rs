@@ -355,6 +355,32 @@ impl TechDemo {
             );
         }
 
+        // Border corner glints for subtle motion.
+        let glint_tile = if (self.frame / 10).is_multiple_of(2) {
+            TILE_FOOD_B
+        } else {
+            TILE_FOOD_A
+        };
+        let corners = [
+            (PLAY_MIN_X * CELL, PLAY_MIN_Y * CELL),
+            (PLAY_MAX_X * CELL, PLAY_MIN_Y * CELL),
+            (PLAY_MIN_X * CELL, PLAY_MAX_Y * CELL),
+            (PLAY_MAX_X * CELL, PLAY_MAX_Y * CELL),
+        ];
+        for (i, (x, y)) in corners.iter().enumerate() {
+            ppu.write_sprite(
+                96 + i,
+                *x as u16,
+                *y as u16,
+                glint_tile,
+                0,
+                0,
+                false,
+                false,
+                false,
+            );
+        }
+
         // Top HUD spark pips = score.
         for i in 0..self.score.min(16) {
             ppu.write_sprite(

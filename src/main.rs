@@ -2,10 +2,9 @@ mod aurex;
 
 use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
-use aurex::runtime::{AudioEngine, AudioMode, FlowController, FlowPhase};
+use aurex::runtime::{AudioEngine, AudioMode, FlowController, FlowPhase, poll_input};
 use sdl2::audio::AudioSpecDesired;
-use sdl2::controller::{Axis, Button, GameController};
-use sdl2::keyboard::Scancode;
+use sdl2::controller::GameController;
 use std::time::{Duration, Instant};
 
 fn rgb555_to_argb8888(c: u16) -> u32 {
@@ -265,24 +264,6 @@ fn main() {
         // We pump events for SDL internals, then consume keyboard/controller state.
         pump.pump_events();
 
-        if let Some(c) = &controller {
-            let lx = c.axis(Axis::LeftX);
-            let press = lx < -8_000
-                || lx > 8_000
-                || c.button(Button::DPadLeft)
-                || c.button(Button::DPadRight)
-                || c.button(Button::DPadUp)
-                || c.button(Button::DPadDown)
-                || c.button(Button::A)
-                || c.button(Button::B)
-                || c.button(Button::X)
-                || c.button(Button::Y);
-
-            if press && flow.register_start_request() {
-                synth.trigger_confirm();
-            }
-        }
-
         if flow.tick() {
             system.start_game();
             println!("Snake demo loaded");
@@ -302,68 +283,17 @@ fn main() {
             let _ = queue.queue_audio(&block);
         }
 
-        let kb = pump.keyboard_state();
+        let polled = poll_input(&pump, controller.as_ref(), flow.game_active());
 
-        if kb.is_scancode_pressed(Scancode::Escape) {
+        if polled.quit_requested {
             break 'running;
         }
 
-        // Avoid `pressed_scancodes()` iteration because some SDL stacks can report
-        // out-of-range scancode values that trigger enum-conversion panics in rust-sdl2.
-        // We intentionally poll a curated list of common start keys instead.
-        let start_key_pressed = kb.is_scancode_pressed(Scancode::Return)
-            || kb.is_scancode_pressed(Scancode::Space)
-            || kb.is_scancode_pressed(Scancode::LShift)
-            || kb.is_scancode_pressed(Scancode::RShift)
-            || kb.is_scancode_pressed(Scancode::LCtrl)
-            || kb.is_scancode_pressed(Scancode::RCtrl)
-            || kb.is_scancode_pressed(Scancode::Tab)
-            || kb.is_scancode_pressed(Scancode::Up)
-            || kb.is_scancode_pressed(Scancode::Down)
-            || kb.is_scancode_pressed(Scancode::Left)
-            || kb.is_scancode_pressed(Scancode::Right)
-            || kb.is_scancode_pressed(Scancode::W)
-            || kb.is_scancode_pressed(Scancode::A)
-            || kb.is_scancode_pressed(Scancode::S)
-            || kb.is_scancode_pressed(Scancode::D)
-            || kb.is_scancode_pressed(Scancode::Z)
-            || kb.is_scancode_pressed(Scancode::X);
-        if start_key_pressed && flow.register_start_request() {
+        if polled.start_pressed && flow.register_start_request() {
             synth.trigger_confirm();
         }
 
-        let mut pad_left = false;
-        let mut pad_right = false;
-        let mut pad_up = false;
-        let mut pad_down = false;
-
-        if let Some(c) = &controller {
-            let lx = c.axis(Axis::LeftX);
-            let ly = c.axis(Axis::LeftY);
-            pad_left = lx < -8_000 || c.button(Button::DPadLeft);
-            pad_right = lx > 8_000 || c.button(Button::DPadRight);
-            pad_up = ly < -8_000 || c.button(Button::DPadUp);
-            pad_down = ly > 8_000 || c.button(Button::DPadDown);
-        }
-
-        let input = if flow.game_active() {
-            InputState {
-                left: kb.is_scancode_pressed(Scancode::Left)
-                    || kb.is_scancode_pressed(Scancode::A)
-                    || pad_left,
-                right: kb.is_scancode_pressed(Scancode::Right)
-                    || kb.is_scancode_pressed(Scancode::D)
-                    || pad_right,
-                up: kb.is_scancode_pressed(Scancode::Up)
-                    || kb.is_scancode_pressed(Scancode::W)
-                    || pad_up,
-                down: kb.is_scancode_pressed(Scancode::Down)
-                    || kb.is_scancode_pressed(Scancode::S)
-                    || pad_down,
-            }
-        } else {
-            InputState::default()
-        };
+        let input = polled.gameplay;
 
         system.run_frame(input);
         synth.trigger_cue(system.take_audio_cue());
