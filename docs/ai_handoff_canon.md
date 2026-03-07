@@ -287,3 +287,22 @@ This establishes:
 Architecture remains stable.
 
 END OF CANON
+
+
+---
+
+# Library Profile Canon (Current)
+
+- Runtime scene: Boot → Library.
+- Library entries are represented by profile data:
+  - title string
+  - track id
+  - color theme
+  - icon kind
+- Selection emits `AudioCue::SelectTrack`.
+- Audio engine uses track id mapping for deterministic per-title song playback.
+
+
+- Runtime event boundary active:
+  - Simulation emits typed runtime events
+  - Host loop drains and dispatches side effects

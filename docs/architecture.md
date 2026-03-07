@@ -170,3 +170,56 @@ Aurex-16++ aims to:
 - Encourage creative constraint
 - Support LLM-generated cartridges under hardware-style limits
 - Prioritize readability, determinism, and performance
+
+
+---
+
+## Library Runtime Domain (2026-03-08 update)
+
+A dedicated title-profile domain now drives the library scene:
+
+- `TitleProfile` = title text + audio track id + color theme + icon kind.
+- Library selection is now a stateful domain event source.
+- Selection changes emit `AudioCue::SelectTrack(track_id)`.
+- Audio runtime resolves per-title songs by `track_id` (6 title-specific patterns).
+
+This keeps UI theming and soundtrack policy data-driven instead of hardcoded across unrelated modules.
+
+
+## Boot Gate Architecture (2026-03-08)
+
+Boot flow is now strictly non-interruptible:
+- Phase 1: Timed boot cinematic (`FlowPhase::Boot`).
+- Phase 2: Gate screen on same boot scene (`FlowPhase::AwaitStart`).
+- Phase 3: Library runtime (`FlowPhase::Game`).
+
+Input is ignored for scene transitions during timed boot and only accepted in `AwaitStart` for an explicit Start press.
+
+
+## Runtime Event Bus (2026-03-08)
+
+A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
+
+- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
+- This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
+
+
+## Event Queue Component (2026-03-08)
+
+Runtime events now flow through a dedicated queue object (`RuntimeEventQueue`) instead of raw vectors in core state.
+
+- Queue owns event buffering and drain semantics.
+- `Aurex` emits intents to queue.
+- Host loop drains queue and executes side effects.
+
+This formalizes event transport as a reusable core component for future channels.
+
+
+## Runtime Dispatch Primitive (2026-03-08)
+
+A runtime-level dispatch helper now applies side effects from drained events:
+
+- `dispatch_runtime_events(AudioEngine, &[RuntimeEvent])`
+
+This centralizes host-side dispatch policy and keeps the main loop focused on lifecycle orchestration.
