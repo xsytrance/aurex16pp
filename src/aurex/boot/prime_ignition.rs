@@ -63,7 +63,7 @@ impl PrimeIgnition {
             );
         }
 
-        if (220..300).contains(&t) && (t / 10).is_multiple_of(2) {
+        if (220..300).contains(&t) && (t / 10) % 2 == 0 {
             draw_text(fb, "BOOTING LIBRARY...", 122, 210, 2, rgb555(14, 22, 28));
         }
     }
@@ -181,115 +181,5 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C],
         ' ' => [0x00; 7],
         _ => [0x1F, 0x11, 0x15, 0x15, 0x15, 0x11, 0x1F],
-    }
-
-    pub fn set_confirming(&mut self, confirming: bool) {
-        self.confirming = confirming;
-    }
-
-    pub fn draw_overlay(&self, fb: &mut Framebuffer) {
-        let logo_color = rgb555(31, 31, 31);
-        let shadow_color = rgb555(4, 6, 10);
-        let prompt_color = rgb555(20, 29, 31);
-
-        let title = "AUREX-16++";
-        let title_w = self.text_width(title, 4);
-        let title_x = ((FB_W as i32 - title_w) / 2).max(0);
-
-        self.draw_text(fb, title, title_x + 2, 48, 4, shadow_color);
-        self.draw_text(fb, title, title_x, 46, 4, logo_color);
-
-        let prompt = if self.confirming {
-            "LOADING..."
-        } else {
-            "PRESS ANY BUTTON TO CONTINUE"
-        };
-        let prompt_w = self.text_width(prompt, 2);
-        let prompt_x = ((FB_W as i32 - prompt_w) / 2).max(0);
-
-        if self.confirming || (self.frame / 20).is_multiple_of(2) {
-            self.draw_text(fb, prompt, prompt_x, 212, 2, prompt_color);
-        }
-    }
-
-    fn draw_text(
-        &self,
-        fb: &mut Framebuffer,
-        text: &str,
-        x: i32,
-        y: i32,
-        scale: usize,
-        color: u16,
-    ) {
-        let mut cursor_x = x;
-        for ch in text.chars() {
-            self.draw_glyph(fb, ch, cursor_x, y, scale, color);
-            cursor_x += (6 * scale) as i32;
-        }
-    }
-
-    fn text_width(&self, text: &str, scale: usize) -> i32 {
-        let chars = text.chars().count() as i32;
-        if chars == 0 {
-            0
-        } else {
-            chars * (6 * scale) as i32 - scale as i32
-        }
-    }
-
-    fn draw_glyph(&self, fb: &mut Framebuffer, ch: char, x: i32, y: i32, scale: usize, color: u16) {
-        let glyph = glyph_5x7(ch);
-        let pixels = fb.pixels_mut();
-
-        for (row, bits) in glyph.iter().enumerate() {
-            for col in 0..5usize {
-                if bits & (1 << (4 - col)) == 0 {
-                    continue;
-                }
-
-                for sy in 0..scale {
-                    let py = y + (row * scale + sy) as i32;
-                    if !(0..FB_H as i32).contains(&py) {
-                        continue;
-                    }
-
-                    for sx in 0..scale {
-                        let px = x + (col * scale + sx) as i32;
-                        if !(0..FB_W as i32).contains(&px) {
-                            continue;
-                        }
-                        pixels[py as usize * FB_W + px as usize] = color;
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn glyph_5x7(ch: char) -> [u8; 7] {
-    match ch {
-        'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
-        'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
-        'C' => [0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F],
-        'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
-        'G' => [0x0F, 0x10, 0x10, 0x13, 0x11, 0x11, 0x0F],
-        'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
-        'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F],
-        'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
-        'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
-        'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
-        'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11],
-        'S' => [0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E],
-        'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
-        'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
-        'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
-        'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
-        '1' => [0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E],
-        '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
-        '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
-        '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
-        '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x06],
-        ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-        _ => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
     }
 }

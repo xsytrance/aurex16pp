@@ -78,7 +78,12 @@ fn main() {
     'running: loop {
         pump.pump_events();
 
-        if controller.as_ref().is_none_or(|c| !c.attached()) {
+        let controller_missing_or_detached = match controller.as_ref() {
+            None => true,
+            Some(c) => !c.attached(),
+        };
+
+        if controller_missing_or_detached {
             controller = open_first_controller(&game_controller);
         }
 
