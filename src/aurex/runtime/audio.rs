@@ -3,7 +3,6 @@ use crate::aurex::game::AudioCue;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum AudioMode {
     Boot,
-    Confirm,
     Game,
 }
 
@@ -40,10 +39,6 @@ impl AudioEngine {
         (((hz as u64) << 32) / self.sample_rate as u64) as u32
     }
 
-    pub fn trigger_confirm(&mut self) {
-        self.confirm_samples_left = self.sample_rate / 3;
-    }
-
     pub fn trigger_cue(&mut self, cue: AudioCue) {
         match cue {
             AudioCue::Eat => self.eat_samples_left = self.sample_rate / 9,
@@ -64,7 +59,6 @@ impl AudioEngine {
         for s in out.iter_mut() {
             let music = match mode {
                 AudioMode::Boot => self.boot_sample(),
-                AudioMode::Confirm => 0,
                 AudioMode::Game => self.game_sample(),
             };
 
@@ -75,47 +69,56 @@ impl AudioEngine {
     }
 
     fn boot_sample(&mut self) -> i32 {
-        const BPM: u32 = 132;
+        // ~4.5s Yuzo-inspired driving intro with bass + lead + arp + noise hats.
+        const BOOT_SAMPLES: u64 = 44_100 * 9 / 2;
+        if self.sample_clock >= BOOT_SAMPLES {
+            return 0;
+        }
+
+        const BPM: u32 = 154;
         const BASS: [u32; 16] = [
-            55, 55, 55, 55, 73, 73, 73, 73, 65, 65, 65, 65, 49, 49, 49, 49,
+            73, 73, 98, 73, 82, 82, 110, 82, 73, 73, 98, 73, 65, 65, 87, 65,
         ];
         const LEAD: [u32; 16] = [
-            220, 0, 247, 0, 220, 0, 294, 0, 220, 0, 247, 0, 330, 0, 294, 0,
+            294, 392, 440, 392, 349, 392, 523, 392, 294, 392, 440, 392, 262, 330, 392, 330,
         ];
-        self.pattern_sample(BPM, &BASS, &LEAD, 9000, 6500, false)
+
+        let body = self.pattern_sample(BPM, &BASS, &LEAD, 8200, 6400, true);
+        let tail = (BOOT_SAMPLES - self.sample_clock).min(44_100) as i32;
+        (body * tail) / 44_100
     }
 
     fn game_sample(&mut self) -> i32 {
         match self.track_index {
             0 => {
-                const BPM: u32 = 132;
+                const BPM: u32 = 110;
                 const BASS: [u32; 16] = [
-                    65, 65, 73, 65, 82, 82, 73, 65, 55, 55, 65, 55, 49, 49, 55, 49,
+                    49, 49, 55, 49, 65, 65, 55, 49, 49, 49, 55, 49, 41, 41, 49, 41,
                 ];
                 const LEAD: [u32; 16] = [
-                    262, 330, 392, 330, 294, 330, 440, 330, 262, 330, 392, 330, 247, 294, 330, 294,
+                    196, 247, 294, 247, 220, 247, 330, 247, 196, 247, 294, 247, 175, 196, 247, 196,
                 ];
-                self.pattern_sample(BPM, &BASS, &LEAD, 7000, 5000, true)
+                self.pattern_sample(BPM, &BASS, &LEAD, 5200, 3400, true)
             }
             1 => {
-                const BPM: u32 = 148;
+                const BPM: u32 = 124;
                 const BASS: [u32; 16] = [
-                    82, 82, 110, 82, 98, 98, 123, 98, 82, 82, 110, 82, 73, 73, 98, 73,
+                    55, 55, 65, 55, 73, 73, 65, 55, 55, 55, 65, 55, 49, 49, 55, 49,
                 ];
                 const LEAD: [u32; 16] = [
-                    330, 392, 440, 392, 349, 392, 523, 392, 330, 392, 440, 392, 294, 330, 392, 330,
+                    220, 277, 330, 277, 247, 277, 370, 277, 220, 277, 330, 277, 196, 220, 277, 220,
                 ];
-                self.pattern_sample(BPM, &BASS, &LEAD, 7000, 5000, true)
+                self.pattern_sample(BPM, &BASS, &LEAD, 5000, 3200, true)
             }
             _ => {
-                const BPM: u32 = 160;
+                const BPM: u32 = 136;
                 const BASS: [u32; 16] = [
-                    98, 98, 123, 98, 110, 110, 147, 110, 98, 98, 123, 98, 82, 82, 110, 82,
+                    65, 65, 73, 65, 82, 82, 73, 65, 65, 65, 73, 65, 55, 55, 65, 55,
                 ];
                 const LEAD: [u32; 16] = [
-                    392, 494, 523, 494, 440, 494, 659, 494, 392, 494, 523, 494, 349, 392, 494, 392,
+                    262, 330, 392, 330, 294, 330, 440, 330, 262, 330, 392, 330, 220, 262, 330, 262,
                 ];
-                self.pattern_sample(BPM, &BASS, &LEAD, 6800, 5600, true)
+                self.pattern_sample(BPM, &BASS, &LEAD, 5000, 3300, true)
             }
         }
     }

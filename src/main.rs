@@ -5,9 +5,24 @@ use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, poll_input, present_frame,
 };
+use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::GameController;
 use std::time::Duration;
+
+fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
+    for id in 0..game_controller.num_joysticks().unwrap_or(0) {
+        if !game_controller.is_game_controller(id) {
+            continue;
+        }
+
+        if let Ok(c) = game_controller.open(id) {
+            println!("Controller connected: {}", c.name());
+            return Some(c);
+        }
+    }
+    None
+}
 
 fn main() {
     let sdl = sdl2::init().expect("SDL init failed");
@@ -53,49 +68,18 @@ fn main() {
         .expect("texture create failed");
 
     let mut pump = sdl.event_pump().expect("event pump failed");
-    let mut controller: Option<GameController> = None;
-    for id in 0..game_controller.num_joysticks().unwrap_or(0) {
-        if !game_controller.is_game_controller(id) {
-            continue;
-        }
-        if let Ok(c) = game_controller.open(id) {
-            println!("Controller connected: {}", c.name());
-            controller = Some(c);
-            break;
-        }
-    }
+    let mut controller = open_first_controller(&game_controller);
 
     let mut system = aurex::Aurex::new();
     let mut flow = FlowController::new();
-    flow.force_game();
-    system.start_game();
 
     let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
 
     'running: loop {
-        // NOTE: We intentionally avoid SDL event enum decoding here because some
-        // controller firmwares/drivers can emit unknown event tags that older
-        // rust-sdl2 releases fail to decode safely (panic on invalid enum value).
-        // We pump events for SDL internals, then consume keyboard/controller state.
         pump.pump_events();
 
-        if flow.tick() {
-            system.start_game();
-            println!("Snake demo loaded");
-        }
-
-        system.set_boot_confirming(flow.boot_confirming());
-
-        let audio_mode = match flow.phase() {
-            FlowPhase::Boot => AudioMode::Boot,
-            FlowPhase::Confirming => AudioMode::Confirm,
-            FlowPhase::Game => AudioMode::Game,
-        };
-
-        if queue.size() < 16_384 {
-            let mut block = [0i16; 2048];
-            synth.render_block(audio_mode, &mut block);
-            let _ = queue.queue_audio(&block);
+        if controller.as_ref().is_none_or(|c| !c.attached()) {
+            controller = open_first_controller(&game_controller);
         }
 
         let polled = poll_input(&pump, controller.as_ref(), flow.game_active());
@@ -104,8 +88,20 @@ fn main() {
             break 'running;
         }
 
-        if polled.start_pressed && flow.register_start_request() {
-            synth.trigger_confirm();
+        if flow.tick(polled.start_pressed) {
+            system.start_game();
+            println!("Library ready");
+        }
+
+        let audio_mode = match flow.phase() {
+            FlowPhase::Boot => AudioMode::Boot,
+            FlowPhase::Game => AudioMode::Game,
+        };
+
+        if queue.size() < 16_384 {
+            let mut block = [0i16; 2048];
+            synth.render_block(audio_mode, &mut block);
+            let _ = queue.queue_audio(&block);
         }
 
         let input = polled.gameplay;

@@ -45,21 +45,34 @@ pub fn poll_input(
     if let Some(c) = controller {
         let lx = c.axis(Axis::LeftX);
         let ly = c.axis(Axis::LeftY);
+        let rx = c.axis(Axis::RightX);
+        let ry = c.axis(Axis::RightY);
+        let lt = c.axis(Axis::TriggerLeft);
+        let rt = c.axis(Axis::TriggerRight);
 
-        pad_left = lx < -8_000 || c.button(Button::DPadLeft);
-        pad_right = lx > 8_000 || c.button(Button::DPadRight);
-        pad_up = ly < -8_000 || c.button(Button::DPadUp);
-        pad_down = ly > 8_000 || c.button(Button::DPadDown);
+        // XInput-friendly deadzones for analog movement.
+        pad_left = lx < -10_000 || rx < -12_000 || c.button(Button::DPadLeft);
+        pad_right = lx > 10_000 || rx > 12_000 || c.button(Button::DPadRight);
+        pad_up = ly < -10_000 || ry < -12_000 || c.button(Button::DPadUp);
+        pad_down = ly > 10_000 || ry > 12_000 || c.button(Button::DPadDown);
 
         pad_start = pad_left
             || pad_right
             || pad_up
             || pad_down
+            || lt > 8_000
+            || rt > 8_000
             || c.button(Button::A)
             || c.button(Button::B)
             || c.button(Button::X)
             || c.button(Button::Y)
-            || c.button(Button::Start);
+            || c.button(Button::Back)
+            || c.button(Button::Guide)
+            || c.button(Button::Start)
+            || c.button(Button::LeftShoulder)
+            || c.button(Button::RightShoulder)
+            || c.button(Button::LeftStick)
+            || c.button(Button::RightStick);
     }
 
     let gameplay = if game_active {

@@ -1,22 +1,21 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FlowPhase {
     Boot,
-    Confirming,
     Game,
 }
 
 pub struct FlowController {
     phase: FlowPhase,
-    confirm_frames_left: u8,
+    boot_frames_left: u16,
 }
 
 impl FlowController {
-    pub const CONFIRM_FRAMES: u8 = 32;
+    pub const BOOT_FRAMES: u16 = 300; // 5 seconds @ 60 fps
 
     pub fn new() -> Self {
         Self {
             phase: FlowPhase::Boot,
-            confirm_frames_left: 0,
+            boot_frames_left: Self::BOOT_FRAMES,
         }
     }
 
@@ -28,36 +27,20 @@ impl FlowController {
         self.phase == FlowPhase::Game
     }
 
-    pub fn boot_confirming(&self) -> bool {
-        self.phase == FlowPhase::Confirming
-    }
-
-    pub fn force_game(&mut self) {
-        self.phase = FlowPhase::Game;
-        self.confirm_frames_left = 0;
-    }
-
-    pub fn register_start_request(&mut self) -> bool {
-        if self.phase != FlowPhase::Boot {
+    pub fn tick(&mut self, skip_requested: bool) -> bool {
+        if self.phase == FlowPhase::Game {
             return false;
         }
 
-        self.phase = FlowPhase::Confirming;
-        self.confirm_frames_left = Self::CONFIRM_FRAMES;
-        true
-    }
-
-    pub fn tick(&mut self) -> bool {
-        if self.phase != FlowPhase::Confirming {
-            return false;
+        if self.boot_frames_left > 0 {
+            self.boot_frames_left -= 1;
         }
 
-        if self.confirm_frames_left > 0 {
-            self.confirm_frames_left -= 1;
-            return false;
+        if self.boot_frames_left == 0 || skip_requested {
+            self.phase = FlowPhase::Game;
+            return true;
         }
 
-        self.phase = FlowPhase::Game;
-        true
+        false
     }
 }

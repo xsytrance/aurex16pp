@@ -13,7 +13,7 @@ use crate::aurex::ppu::ppu::Ppu;
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
-use game::{AudioCue, InputState, tech_demo::TechDemo};
+use game::{AudioCue, InputState, library::LibraryScreen};
 use pdu::Pdu;
 use ppu::vram::Vram;
 use vm32::core::Vm32;
@@ -34,15 +34,16 @@ pub struct Aurex {
     fb: ppu::framebuffer::Framebuffer,
     ppu: Ppu,
     boot: PrimeIgnition,
-    game: TechDemo,
+    library: LibraryScreen,
     mode: RunMode,
     audio_cue: AudioCue,
+    ui_frame: u64,
 }
 
 impl Aurex {
     pub fn new() -> Self {
-        let mut vram = Vram::new();
-        let game = TechDemo::new(&mut vram);
+        let vram = Vram::new();
+        let library = LibraryScreen::new();
 
         let s = Self {
             clock: Clock::new(),
@@ -54,9 +55,10 @@ impl Aurex {
             fb: ppu::framebuffer::Framebuffer::new(),
             ppu: Ppu::new(),
             boot: PrimeIgnition::new(),
-            game,
+            library,
             mode: RunMode::Boot,
             audio_cue: AudioCue::None,
+            ui_frame: 0,
         };
 
         s
@@ -95,8 +97,7 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                // Tech demo gameplay update
-                self.audio_cue = self.game.update(&mut self.ppu, input);
+                self.audio_cue = self.library.update(input);
             }
         }
 
@@ -105,8 +106,9 @@ impl Aurex {
         // ---------------------------------------------------------------------
         self.ppu.render_frame(&self.vram, &mut self.fb);
 
-        if let RunMode::Boot = self.mode {
-            self.boot.draw_overlay(&mut self.fb);
+        match self.mode {
+            RunMode::Boot => self.boot.draw_overlay(&mut self.fb),
+            RunMode::Game => self.library.draw(&mut self.fb, self.ui_frame),
         }
 
         // =====================================================================
@@ -135,10 +137,7 @@ impl Aurex {
 
         self.pdu.end_frame();
         self.clock.end_frame();
-    }
-
-    pub fn set_boot_confirming(&mut self, confirming: bool) {
-        self.boot.set_confirming(confirming);
+        self.ui_frame = self.ui_frame.wrapping_add(1);
     }
 
     pub fn take_audio_cue(&mut self) -> AudioCue {

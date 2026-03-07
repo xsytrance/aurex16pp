@@ -1,4 +1,4 @@
-pub mod tech_demo;
+pub mod library;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct InputState {
