@@ -10,7 +10,7 @@ pub mod wram;
 
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
-use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue};
+use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue, SceneId};
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
@@ -65,6 +65,8 @@ impl Aurex {
 
     pub fn start_game(&mut self) {
         self.mode = RunMode::Game;
+        self.events
+            .push(RuntimeEvent::SceneChanged(SceneId::Library));
         self.events
             .push(RuntimeEvent::Audio(self.library.current_audio_cue()));
     }
@@ -123,6 +125,13 @@ impl Aurex {
         self.pdu.end_frame();
         self.clock.end_frame();
         self.ui_frame = self.ui_frame.wrapping_add(1);
+    }
+
+    pub fn current_scene(&self) -> SceneId {
+        match self.mode {
+            RunMode::Boot => SceneId::Boot,
+            RunMode::Game => SceneId::Library,
+        }
     }
 
     pub fn set_boot_waiting_for_start(&mut self, waiting: bool) {

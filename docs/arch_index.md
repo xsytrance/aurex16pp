@@ -216,3 +216,20 @@ Coverage:
 - Boot non-skip guard
 - Boot timer expiry transition
 - Await-start handshake transition
+
+
+## SCENE TRANSITION EVENTS
+
+Files:
+- `src/aurex/runtime/event.rs`
+- `src/aurex/mod.rs`
+- `src/main.rs`
+
+Core objects:
+- `SceneId`
+- `RuntimeEvent::SceneChanged`
+- `Aurex::current_scene()`
+
+Responsibilities:
+- Emit explicit scene transition telemetry
+- Keep scene lifecycle observable at host/runtime layer

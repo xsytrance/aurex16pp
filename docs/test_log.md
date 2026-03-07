@@ -195,3 +195,13 @@ Validation focus:
 Validation focus:
 - Event dispatch still triggers audio cue routing after `run_frame`.
 - Main loop no longer owns manual per-event match boilerplate.
+
+
+## 2026-03-08 — Scene Transition Telemetry Validation
+- ✅ `cargo fmt -- --check`
+- ✅ `cargo check`
+
+Validation focus:
+- Boot->library transition emits `RuntimeEvent::SceneChanged(SceneId::Library)`.
+- Main loop can consume and log scene transition events.
+- Event dispatch remains side-effect-safe for audio events.

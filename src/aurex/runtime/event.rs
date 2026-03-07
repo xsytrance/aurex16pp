@@ -1,8 +1,15 @@
 use crate::aurex::game::AudioCue;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SceneId {
+    Boot,
+    Library,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum RuntimeEvent {
     Audio(AudioCue),
+    SceneChanged(SceneId),
 }
 
 pub struct RuntimeEventQueue {

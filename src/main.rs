@@ -118,6 +118,13 @@ fn main() {
         system.run_frame(input);
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
+
+        for event in &runtime_events {
+            if let aurex::runtime::RuntimeEvent::SceneChanged(scene) = event {
+                println!("Scene changed: {:?}", scene);
+            }
+        }
+
         dispatch_runtime_events(&mut synth, &runtime_events);
 
         let src = system.framebuffer().pixels();

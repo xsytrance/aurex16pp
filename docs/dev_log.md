@@ -692,3 +692,19 @@ Extracted host-side runtime event dispatch into a dedicated helper to keep `main
 
 ### Rationale
 Improves iteration speed by making side-effect dispatch a reusable runtime primitive as additional event types are introduced.
+
+
+## 2026-03-08 02:00:00Z — Scene Transition Telemetry + Handoff Contract Pass
+
+### Summary
+Extended the runtime event model with explicit scene transition telemetry and documented a formal handoff contract across flow/simulation/event/dispatch boundaries.
+
+### Changes
+- Added `SceneId` and `RuntimeEvent::SceneChanged`.
+- Emitted `SceneChanged(Library)` on boot->library transition.
+- Added `Aurex::current_scene()` for runtime introspection.
+- Main loop now logs scene transition events before dispatch.
+- Updated architecture and handoff documents with contract-level detail.
+
+### Rationale
+Improves observability and handoff-readiness without increasing coupling. Future options/menus/router features can consume transition telemetry through existing event channels.

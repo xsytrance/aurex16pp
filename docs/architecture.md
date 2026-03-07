@@ -223,3 +223,28 @@ A runtime-level dispatch helper now applies side effects from drained events:
 - `dispatch_runtime_events(AudioEngine, &[RuntimeEvent])`
 
 This centralizes host-side dispatch policy and keeps the main loop focused on lifecycle orchestration.
+
+
+## Scene Transition Telemetry (2026-03-08)
+
+Runtime now emits explicit scene transition events via the event bus:
+
+- `RuntimeEvent::SceneChanged(SceneId)`
+- Current scenes:
+  - `SceneId::Boot`
+  - `SceneId::Library`
+
+Core emits transition intent; host loop may log/route diagnostics or future UI overlays without touching scene internals.
+
+## Handoff-Ready Runtime Boundaries
+
+Current boundaries are now explicit and suitable for team/agent handoff:
+
+1. **Flow Policy** (`FlowController`)
+   - Owns transition timing and gates.
+2. **Scene Simulation** (`Aurex` core)
+   - Owns deterministic frame update/render.
+3. **Event Transport** (`RuntimeEventQueue`)
+   - Owns event buffering and draining semantics.
+4. **Host Dispatch** (`dispatch_runtime_events`)
+   - Owns side effects from emitted runtime intents.
