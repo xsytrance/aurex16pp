@@ -1,3 +1,19 @@
+## 2026-03-07 17:12:20Z — Runtime Flow Controller Architecture Pass
+
+### Summary
+Advanced architecture by extracting boot/confirm/game transition policy from `main.rs` into a dedicated runtime controller module.
+
+### Technical Changes
+- Added `aurex::runtime` module with `FlowController` and `FlowPhase`.
+- Moved phase-transition responsibilities (`Boot -> Confirming -> Game`) into the controller.
+- Converted `main.rs` to consume controller APIs (`register_start_request`, `tick`, `phase`, `game_active`).
+- Synced boot overlay confirmation state from central flow policy each frame.
+
+### Why this helps
+- Improves separation of concerns (input/audio loop no longer owns transition policy details).
+- Provides a reusable control point for future scene/state expansion.
+- Reduces duplicated transition condition logic across input pathways.
+
 ## 2026-03-07 17:00:47Z — Boot Prompt Centering + Transition Handoff + Snake Demo Pass
 
 ### Summary

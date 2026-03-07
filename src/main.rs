@@ -2,6 +2,7 @@ mod aurex;
 
 use aurex::game::{AudioCue, InputState};
 use aurex::ppu::framebuffer::{FB_H, FB_W};
+use aurex::runtime::{FlowController, FlowPhase};
 use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::{Axis, Button, GameController};
 use sdl2::event::Event;
@@ -24,13 +25,6 @@ fn rgb555_to_argb8888(c: u16) -> u32 {
 enum AudioMode {
     Boot,
     Confirm,
-    Game,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum FlowPhase {
-    Boot,
-    Confirming,
     Game,
 }
 
@@ -243,8 +237,7 @@ fn main() {
     }
 
     let mut system = aurex::Aurex::new();
-    let mut phase = FlowPhase::Boot;
-    let mut confirm_frames_left: u8 = 0;
+    let mut flow = FlowController::new();
 
     let target = Duration::from_nanos(16_666_667);
     let mut last = Instant::now();
@@ -258,19 +251,13 @@ fn main() {
                     ..
                 } => break 'running,
                 Event::KeyDown { .. } => {
-                    if phase == FlowPhase::Boot {
-                        phase = FlowPhase::Confirming;
-                        confirm_frames_left = 32;
+                    if flow.register_start_request() {
                         synth.trigger_confirm();
-                        system.set_boot_confirming(true);
                     }
                 }
                 Event::ControllerButtonDown { .. } => {
-                    if phase == FlowPhase::Boot {
-                        phase = FlowPhase::Confirming;
-                        confirm_frames_left = 32;
+                    if flow.register_start_request() {
                         synth.trigger_confirm();
-                        system.set_boot_confirming(true);
                     }
                 }
                 Event::ControllerDeviceAdded { which, .. } => {
@@ -306,26 +293,19 @@ fn main() {
                 || c.button(Button::X)
                 || c.button(Button::Y);
 
-            if phase == FlowPhase::Boot && press {
-                phase = FlowPhase::Confirming;
-                confirm_frames_left = 32;
+            if press && flow.register_start_request() {
                 synth.trigger_confirm();
-                system.set_boot_confirming(true);
             }
         }
 
-        if phase == FlowPhase::Confirming {
-            if confirm_frames_left > 0 {
-                confirm_frames_left -= 1;
-            } else {
-                phase = FlowPhase::Game;
-                system.set_boot_confirming(false);
-                system.start_game();
-                println!("Snake demo loaded");
-            }
+        if flow.tick() {
+            system.start_game();
+            println!("Snake demo loaded");
         }
 
-        let audio_mode = match phase {
+        system.set_boot_confirming(flow.boot_confirming());
+
+        let audio_mode = match flow.phase() {
             FlowPhase::Boot => AudioMode::Boot,
             FlowPhase::Confirming => AudioMode::Confirm,
             FlowPhase::Game => AudioMode::Game,
@@ -352,7 +332,7 @@ fn main() {
             pad_down = ly > 8_000 || c.button(Button::DPadDown);
         }
 
-        let input = if phase == FlowPhase::Game {
+        let input = if flow.game_active() {
             InputState {
                 left: kb.is_scancode_pressed(Scancode::Left)
                     || kb.is_scancode_pressed(Scancode::A)

@@ -4,6 +4,7 @@ pub mod dma;
 pub mod game;
 pub mod pdu;
 pub mod ppu;
+pub mod runtime;
 pub mod vm32;
 pub mod wram;
 
