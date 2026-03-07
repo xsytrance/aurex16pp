@@ -1,3 +1,16 @@
+## 2026-03-07 17:56:26Z — Keyboard Scancode Panic Mitigation
+
+### Summary
+Addressed another Windows panic source (`scancode.rs` invalid enum value) by removing dynamic scancode iteration from the input path.
+
+### Technical Changes
+- Replaced `keyboard_state().pressed_scancodes()` usage with an explicit, curated set of safe `is_scancode_pressed(...)` checks for start keys.
+- Kept Escape handling and gameplay directional polling unchanged.
+- Added inline note documenting the defensive strategy for rust-sdl2 enum conversion edge cases.
+
+### Impact
+- Eliminates the reported keyboard-scancode conversion panic path while preserving expected start/menu and gameplay controls.
+
 ## 2026-03-07 17:41:58Z — SDL Event Robustness Fix + Warning Cleanup
 
 ### Summary

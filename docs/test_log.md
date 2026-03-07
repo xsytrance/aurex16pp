@@ -1,3 +1,13 @@
+## 2026-03-07 17:56:26Z — Keyboard Scancode Panic Mitigation Validation
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment due to missing native SDL2 linker library: `-lSDL2`)
+
+Verification focus:
+- No `pressed_scancodes()` iterator usage remains in runtime path.
+- Start-input behavior still triggers from common keyboard keys.
+- Controller-driven flow and gameplay input remain unchanged.
+
 ## 2026-03-07 17:41:58Z — SDL Event Robustness Validation
 - ✅ `cargo fmt --all`
 - ✅ `cargo check -q`

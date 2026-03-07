@@ -308,8 +308,27 @@ fn main() {
             break 'running;
         }
 
-        let any_key_pressed = kb.pressed_scancodes().any(|sc| sc != Scancode::Escape);
-        if any_key_pressed && flow.register_start_request() {
+        // Avoid `pressed_scancodes()` iteration because some SDL stacks can report
+        // out-of-range scancode values that trigger enum-conversion panics in rust-sdl2.
+        // We intentionally poll a curated list of common start keys instead.
+        let start_key_pressed = kb.is_scancode_pressed(Scancode::Return)
+            || kb.is_scancode_pressed(Scancode::Space)
+            || kb.is_scancode_pressed(Scancode::LShift)
+            || kb.is_scancode_pressed(Scancode::RShift)
+            || kb.is_scancode_pressed(Scancode::LCtrl)
+            || kb.is_scancode_pressed(Scancode::RCtrl)
+            || kb.is_scancode_pressed(Scancode::Tab)
+            || kb.is_scancode_pressed(Scancode::Up)
+            || kb.is_scancode_pressed(Scancode::Down)
+            || kb.is_scancode_pressed(Scancode::Left)
+            || kb.is_scancode_pressed(Scancode::Right)
+            || kb.is_scancode_pressed(Scancode::W)
+            || kb.is_scancode_pressed(Scancode::A)
+            || kb.is_scancode_pressed(Scancode::S)
+            || kb.is_scancode_pressed(Scancode::D)
+            || kb.is_scancode_pressed(Scancode::Z)
+            || kb.is_scancode_pressed(Scancode::X);
+        if start_key_pressed && flow.register_start_request() {
             synth.trigger_confirm();
         }
 
