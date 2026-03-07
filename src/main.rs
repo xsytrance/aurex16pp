@@ -1,9 +1,10 @@
 mod aurex;
 
+use aurex::game::{AudioCue, InputState};
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use sdl2::audio::AudioSpecDesired;
 use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+use sdl2::keyboard::{Keycode, Scancode};
 use std::time::{Duration, Instant};
 
 fn rgb555_to_argb8888(c: u16) -> u32 {
@@ -116,8 +117,12 @@ fn main() {
     let win_w = (FB_W as u32) * scale;
     let win_h = (FB_H as u32) * scale;
 
+    let mut synth = RetroSynth::new(queue.spec().freq as u32);
+    queue.resume();
+
+    let scale: u32 = 3;
     let window = video
-        .window("Aurex-16++", win_w, win_h)
+        .window("Aurex-16++", (FB_W as u32) * scale, (FB_H as u32) * scale)
         .position_centered()
         .build()
         .expect("window build failed");
@@ -139,6 +144,7 @@ fn main() {
 
     let mut pump = sdl.event_pump().expect("event pump failed");
     let mut system = aurex::Aurex::new();
+    let mut flow = FlowController::new();
 
     let target = Duration::from_nanos(16_666_667);
     let mut last = Instant::now();
@@ -151,6 +157,32 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown { .. } => {
+                    if flow.register_start_request() {
+                        synth.trigger_confirm();
+                    }
+                }
+                Event::ControllerButtonDown { .. } => {
+                    if flow.register_start_request() {
+                        synth.trigger_confirm();
+                    }
+                }
+                Event::ControllerDeviceAdded { which, .. } => {
+                    if controller.is_none() && game_controller.is_game_controller(which) {
+                        if let Ok(c) = game_controller.open(which) {
+                            println!("Controller connected: {}", c.name());
+                            controller = Some(c);
+                        }
+                    }
+                }
+                Event::ControllerDeviceRemoved { which, .. } => {
+                    if let Some(c) = &controller {
+                        if c.instance_id() == which {
+                            println!("Controller disconnected");
+                            controller = None;
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -165,12 +197,49 @@ fn main() {
         system.run_frame();
         let src = system.framebuffer().pixels();
 
+        let kb = pump.keyboard_state();
+        let mut pad_left = false;
+        let mut pad_right = false;
+        let mut pad_up = false;
+        let mut pad_down = false;
+
+        if let Some(c) = &controller {
+            let lx = c.axis(Axis::LeftX);
+            let ly = c.axis(Axis::LeftY);
+            pad_left = lx < -8_000 || c.button(Button::DPadLeft);
+            pad_right = lx > 8_000 || c.button(Button::DPadRight);
+            pad_up = ly < -8_000 || c.button(Button::DPadUp);
+            pad_down = ly > 8_000 || c.button(Button::DPadDown);
+        }
+
+        let input = if flow.game_active() {
+            InputState {
+                left: kb.is_scancode_pressed(Scancode::Left)
+                    || kb.is_scancode_pressed(Scancode::A)
+                    || pad_left,
+                right: kb.is_scancode_pressed(Scancode::Right)
+                    || kb.is_scancode_pressed(Scancode::D)
+                    || pad_right,
+                up: kb.is_scancode_pressed(Scancode::Up)
+                    || kb.is_scancode_pressed(Scancode::W)
+                    || pad_up,
+                down: kb.is_scancode_pressed(Scancode::Down)
+                    || kb.is_scancode_pressed(Scancode::S)
+                    || pad_down,
+            }
+        } else {
+            InputState::default()
+        };
+
+        system.run_frame(input);
+        synth.trigger_cue(system.take_audio_cue());
+
+        let src = system.framebuffer().pixels();
         texture
             .with_lock(None, |dst: &mut [u8], pitch: usize| {
                 for y in 0..FB_H {
                     let row = &src[y * FB_W..(y + 1) * FB_W];
                     let out = &mut dst[y * pitch..y * pitch + FB_W * 4];
-
                     for (x, &c) in row.iter().enumerate() {
                         let argb = rgb555_to_argb8888(c);
                         let o = x * 4;
