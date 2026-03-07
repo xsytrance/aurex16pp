@@ -201,6 +201,7 @@ Input is ignored for scene transitions during timed boot and only accepted in `A
 A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
 
 - `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- `RuntimeEvent::TitleLaunchRequested(&'static str)` captures library launch intent as typed telemetry.
 - Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
 - This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
 
@@ -248,3 +249,14 @@ Current boundaries are now explicit and suitable for team/agent handoff:
    - Owns event buffering and draining semantics.
 4. **Host Dispatch** (`dispatch_runtime_events`)
    - Owns side effects from emitted runtime intents.
+
+
+## Library AV Feedback Pass (2026-03-08 01:08:00Z)
+
+Library runtime now includes explicit launch-feedback channels across visual, audio, and host diagnostics layers:
+
+- Visual: deterministic footer audio meter + launch status pulse tint.
+- Audio: `AudioCue::LaunchRequest` triggers dedicated launch stinger SFX.
+- Architecture: `collect_runtime_diagnostics(&[RuntimeEvent]) -> RuntimeDiagnostics` centralizes non-audio event interpretation for host orchestration.
+
+This keeps scene simulation deterministic while improving UX clarity and reducing host-loop branching noise.

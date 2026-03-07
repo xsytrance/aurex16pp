@@ -1,3 +1,42 @@
+## 2026-03-08 01:08:00Z — Library AV Pass: Launch Stinger + Meter + Runtime Diagnostics
+
+### Summary
+Continued polish on graphics, sound, and runtime architecture around the library scene while preserving deterministic frame behavior.
+
+### Graphics
+- Added a footer audio meter visualization that animates per frame and picks up selected-title color themes.
+- Added launch-status pulse tinting for the footer status text after an accept press.
+
+### Sound
+- Added `AudioCue::LaunchRequest` and wired an explicit launch stinger synthesis path in `AudioEngine::sfx_sample`.
+- Launch stinger now has priority over short confirm beeps so title-open intent has clear audible feedback.
+
+### Architecture
+- Added `collect_runtime_diagnostics(events)` and `RuntimeDiagnostics` to centralize host-side interpretation of non-audio runtime events.
+- Main loop now uses diagnostics extraction instead of ad-hoc direct event matching.
+
+### Validation
+- Updated library tests to assert launch cue emission when launch is requested.
+
+## 2026-03-08 00:22:00Z — Library Launch Request Event + Accept Input Path
+
+### Summary
+Implemented the next library milestone: explicit launch intent capture for selected titles with typed runtime telemetry, while keeping deterministic flow and existing track-selection behavior.
+
+### Functional Changes
+- Added gameplay-level `accept`/`cancel` input fields to support menu intent expansion beyond directional navigation.
+- Library selection update now returns a typed `LibraryUpdate` payload (`audio_cue`, `launch_requested`) instead of only an audio cue.
+- Pressing accept on a library card now edge-triggers a launch request intent and updates footer status messaging to show launch pipeline progress text.
+- Added runtime event `RuntimeEvent::TitleLaunchRequested(&'static str)` and host logging hook in `main`.
+
+### Validation
+- Added unit tests for:
+  - selection wrap + deterministic track cue emission
+  - edge-triggered launch request behavior (press/hold/release/press)
+
+### Architecture Rationale
+This keeps scene simulation deterministic while making “open title” a first-class event boundary. The host can now route launch requests (future cartridge boot flow) without coupling launch side effects into the library scene.
+
 ## 2026-03-07 20:09:06Z — Snake Retirement + System Sandbox Bring-up
 
 ### Summary
