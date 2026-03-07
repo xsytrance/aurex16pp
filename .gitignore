@@ -1,1 +1,8 @@
 /target
+
+# Local/native binary artifacts
+*.dll
+*.lib
+
+# Cartridge generated payloads
+cartridges/default/*.bin
