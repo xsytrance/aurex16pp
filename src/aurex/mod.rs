@@ -12,7 +12,7 @@ use crate::aurex::ppu::ppu::Ppu;
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
-use game::{InputState, tech_demo::TechDemo};
+use game::{AudioCue, InputState, tech_demo::TechDemo};
 use pdu::Pdu;
 use ppu::vram::Vram;
 use vm32::core::Vm32;
@@ -35,6 +35,7 @@ pub struct Aurex {
     boot: PrimeIgnition,
     game: TechDemo,
     mode: RunMode,
+    audio_cue: AudioCue,
 }
 
 impl Aurex {
@@ -54,6 +55,7 @@ impl Aurex {
             boot: PrimeIgnition::new(),
             game,
             mode: RunMode::Boot,
+            audio_cue: AudioCue::None,
         };
 
         s
@@ -93,7 +95,7 @@ impl Aurex {
             }
             RunMode::Game => {
                 // Tech demo gameplay update
-                self.game.update(&mut self.ppu, input);
+                self.audio_cue = self.game.update(&mut self.ppu, input);
             }
         }
 
@@ -132,6 +134,16 @@ impl Aurex {
 
         self.pdu.end_frame();
         self.clock.end_frame();
+    }
+
+    pub fn set_boot_confirming(&mut self, confirming: bool) {
+        self.boot.set_confirming(confirming);
+    }
+
+    pub fn take_audio_cue(&mut self) -> AudioCue {
+        let cue = self.audio_cue;
+        self.audio_cue = AudioCue::None;
+        cue
     }
     pub fn framebuffer(&self) -> &crate::aurex::ppu::framebuffer::Framebuffer {
         &self.fb

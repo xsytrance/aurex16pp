@@ -1,3 +1,20 @@
+## 2026-03-07 17:00:47Z — Boot Prompt Centering + Transition Handoff + Snake Demo Pass
+
+### Summary
+Addressed final boot/demo UX polish requests: centered/fixed continue prompt text, explicit audio/state handoff from boot into game, and replaced the prior platformer demo with a compact snake-style clone.
+
+### Technical Changes
+- Centered bottom prompt using measured text width.
+- Fixed missing glyph support in the boot pixel font (`I`, plus additional prompt/loading characters).
+- Added a boot confirmation/loading handoff state so input triggers a short confirm phase before game start.
+- Added explicit boot confirmation visual (`LOADING...`) while the handoff is active.
+- Split audio behavior into flow-aware modes: boot music, confirmation sound, and separate game music.
+- Added game SFX cue path for snake events (eat/fail) and wired it through core->main audio trigger handling.
+- Replaced previous tech demo with a simple snake clone (grid movement, growth, food spawn, death/reset loop).
+
+### Notes
+Scope intentionally kept lightweight for iteration speed while fixing requested UX/audio transitions.
+
 ## 2026-03-07 16:26:34Z — Boot Visual/Flow Refinement
 
 ### Summary

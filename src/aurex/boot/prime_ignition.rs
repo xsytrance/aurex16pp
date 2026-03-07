@@ -9,11 +9,15 @@ use crate::aurex::wram::Wram;
 
 pub struct PrimeIgnition {
     frame: u32,
+    confirming: bool,
 }
 
 impl PrimeIgnition {
     pub fn new() -> Self {
-        Self { frame: 0 }
+        Self {
+            frame: 0,
+            confirming: false,
+        }
     }
 
     pub fn update(&mut self, ppu: &mut Ppu, dma: &mut DmaController, wram: &mut Wram, vram: &Vram) {
@@ -413,16 +417,32 @@ impl PrimeIgnition {
         self.frame = self.frame.wrapping_add(1);
     }
 
+    pub fn set_confirming(&mut self, confirming: bool) {
+        self.confirming = confirming;
+    }
+
     pub fn draw_overlay(&self, fb: &mut Framebuffer) {
         let logo_color = rgb555(31, 31, 31);
         let shadow_color = rgb555(4, 6, 10);
         let prompt_color = rgb555(20, 29, 31);
 
-        self.draw_text(fb, "AUREX-16++", 42, 48, 4, shadow_color);
-        self.draw_text(fb, "AUREX-16++", 40, 46, 4, logo_color);
+        let title = "AUREX-16++";
+        let title_w = self.text_width(title, 4);
+        let title_x = ((FB_W as i32 - title_w) / 2).max(0);
 
-        if (self.frame / 20).is_multiple_of(2) {
-            self.draw_text(fb, "PRESS ANY BUTTON TO CONTINUE", 85, 190, 2, prompt_color);
+        self.draw_text(fb, title, title_x + 2, 48, 4, shadow_color);
+        self.draw_text(fb, title, title_x, 46, 4, logo_color);
+
+        let prompt = if self.confirming {
+            "LOADING..."
+        } else {
+            "PRESS ANY BUTTON TO CONTINUE"
+        };
+        let prompt_w = self.text_width(prompt, 2);
+        let prompt_x = ((FB_W as i32 - prompt_w) / 2).max(0);
+
+        if self.confirming || (self.frame / 20).is_multiple_of(2) {
+            self.draw_text(fb, prompt, prompt_x, 212, 2, prompt_color);
         }
     }
 
@@ -439,6 +459,15 @@ impl PrimeIgnition {
         for ch in text.chars() {
             self.draw_glyph(fb, ch, cursor_x, y, scale, color);
             cursor_x += (6 * scale) as i32;
+        }
+    }
+
+    fn text_width(&self, text: &str, scale: usize) -> i32 {
+        let chars = text.chars().count() as i32;
+        if chars == 0 {
+            0
+        } else {
+            chars * (6 * scale) as i32 - scale as i32
         }
     }
 
@@ -477,6 +506,9 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
         'C' => [0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F],
         'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
+        'G' => [0x0F, 0x10, 0x10, 0x13, 0x11, 0x11, 0x0F],
+        'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F],
         'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
         'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
         'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
@@ -490,6 +522,7 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
         '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
         '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
+        '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x06],
         ' ' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
         _ => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
     }

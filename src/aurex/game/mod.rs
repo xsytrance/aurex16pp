@@ -4,5 +4,14 @@ pub mod tech_demo;
 pub struct InputState {
     pub left: bool,
     pub right: bool,
-    pub jump: bool,
+    pub up: bool,
+    pub down: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum AudioCue {
+    #[default]
+    None,
+    Eat,
+    Fail,
 }
