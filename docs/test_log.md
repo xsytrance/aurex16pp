@@ -1,3 +1,13 @@
+## 2026-03-07 19:26:20Z — Dark Theme + Frame Pacer Validation
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment due to missing native SDL2 linker library: `-lSDL2`)
+
+Verification focus:
+- Snake playfield palette is darker and higher-contrast.
+- Main loop pacing now uses runtime `FramePacer` helper.
+- Existing flow/input/audio/render paths remain wired and compile clean.
+
 ## 2026-03-07 18:58:48Z — Render Extraction + Motion Tune Validation
 - ✅ `cargo fmt --all`
 - ✅ `cargo check -q`

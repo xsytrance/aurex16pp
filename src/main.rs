@@ -3,11 +3,11 @@ mod aurex;
 use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
-    AudioEngine, AudioMode, FlowController, FlowPhase, poll_input, present_frame,
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, poll_input, present_frame,
 };
 use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::GameController;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 fn main() {
     let sdl = sdl2::init().expect("SDL init failed");
@@ -68,8 +68,7 @@ fn main() {
     let mut system = aurex::Aurex::new();
     let mut flow = FlowController::new();
 
-    let target = Duration::from_nanos(16_666_667);
-    let mut last = Instant::now();
+    let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
 
     'running: loop {
         // NOTE: We intentionally avoid SDL event enum decoding here because some
@@ -115,10 +114,6 @@ fn main() {
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
 
-        let elapsed = last.elapsed();
-        if elapsed < target {
-            std::thread::sleep(target - elapsed);
-        }
-        last = Instant::now();
+        pacer.wait_next_frame();
     }
 }

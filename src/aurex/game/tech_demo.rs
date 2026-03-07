@@ -74,14 +74,14 @@ impl TechDemo {
     fn upload_palette(&self, vram: &mut Vram) {
         let palette: [u16; 10] = [
             rgb555(0, 0, 0),    // 0 transparent
-            rgb555(3, 6, 10),   // 1 bg dark navy
-            rgb555(4, 8, 13),   // 2 bg light navy
-            rgb555(10, 20, 28), // 3 border cyan steel
-            rgb555(8, 24, 10),  // 4 snake body
-            rgb555(18, 31, 18), // 5 snake head bright
-            rgb555(31, 8, 8),   // 6 food red
-            rgb555(31, 24, 9),  // 7 food glow gold
-            rgb555(23, 30, 31), // 8 hud sparkle
+            rgb555(1, 1, 3),    // 1 bg near-black blue
+            rgb555(2, 2, 5),    // 2 bg dark tile variant
+            rgb555(4, 13, 18),  // 3 border deep cyan
+            rgb555(6, 22, 8),   // 4 snake body
+            rgb555(15, 31, 18), // 5 snake head bright
+            rgb555(31, 6, 6),   // 6 food red
+            rgb555(31, 18, 6),  // 7 food glow amber
+            rgb555(18, 24, 31), // 8 hud sparkle
             rgb555(31, 31, 31), // 9 white
         ];
 

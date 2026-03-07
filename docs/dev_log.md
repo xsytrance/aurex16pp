@@ -1,3 +1,31 @@
+## 2026-03-07 19:26:20Z — Dark Theme Pass + Frame Pacer Architecture
+
+### Summary
+Applied requested visibility update by darkening the snake playfield theme and continued architecture separation by extracting frame pacing logic from `main`.
+
+### Graphics Changes
+- Reworked game palette to a darker near-black blue board for stronger contrast and less visual washout.
+- Preserved bright snake/head/food accents against darker background for readability.
+
+### Architecture Changes
+- Added `runtime::frame_pacer` module with `FramePacer` helper.
+- Replaced manual sleep/elapsed timing math in `main.rs` with `FramePacer::wait_next_frame()`.
+- Keeps main loop focused on orchestrating runtime subsystems (flow/input/audio/render/pacing).
+
+### Progress Report
+Current subsystem status:
+- ✅ Flow state machine extracted (`runtime::flow`).
+- ✅ Audio synthesis extracted (`runtime::audio`).
+- ✅ Input polling extracted (`runtime::input`).
+- ✅ Render presentation extracted (`runtime::render`).
+- ✅ Frame pacing extracted (`runtime::frame_pacer`).
+- ✅ Snake AV polish stack active (glow body, corner glints, subtle drift, richer audio layers).
+
+Next recommended architecture steps:
+1. Add a `Scene` trait + `SceneManager` to formalize boot/game transitions.
+2. Introduce a typed event bus for audio cues/telemetry.
+3. Move hardcoded gameplay constants into config structs to support rapid theme/game swaps.
+
 ## 2026-03-07 18:58:48Z — Render Pipeline Extraction + Audio/Visual Motion Tune
 
 ### Summary
