@@ -1,24 +1,8 @@
 use crate::aurex::DmaController;
-use crate::aurex::dma::command::{DmaCommand, VramRegion};
-use crate::aurex::ppu::framebuffer::FB_W;
-use crate::aurex::ppu::ppu::Ppu;
+use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
+use crate::aurex::ppu::ppu::{PPU_BG0_ENABLE, PPU_BG1_ENABLE, PPU_SPRITE_ENABLE, Ppu};
 use crate::aurex::ppu::vram::Vram;
 use crate::aurex::wram::Wram;
-
-// -------------------------------------------------------------
-// PRIME IGNITION SPRITE TILE DATA
-// 4bpp planar, 32 bytes per tile
-// Using palette index 1 only
-// -------------------------------------------------------------
-
-const TILE_A_0: [u8; 32] = [
-    0b00011000, 0, 0, 0, 0b00111100, 0, 0, 0, 0b01100110, 0, 0, 0, 0b01100110, 0, 0, 0, 0b01111110,
-    0, 0, 0, 0b01100110, 0, 0, 0, 0b01100110, 0, 0, 0, 0b00000000, 0, 0, 0,
-];
-
-const TILE_A_1: [u8; 32] = TILE_A_0;
-const TILE_A_2: [u8; 32] = TILE_A_0;
-const TILE_A_3: [u8; 32] = TILE_A_0;
 
 pub struct PrimeIgnition {
     frame: u32,
@@ -29,360 +13,169 @@ impl PrimeIgnition {
         Self { frame: 0 }
     }
 
-    pub fn update(&mut self, ppu: &mut Ppu, dma: &mut DmaController, wram: &mut Wram, vram: &Vram) {
-        if self.frame == 0 {
-            let base_wram_offset = 0x0000;
-
-            let base_wram_offset = 0x0000;
-
-            // 9 glyphs * 4 tiles each = 36 tiles
-            const GLYPHS: usize = 10;
-            const TILES_PER_GLYPH: usize = 4;
-            const TILE_BYTES: usize = 32;
-            const TOTAL_TILES: usize = GLYPHS * TILES_PER_GLYPH;
-            const TOTAL_BYTES: usize = TOTAL_TILES * TILE_BYTES;
-
-            fn set_px(buf: &mut [u8; 16 * 16], x: i32, y: i32, v: u8) {
-                if x < 0 || y < 0 || x >= 16 || y >= 16 {
-                    return;
-                }
-                buf[(y as usize) * 16 + (x as usize)] = v;
-            }
-
-            // Simple stroke helpers (deterministic, integer)
-            fn rect(buf: &mut [u8; 16 * 16], x0: i32, y0: i32, x1: i32, y1: i32, v: u8) {
-                for y in y0..=y1 {
-                    for x in x0..=x1 {
-                        set_px(buf, x, y, v);
-                    }
-                }
-            }
-
-            fn diag(buf: &mut [u8; 16 * 16], x0: i32, y0: i32, x1: i32, y1: i32, v: u8) {
-                // Bresenham (small, deterministic)
-                let mut x = x0;
-                let mut y = y0;
-                let dx = (x1 - x0).abs();
-                let sx = if x0 < x1 { 1 } else { -1 };
-                let dy = -(y1 - y0).abs();
-                let sy = if y0 < y1 { 1 } else { -1 };
-                let mut err = dx + dy;
-                loop {
-                    set_px(buf, x, y, v);
-                    if x == x1 && y == y1 {
-                        break;
-                    }
-                    let e2 = 2 * err;
-                    if e2 >= dy {
-                        err += dy;
-                        x += sx;
-                    }
-                    if e2 <= dx {
-                        err += dx;
-                        y += sy;
-                    }
-                }
-            }
-
-            fn pack_16x16_to_tiles(dst: &mut [u8], glyph_index: usize, pix: &[u8; 16 * 16]) {
-                // dst contains TOTAL_TILES * 32 bytes
-                // Layout for each glyph: 4 tiles (TL,TR,BL,BR), each 8x8, nibble-packed
-                let base_tile = glyph_index * 4;
-
-                for ty in 0..2 {
-                    for tx in 0..2 {
-                        let tile = base_tile + (ty * 2 + tx);
-                        let out_base = tile * 32;
-
-                        for row in 0..8 {
-                            let src_y = ty * 8 + row;
-                            let out_row = out_base + row * 4;
-
-                            // 8 pixels => 4 bytes, high nibble then low nibble
-                            for pair in 0..4 {
-                                let src_x0 = tx * 8 + pair * 2;
-                                let p0 = pix[src_y * 16 + src_x0] & 0x0F;
-                                let p1 = pix[src_y * 16 + (src_x0 + 1)] & 0x0F;
-                                dst[out_row + pair] = (p0 << 4) | p1;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Build all glyphs into a single VRAM sprite-tile blob
-            let mut tiles = [0u8; TOTAL_BYTES];
-
-            // Glyph order: A U R E X - 1 6 + +
-            for gi in 0..GLYPHS {
-                let mut pix = [0u8; 16 * 16];
-
-                // -------------------------------------------------------------
-                // Style (clean, bold, readable)
-                // -------------------------------------------------------------
-                let fg = 1u8;
-                let t: i32 = 3; // stroke thickness (3 looks much better at 16x16)
-
-                // Canvas helpers:
-                // - rect(buf, x0, y0, x1, y1, v)
-                // - diag(buf, x0, y0, x1, y1, v)
-                //
-                // We draw within a "safe box" to avoid edge clipping:
-                // x: 2..13, y: 2..14, baseline at y=15
-
-                match gi {
-                    // ---------------------------------------------------------
-                    // A
-                    // ---------------------------------------------------------
-                    0 => {
-                        // legs
-                        rect(&mut pix, 2, 4, 2 + (t - 1), 14, fg);
-                        rect(&mut pix, 13 - (t - 1), 4, 13, 14, fg);
-
-                        // top cap
-                        rect(&mut pix, 2, 4, 13, 4 + (t - 1), fg);
-
-                        // cross bar (slightly above center)
-                        rect(&mut pix, 2, 9, 13, 9 + (t - 1), fg);
-                    }
-
-                    // ---------------------------------------------------------
-                    // U
-                    // ---------------------------------------------------------
-                    1 => {
-                        rect(&mut pix, 2, 4, 2 + (t - 1), 13, fg);
-                        rect(&mut pix, 13 - (t - 1), 4, 13, 13, fg);
-                        rect(&mut pix, 2, 13 - (t - 1), 13, 13, fg);
-                    }
-
-                    // ---------------------------------------------------------
-                    // R
-                    // ---------------------------------------------------------
-                    2 => {
-                        // spine
-                        rect(&mut pix, 2, 4, 2 + (t - 1), 14, fg);
-
-                        // top bar
-                        rect(&mut pix, 2, 4, 13, 4 + (t - 1), fg);
-
-                        // bowl right
-                        rect(&mut pix, 13 - (t - 1), 4, 13, 10, fg);
-
-                        // mid bar
-                        rect(&mut pix, 2, 10 - (t - 1), 13, 10, fg);
-
-                        // leg (clean blocky leg)
-                        rect(&mut pix, 9, 11, 13, 14, fg);
-                    }
-
-                    // ---------------------------------------------------------
-                    // E
-                    // ---------------------------------------------------------
-                    3 => {
-                        rect(&mut pix, 2, 4, 2 + (t - 1), 14, fg); // spine
-                        rect(&mut pix, 2, 4, 13, 4 + (t - 1), fg); // top
-                        rect(&mut pix, 2, 9, 11, 9 + (t - 1), fg); // mid
-                        rect(&mut pix, 2, 14 - (t - 1), 13, 14, fg); // bottom
-                    }
-
-                    // ---------------------------------------------------------
-                    // X (double diagonals for thickness)
-                    // ---------------------------------------------------------
-                    4 => {
-                        diag(&mut pix, 2, 4, 13, 14, fg);
-                        diag(&mut pix, 3, 4, 13, 13, fg);
-                        diag(&mut pix, 13, 4, 2, 14, fg);
-                        diag(&mut pix, 12, 4, 2, 13, fg);
-                    }
-
-                    // ---------------------------------------------------------
-                    // - (dash)
-                    // ---------------------------------------------------------
-                    5 => {
-                        rect(&mut pix, 3, 10, 12, 10 + (t - 1), fg);
-                    }
-
-                    // ---------------------------------------------------------
-                    // 1
-                    // ---------------------------------------------------------
-                    6 => {
-                        rect(&mut pix, 8, 4, 8 + (t - 1), 14, fg); // stem
-                        rect(&mut pix, 6, 14 - (t - 1), 12, 14, fg); // base
-                        rect(&mut pix, 6, 5, 8 + (t - 1), 4 + (t - 1), fg); // tiny cap
-                    }
-
-                    // ---------------------------------------------------------
-                    // 6 (clean loop)
-                    // ---------------------------------------------------------
-                    7 => {
-                        rect(&mut pix, 3, 5, 3 + (t - 1), 14, fg); // left
-                        rect(&mut pix, 3, 5, 12, 5 + (t - 1), fg); // top
-                        rect(&mut pix, 3, 10, 12, 10 + (t - 1), fg); // mid
-                        rect(&mut pix, 12 - (t - 1), 10, 12, 14, fg); // right lower
-                        rect(&mut pix, 3, 14 - (t - 1), 12, 14, fg); // bottom
-                    }
-
-                    // ---------------------------------------------------------
-                    // + (both plus glyphs)
-                    // ---------------------------------------------------------
-                    8 | 9 => {
-                        rect(&mut pix, 8, 6, 8 + (t - 1), 13, fg); // vertical
-                        rect(&mut pix, 5, 10, 13, 10 + (t - 1), fg); // horizontal
-                    }
-
-                    _ => {}
-                }
-
-                // -------------------------------------------------------------
-                // Baseline anchor (makes glyphs feel “not cut off”)
-                // -------------------------------------------------------------
-                rect(&mut pix, 2, 15, 13, 15, 0); // keep baseline clean (no forced line)
-
-                // Pack into 4 tiles (TL,TR,BL,BR)
-                pack_16x16_to_tiles(&mut tiles[..], gi, &pix);
-            }
-
-            // Copy tiles into WRAM staging
-            wram.memory_mut()[base_wram_offset..base_wram_offset + TOTAL_BYTES]
-                .copy_from_slice(&tiles);
-
-            // DMA to SpriteTiles VRAM
-            let cmd = DmaCommand::new(
-                VramRegion::SpriteTiles,
-                base_wram_offset,
-                0, // tile 0
-                TOTAL_BYTES,
-            );
-            dma.request(cmd, wram, vram);
-
-            // -------------------------------------------------------------
-            // PALETTE INITIALIZATION (Palette 0)
-            // -------------------------------------------------------------
-
-            let palette_wram_offset = 0x0100; // separate from tile staging
-
-            let palette_data: [u8; 64] = [
-                // ---------------------------
-                // Palette 0 (logo - silver)
-                // ---------------------------
-                0x00, 0x00, // 0: transparent
-                0xFF, 0x7F, // 1: white
-                0xAD, 0x56, // 2: mid silver
-                0x29, 0x21, // 3: dark silver
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                // ---------------------------
-                // Palette 1 (glow - cyan)
-                // ---------------------------
-                0x00, 0x00, // 0: transparent
-                0xFF, 0x03, // 1: bright cyan
-                0x9F, 0x02, // 2: mid cyan
-                0x5F, 0x01, // 3: deep cyan
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ];
-
-            wram.memory_mut()[palette_wram_offset..palette_wram_offset + 64]
-                .copy_from_slice(&palette_data);
-
-            let palette_cmd = DmaCommand::new(
-                VramRegion::Palettes,
-                palette_wram_offset,
-                0, // start of palette memory
-                64,
-            );
-
-            dma.request(palette_cmd, wram, vram);
-
-            // Copy to WRAM
-
-            let cmd = DmaCommand::new(VramRegion::SpriteTiles, base_wram_offset, 0, 128);
-
-            dma.request(cmd, wram, vram);
-        }
-
-        let frame = self.frame;
-
-        // -------------------------------------------------------------
-        // Disable background layers for clean boot screen
-        // -------------------------------------------------------------
-        ppu.bg0_enable = false;
-        ppu.bg1_enable = false;
-
-        // -------------------------------------------------------------
-        // Background Scroll (slow cosmic drift)
-        // -------------------------------------------------------------
-        let scroll = (frame / 4) as u16;
-        ppu.set_bg0_scroll(scroll, 0);
-
-        // -------------------------------------------------------------
-        // Logo Drop Logic
-        // -------------------------------------------------------------
-        let base_y: i16 = 80;
-        let start_y: i16 = -40;
-        let spacing: i16 = 20;
-        let center_x: i16 = (FB_W as i16) / 2;
-
-        let letters = 10; // A U R E X - 1 6 + +
-
-        for i in 0..letters {
-            let appear_frame = 60 + (i as u32 * 8);
-
-            let total_width = letters as i16 * spacing;
-            let start_x = center_x - (total_width / 2);
-
-            let x = start_x + (i as i16 * spacing);
-
-            let y = if frame < appear_frame {
-                start_y
-            } else {
-                let t = (frame - appear_frame) as f32;
-
-                let duration = 40.0;
-                let progress = (t / duration).min(1.0);
-
-                // smoothstep easing
-                let eased = progress * progress * (3.0 - 2.0 * progress);
-
-                (start_y as f32 + (base_y - start_y) as f32 * eased) as i16
-            };
-
-            let tile_index = (i * 4) as u16;
-
-            let tile_index = (i * 4) as u16;
-
-            ppu.write_sprite(
-                i as usize, // glow uses low indices
-                (x + 1) as u16,
-                y as u16,
-                tile_index,
-                1,
-                0,
-                true,
-                false,
-                false,
-            );
-
-            // Main pass (front)
-            ppu.write_sprite(
-                32 + i as usize, // main uses higher indices
-                x as u16,
-                y as u16,
-                tile_index,
-                0,
-                0,
-                true,
-                false,
-                false,
-            );
-        }
-
-        // -------------------------------------------------------------
-        // Cinematic Drop Spike
-        // -------------------------------------------------------------
-        if frame == 360 {
-            let spike = scroll.wrapping_mul(4);
-            ppu.set_bg0_scroll(spike, 0);
-        }
-
+    pub fn update(
+        &mut self,
+        ppu: &mut Ppu,
+        _dma: &mut DmaController,
+        _wram: &mut Wram,
+        _vram: &Vram,
+    ) {
+        ppu.write_addr(PPU_BG0_ENABLE, 0);
+        ppu.write_addr(PPU_BG1_ENABLE, 0);
+        ppu.write_addr(PPU_SPRITE_ENABLE, 0);
         self.frame = self.frame.wrapping_add(1);
+    }
+
+    pub fn draw_overlay(&self, fb: &mut Framebuffer) {
+        let t = self.frame.min(300);
+        self.draw_backdrop(fb, t);
+
+        let logo_scale = if t < 120 { 5 } else { 6 };
+        let title = "AUREX-16++";
+        let title_w = text_width(title, logo_scale);
+        let x = ((FB_W as i32 - title_w) / 2).max(0);
+        let y = 84;
+
+        let glow = ((t / 8) & 7) as u8;
+        draw_text(
+            fb,
+            title,
+            x - 2,
+            y - 2,
+            logo_scale,
+            rgb555(4, 8 + glow, 18 + glow),
+        );
+        draw_text(fb, title, x, y, logo_scale, rgb555(20, 29, 31));
+
+        if t > 80 {
+            let alpha = ((t - 80) / 3).min(20) as u8;
+            draw_text(
+                fb,
+                "NEXT-GEN CARTRIDGE SYSTEM",
+                86,
+                154,
+                2,
+                rgb555(8 + alpha / 4, 14 + alpha / 3, 18 + alpha / 2),
+            );
+        }
+
+        if (220..300).contains(&t) && (t / 10) % 2 == 0 {
+            draw_text(fb, "BOOTING LIBRARY...", 122, 210, 2, rgb555(14, 22, 28));
+        }
+    }
+
+    fn draw_backdrop(&self, fb: &mut Framebuffer, t: u32) {
+        let pixels = fb.pixels_mut();
+        for y in 0..FB_H {
+            for x in 0..FB_W {
+                let scan = (((x as u32 + t) >> 4) ^ ((y as u32 + t * 2) >> 5)) & 7;
+                let b = (2 + (y as i32 * 10 / FB_H as i32) + scan as i32).clamp(0, 31) as u8;
+                let g = (1 + (scan / 2)) as u8;
+                pixels[y * FB_W + x] = rgb555(0, g, b);
+            }
+        }
+
+        // Top and bottom framing bars.
+        fill_rect(fb, 0, 0, FB_W as i32, 18, rgb555(1, 5, 10));
+        fill_rect(
+            fb,
+            0,
+            (FB_H - 18) as i32,
+            FB_W as i32,
+            FB_H as i32,
+            rgb555(1, 5, 10),
+        );
+    }
+}
+
+fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
+    let pixels = fb.pixels_mut();
+    let x0 = x0.clamp(0, FB_W as i32);
+    let x1 = x1.clamp(0, FB_W as i32);
+    let y0 = y0.clamp(0, FB_H as i32);
+    let y1 = y1.clamp(0, FB_H as i32);
+
+    for y in y0..y1 {
+        for x in x0..x1 {
+            pixels[y as usize * FB_W + x as usize] = color;
+        }
+    }
+}
+
+fn draw_text(fb: &mut Framebuffer, text: &str, x: i32, y: i32, scale: usize, color: u16) {
+    let mut cursor_x = x;
+    for ch in text.chars() {
+        draw_glyph(fb, ch, cursor_x, y, scale, color);
+        cursor_x += (6 * scale) as i32;
+    }
+}
+
+fn text_width(text: &str, scale: usize) -> i32 {
+    let chars = text.chars().count() as i32;
+    if chars == 0 {
+        0
+    } else {
+        chars * (6 * scale) as i32 - scale as i32
+    }
+}
+
+fn draw_glyph(fb: &mut Framebuffer, ch: char, x: i32, y: i32, scale: usize, color: u16) {
+    let glyph = glyph_5x7(ch);
+    let pixels = fb.pixels_mut();
+
+    for (row, bits) in glyph.iter().enumerate() {
+        for col in 0..5usize {
+            if bits & (1 << (4 - col)) == 0 {
+                continue;
+            }
+
+            for sy in 0..scale {
+                let py = y + (row * scale + sy) as i32;
+                if !(0..FB_H as i32).contains(&py) {
+                    continue;
+                }
+
+                for sx in 0..scale {
+                    let px = x + (col * scale + sx) as i32;
+                    if !(0..FB_W as i32).contains(&px) {
+                        continue;
+                    }
+                    pixels[py as usize * FB_W + px as usize] = color;
+                }
+            }
+        }
+    }
+}
+
+fn glyph_5x7(ch: char) -> [u8; 7] {
+    match ch {
+        'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
+        'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
+        'C' => [0x0F, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0F],
+        'D' => [0x1E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1E],
+        'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
+        'G' => [0x0F, 0x10, 0x10, 0x13, 0x11, 0x11, 0x0F],
+        'H' => [0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
+        'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F],
+        'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
+        'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
+        'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11],
+        'S' => [0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E],
+        'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
+        'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
+        'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
+        'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
+        'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F],
+        '0' => [0x0E, 0x13, 0x15, 0x19, 0x11, 0x11, 0x0E],
+        '1' => [0x04, 0x0C, 0x14, 0x04, 0x04, 0x04, 0x0E],
+        '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F],
+        '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
+        '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
+        '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
+        '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C],
+        ' ' => [0x00; 7],
+        _ => [0x1F, 0x11, 0x15, 0x15, 0x15, 0x11, 0x1F],
     }
 }

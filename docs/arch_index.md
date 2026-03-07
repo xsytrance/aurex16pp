@@ -173,3 +173,19 @@ prime_ignition.rs - Boot cinematic sequence - DMA glyph upload - Temporary visua
   - TEMP status: Yes (diagnostic tool). May be disabled when PrimeIgnition is stable.
 
 END OF INDEX
+
+
+## LIBRARY DOMAIN
+
+Files:
+- `src/aurex/game/library.rs`
+- `src/aurex/game/mod.rs`
+
+Core model:
+- `TitleProfile`
+- `AudioCue::SelectTrack`
+
+Responsibilities:
+- Own title metadata (theme/icon/track)
+- Emit title-selection cues to runtime audio
+- Render placeholder library UI with per-title styling

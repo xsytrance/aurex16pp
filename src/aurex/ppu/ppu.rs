@@ -419,7 +419,7 @@ impl Ppu {
         // (PPU does not mutate registers internally)
         // -------------------------------------------------------------------------
         let bg0_scroll_x = self.read_addr(PPU_BG0_SCROLL_X);
-        let bg0_scroll_y = self.read_addr(PPU_BG0_SCROLL_Y);
+        let _bg0_scroll_y = self.read_addr(PPU_BG0_SCROLL_Y);
 
         // -------------------------------------------------------------------------
         // Build per-scanline scroll tables (Phase 3)
@@ -510,7 +510,7 @@ impl Ppu {
             // -----------------------------------------------------------------------------
             // Window check (vertical clip)
             // -----------------------------------------------------------------------------
-            let window_active = self.window_enabled
+            let _window_active = self.window_enabled
                 && (y as u16) >= self.window_top
                 && (y as u16) <= self.window_bottom;
 
