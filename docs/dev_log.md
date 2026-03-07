@@ -1,3 +1,43 @@
+## 2026-03-07 16:26:34Z — Boot Visual/Flow Refinement
+
+### Summary
+Improved boot presentation and transition flow: larger/crisper logo treatment, explicit on-screen continue prompt, and retained boot music pipeline before entering the tech demo.
+
+### Technical Changes
+- Added a crisp 5x7 pixel-font overlay renderer for boot text, drawn directly onto the framebuffer for sharp edges.
+- Increased perceived logo size by rendering `AUREX-16++` at scale 4 with drop-shadow.
+- Added blinking `PRESS ANY BUTTON TO CONTINUE` prompt at scale 2.
+- Kept the existing "press any key/button" transition path into `start_game()`.
+- Preserved continuous audio queue feeding for boot music playback.
+
+### Constraints Check
+- Determinism preserved: yes.
+- Hardware caps preserved: yes.
+- No float usage introduced: yes.
+- No architecture rewrite: yes.
+
+## 2026-03-07 16:05:00Z — Boot-to-Game Start Gate and Input Flow Fix
+
+### Summary
+Resolved a boot flow issue where the program could appear stuck on the logo/boot scene by introducing an explicit run mode gate and a clear transition into gameplay.
+
+### Technical Changes
+- Added an explicit `RunMode` state machine (`Boot` and `Game`) in `Aurex`.
+- Added `start_game()` on `Aurex` to perform an explicit mode transition.
+- Routed `Aurex::tick(...)` through boot logic in `Boot` mode and gameplay logic in `Game` mode.
+- Updated event/input handling to trigger start on keyboard and controller button events.
+- Added controller state polling fallback so analog activity can also trigger the transition.
+- Preserved per-frame audio queue feeding to avoid regressions in audio generation cadence.
+
+### Constraints Check
+- Determinism preserved: yes (mode transition is explicit and monotonic per start event).
+- Hardware caps preserved: yes.
+- No float usage introduced in core paths: yes.
+- No architectural rewrite: yes (incremental state-gate fix only).
+
+### Notes
+This addresses the observed user-facing symptom of appearing to remain on boot/logo indefinitely when start input was not being accepted robustly across input paths.
+
 AUREX-16++ DEVELOPMENT LOG
 
 Reverse Chronological Engineering Record
