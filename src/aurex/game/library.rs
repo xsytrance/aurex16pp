@@ -114,6 +114,35 @@ pub struct LibraryScreen {
     selected: usize,
     prev_up: bool,
     prev_down: bool,
+    prev_accept: bool,
+    status_message: StatusMessage,
+}
+
+#[derive(Clone, Copy)]
+struct StatusMessage {
+    text: &'static str,
+    tint: ColorTheme,
+}
+
+impl StatusMessage {
+    fn idle() -> Self {
+        Self {
+            text: "SONG PROFILE ACTIVE",
+            tint: ColorTheme {
+                bg_r: 2,
+                bg_g: 8,
+                bg_b: 14,
+                cover_r: 14,
+                cover_g: 22,
+                cover_b: 28,
+            },
+        }
+    }
+}
+
+pub struct LibraryUpdate {
+    pub audio_cue: AudioCue,
+    pub launch_requested: bool,
 }
 
 impl LibraryScreen {
@@ -122,6 +151,8 @@ impl LibraryScreen {
             selected: 0,
             prev_up: false,
             prev_down: false,
+            prev_accept: false,
+            status_message: StatusMessage::idle(),
         }
     }
 
@@ -129,22 +160,41 @@ impl LibraryScreen {
         AudioCue::SelectTrack(PROFILES[self.selected].track_id)
     }
 
-    pub fn update(&mut self, input: InputState) -> AudioCue {
+    pub fn current_title(&self) -> &'static str {
+        PROFILES[self.selected].title
+    }
+
+    pub fn update(&mut self, input: InputState) -> LibraryUpdate {
         let mut cue = AudioCue::None;
+        let mut launch_requested = false;
 
         if input.up && !self.prev_up {
             self.selected = (self.selected + PROFILES.len() - 1) % PROFILES.len();
             cue = self.current_audio_cue();
+            self.status_message = StatusMessage::idle();
         }
         if input.down && !self.prev_down {
             self.selected = (self.selected + 1) % PROFILES.len();
             cue = self.current_audio_cue();
+            self.status_message = StatusMessage::idle();
+        }
+
+        if input.accept && !self.prev_accept {
+            launch_requested = true;
+            self.status_message = StatusMessage {
+                text: "CARTRIDGE LAUNCH PIPELINE NEXT",
+                tint: PROFILES[self.selected].theme,
+            };
         }
 
         self.prev_up = input.up;
         self.prev_down = input.down;
+        self.prev_accept = input.accept;
 
-        cue
+        LibraryUpdate {
+            audio_cue: cue,
+            launch_requested,
+        }
     }
 
     pub fn draw(&self, fb: &mut Framebuffer, frame: u64) {
@@ -262,11 +312,11 @@ impl LibraryScreen {
         }
     }
 
-    fn draw_footer(&self, fb: &mut Framebuffer, profile: TitleProfile) {
+    fn draw_footer(&self, fb: &mut Framebuffer, _profile: TitleProfile) {
         self.fill_rect(fb, 16, 216, (FB_W - 16) as i32, 236, rgb555(2, 8, 14));
         self.draw_text(
             fb,
-            "UP/DOWN: SELECT   A/START: OPEN (COMING SOON)",
+            "UP/DOWN: SELECT   A/START: REQUEST LAUNCH",
             24,
             222,
             1,
@@ -274,14 +324,14 @@ impl LibraryScreen {
         );
         self.draw_text(
             fb,
-            "SONG PROFILE ACTIVE",
-            306,
+            self.status_message.text,
+            226,
             222,
             1,
             rgb555(
-                profile.theme.cover_r.min(31),
-                profile.theme.cover_g.min(31),
-                profile.theme.cover_b.min(31),
+                self.status_message.tint.cover_r.min(31),
+                self.status_message.tint.cover_g.min(31),
+                self.status_message.tint.cover_b.min(31),
             ),
         );
     }
@@ -385,5 +435,63 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C],
         ' ' => [0x00; 7],
         _ => [0x1F, 0x11, 0x15, 0x15, 0x15, 0x11, 0x1F],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LibraryScreen, PROFILES};
+    use crate::aurex::game::{AudioCue, InputState};
+
+    #[test]
+    fn navigation_wraps_and_emits_track_cue() {
+        let mut lib = LibraryScreen::new();
+        let update_up = lib.update(InputState {
+            up: true,
+            ..InputState::default()
+        });
+
+        assert!(matches!(
+            update_up.audio_cue,
+            AudioCue::SelectTrack(track) if track == PROFILES[PROFILES.len() - 1].track_id
+        ));
+
+        let update_down = lib.update(InputState::default());
+        assert!(matches!(update_down.audio_cue, AudioCue::None));
+
+        let update_down = lib.update(InputState {
+            down: true,
+            ..InputState::default()
+        });
+        assert!(matches!(
+            update_down.audio_cue,
+            AudioCue::SelectTrack(track) if track == PROFILES[0].track_id
+        ));
+    }
+
+    #[test]
+    fn launch_request_is_edge_triggered() {
+        let mut lib = LibraryScreen::new();
+
+        let first = lib.update(InputState {
+            accept: true,
+            ..InputState::default()
+        });
+        assert!(first.launch_requested);
+
+        let held = lib.update(InputState {
+            accept: true,
+            ..InputState::default()
+        });
+        assert!(!held.launch_requested);
+
+        let released = lib.update(InputState::default());
+        assert!(!released.launch_requested);
+
+        let second = lib.update(InputState {
+            accept: true,
+            ..InputState::default()
+        });
+        assert!(second.launch_requested);
     }
 }

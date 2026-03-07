@@ -22,6 +22,7 @@ pub fn dispatch_runtime_events(engine: &mut AudioEngine, events: &[RuntimeEvent]
         match event {
             RuntimeEvent::Audio(cue) => engine.trigger_cue(*cue),
             RuntimeEvent::SceneChanged(_scene) => {}
+            RuntimeEvent::TitleLaunchRequested(_title) => {}
         }
     }
 }

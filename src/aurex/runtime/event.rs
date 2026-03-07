@@ -10,6 +10,7 @@ pub enum SceneId {
 pub enum RuntimeEvent {
     Audio(AudioCue),
     SceneChanged(SceneId),
+    TitleLaunchRequested(&'static str),
 }
 
 pub struct RuntimeEventQueue {

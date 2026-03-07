@@ -6,6 +6,8 @@ pub struct InputState {
     pub right: bool,
     pub up: bool,
     pub down: bool,
+    pub accept: bool,
+    pub cancel: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]

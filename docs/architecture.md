@@ -201,6 +201,7 @@ Input is ignored for scene transitions during timed boot and only accepted in `A
 A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
 
 - `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- `RuntimeEvent::TitleLaunchRequested(&'static str)` captures library launch intent as typed telemetry.
 - Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
 - This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
 
