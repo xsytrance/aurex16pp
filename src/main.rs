@@ -1,5 +1,6 @@
 mod aurex;
 
+use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, dispatch_runtime_events,
