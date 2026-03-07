@@ -13,8 +13,6 @@ pub struct AudioEngine {
     arp_phase: u32,
     sample_rate: u32,
     confirm_samples_left: u32,
-    eat_samples_left: u32,
-    fail_samples_left: u32,
     noise_state: u32,
     track_index: usize,
 }
@@ -28,8 +26,6 @@ impl AudioEngine {
             arp_phase: 0,
             sample_rate,
             confirm_samples_left: 0,
-            eat_samples_left: 0,
-            fail_samples_left: 0,
             noise_state: 0xA5A5_1357,
             track_index: 0,
         }
@@ -41,14 +37,8 @@ impl AudioEngine {
 
     pub fn trigger_cue(&mut self, cue: AudioCue) {
         match cue {
-            AudioCue::Eat => self.eat_samples_left = self.sample_rate / 9,
-            AudioCue::Fail => self.fail_samples_left = self.sample_rate / 4,
-            AudioCue::TrackNext => {
-                self.track_index = (self.track_index + 1) % 3;
-                self.confirm_samples_left = self.sample_rate / 10;
-            }
-            AudioCue::TrackPrev => {
-                self.track_index = (self.track_index + 2) % 3;
+            AudioCue::SelectTrack(track) => {
+                self.track_index = (track as usize) % 6;
                 self.confirm_samples_left = self.sample_rate / 10;
             }
             AudioCue::None => {}
@@ -69,7 +59,6 @@ impl AudioEngine {
     }
 
     fn boot_sample(&mut self) -> i32 {
-        // ~4.5s Yuzo-inspired driving intro with bass + lead + arp + noise hats.
         const BOOT_SAMPLES: u64 = 44_100 * 9 / 2;
         if self.sample_clock >= BOOT_SAMPLES {
             return 0;
@@ -91,7 +80,7 @@ impl AudioEngine {
     fn game_sample(&mut self) -> i32 {
         match self.track_index {
             0 => {
-                const BPM: u32 = 110;
+                const BPM: u32 = 112;
                 const BASS: [u32; 16] = [
                     49, 49, 55, 49, 65, 65, 55, 49, 49, 49, 55, 49, 41, 41, 49, 41,
                 ];
@@ -101,17 +90,17 @@ impl AudioEngine {
                 self.pattern_sample(BPM, &BASS, &LEAD, 5200, 3400, true)
             }
             1 => {
-                const BPM: u32 = 124;
+                const BPM: u32 = 122;
                 const BASS: [u32; 16] = [
                     55, 55, 65, 55, 73, 73, 65, 55, 55, 55, 65, 55, 49, 49, 55, 49,
                 ];
                 const LEAD: [u32; 16] = [
                     220, 277, 330, 277, 247, 277, 370, 277, 220, 277, 330, 277, 196, 220, 277, 220,
                 ];
-                self.pattern_sample(BPM, &BASS, &LEAD, 5000, 3200, true)
+                self.pattern_sample(BPM, &BASS, &LEAD, 5100, 3200, true)
             }
-            _ => {
-                const BPM: u32 = 136;
+            2 => {
+                const BPM: u32 = 128;
                 const BASS: [u32; 16] = [
                     65, 65, 73, 65, 82, 82, 73, 65, 65, 65, 73, 65, 55, 55, 65, 55,
                 ];
@@ -119,6 +108,34 @@ impl AudioEngine {
                     262, 330, 392, 330, 294, 330, 440, 330, 262, 330, 392, 330, 220, 262, 330, 262,
                 ];
                 self.pattern_sample(BPM, &BASS, &LEAD, 5000, 3300, true)
+            }
+            3 => {
+                const BPM: u32 = 96;
+                const BASS: [u32; 16] = [41, 0, 46, 0, 49, 0, 55, 0, 41, 0, 46, 0, 39, 0, 44, 0];
+                const LEAD: [u32; 16] = [
+                    165, 220, 247, 220, 196, 220, 262, 220, 165, 220, 247, 220, 156, 196, 220, 196,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 4400, 2900, true)
+            }
+            4 => {
+                const BPM: u32 = 138;
+                const BASS: [u32; 16] = [
+                    73, 73, 82, 73, 87, 87, 82, 73, 65, 65, 73, 65, 58, 58, 65, 58,
+                ];
+                const LEAD: [u32; 16] = [
+                    294, 370, 440, 370, 330, 370, 494, 370, 262, 330, 392, 330, 247, 294, 330, 294,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 5600, 3600, true)
+            }
+            _ => {
+                const BPM: u32 = 146;
+                const BASS: [u32; 16] = [
+                    82, 82, 98, 82, 110, 110, 98, 82, 73, 73, 82, 73, 65, 65, 73, 65,
+                ];
+                const LEAD: [u32; 16] = [
+                    330, 392, 494, 392, 370, 392, 523, 392, 294, 330, 440, 330, 262, 294, 330, 294,
+                ];
+                self.pattern_sample(BPM, &BASS, &LEAD, 5800, 3800, true)
             }
         }
     }
@@ -198,38 +215,14 @@ impl AudioEngine {
 
     fn sfx_sample(&mut self) -> i32 {
         if self.confirm_samples_left > 0 {
-            let t = self.sample_rate / 3 - self.confirm_samples_left;
-            let hz = 700 + (t * 900 / (self.sample_rate / 3).max(1));
+            let t = self.sample_rate / 10 - self.confirm_samples_left.min(self.sample_rate / 10);
+            let hz = 900 + (t * 800 / (self.sample_rate / 10).max(1));
             self.confirm_samples_left -= 1;
             self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz));
             return if self.lead_phase < 0x8000_0000 {
-                9000
+                8000
             } else {
-                -9000
-            };
-        }
-
-        if self.fail_samples_left > 0 {
-            let t = self.sample_rate / 4 - self.fail_samples_left;
-            let hz = 420_u32.saturating_sub(t / 180);
-            self.fail_samples_left -= 1;
-            self.bass_phase = self.bass_phase.wrapping_add(self.step_from_hz(hz.max(90)));
-            return if self.bass_phase < 0x8000_0000 {
-                11000
-            } else {
-                -11000
-            };
-        }
-
-        if self.eat_samples_left > 0 {
-            let t = self.sample_rate / 9 - self.eat_samples_left;
-            let hz = 1800_u32.saturating_sub(t * 6).max(500);
-            self.eat_samples_left -= 1;
-            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz));
-            return if self.lead_phase < 0x8000_0000 {
-                7000
-            } else {
-                -2000
+                -8000
             };
         }
 

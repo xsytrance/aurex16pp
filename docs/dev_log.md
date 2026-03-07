@@ -617,3 +617,19 @@ Brief overview of change.
 Optional engineering commentary.
 
 Always insert new entries above older entries.
+
+
+## 2026-03-08 00:00:00Z — Per-Title AV Profiles + Library Domain Refactor
+
+### Summary
+Implemented per-title song selection, per-title color themes, and tiny title graphics in the library UI while tightening system architecture boundaries.
+
+### Changes
+- Added `TitleProfile` domain model in library module (title, track id, theme, icon).
+- Library selection now emits `AudioCue::SelectTrack(u8)` on change.
+- Audio engine now supports 6 title-specific music patterns mapped 1:1 to library entries.
+- Library cards now render per-title accent color + tiny icon graphic.
+- `Aurex::start_game()` primes audio cue from currently selected title.
+
+### Architecture Rationale
+This starts a reusable “content profile” architecture for future cartridge metadata integration: one profile drives both visual and audio presentation from a single selection state.

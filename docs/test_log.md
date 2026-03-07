@@ -145,3 +145,13 @@ Focus of verification:
 - Removed DMA smoke test from core loop
 - Fixed stack overflow caused by large array allocations
 - Verified deterministic frame pacing
+
+## 2026-03-08 — Library Profile Audio/Theme Validation
+- ✅ `cargo fmt -- --check`
+- ✅ `cargo check`
+
+Validation focus:
+- Each library title produces a distinct `SelectTrack` cue when selection changes.
+- Audio engine maps six track IDs to six unique game patterns.
+- Library visuals vary by selected profile (backdrop tint, card accent, icon rendering).
+- Start-of-library transition emits current title track cue.

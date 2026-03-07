@@ -12,8 +12,5 @@ pub struct InputState {
 pub enum AudioCue {
     #[default]
     None,
-    Eat,
-    Fail,
-    TrackNext,
-    TrackPrev,
+    SelectTrack(u8),
 }

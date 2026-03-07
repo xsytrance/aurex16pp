@@ -66,6 +66,7 @@ impl Aurex {
 
     pub fn start_game(&mut self) {
         self.mode = RunMode::Game;
+        self.audio_cue = self.library.current_audio_cue();
     }
 
     pub fn run(&mut self) -> ! {

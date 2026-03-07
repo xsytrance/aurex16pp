@@ -170,3 +170,17 @@ Aurex-16++ aims to:
 - Encourage creative constraint
 - Support LLM-generated cartridges under hardware-style limits
 - Prioritize readability, determinism, and performance
+
+
+---
+
+## Library Runtime Domain (2026-03-08 update)
+
+A dedicated title-profile domain now drives the library scene:
+
+- `TitleProfile` = title text + audio track id + color theme + icon kind.
+- Library selection is now a stateful domain event source.
+- Selection changes emit `AudioCue::SelectTrack(track_id)`.
+- Audio runtime resolves per-title songs by `track_id` (6 title-specific patterns).
+
+This keeps UI theming and soundtrack policy data-driven instead of hardcoded across unrelated modules.
