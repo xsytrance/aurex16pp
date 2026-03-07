@@ -1,3 +1,21 @@
+## 2026-03-07 17:29:13Z — Visual/Sound Polish Pass (Snake Scene)
+
+### Summary
+Continued forward with player-facing polish by improving in-game visual quality and audio texture while preserving deterministic behavior.
+
+### Visual Changes
+- Introduced a styled BG tilemap board (dark/light checker playfield + cyan border frame).
+- Enabled BG rendering in game mode with fixed zero-scroll board presentation.
+- Added animated/pulsing food visuals via alternating sprite tiles.
+- Tightened playfield bounds to match visible framed arena and improved HUD pip spacing.
+
+### Audio Changes
+- Added deterministic hat/noise texture into music pattern synthesis for fuller mix.
+- Refined eat SFX into a short descending chirp for clearer arcade feedback.
+
+### Technical Note
+This pass prioritized immediate presentation quality without architecture churn.
+
 ## 2026-03-07 17:12:20Z — Runtime Flow Controller Architecture Pass
 
 ### Summary

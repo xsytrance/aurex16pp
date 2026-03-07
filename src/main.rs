@@ -36,6 +36,7 @@ struct RetroSynth {
     confirm_samples_left: u32,
     eat_samples_left: u32,
     fail_samples_left: u32,
+    noise_state: u32,
 }
 
 impl RetroSynth {
@@ -48,6 +49,7 @@ impl RetroSynth {
             confirm_samples_left: 0,
             eat_samples_left: 0,
             fail_samples_left: 0,
+            noise_state: 0xA5A5_1357,
         }
     }
 
@@ -138,7 +140,20 @@ impl RetroSynth {
 
         let kick_env = (spb.saturating_sub(sub)).min(spb / 6) as i32;
         let kick = (kick_env * 6) - 3500;
-        (bass_wave + lead_wave + kick) / 2
+
+        // Deterministic hi-hat/noise pulse for extra texture.
+        let hat_window = spb / 8;
+        let hat = if sub < hat_window || (sub > spb / 2 && sub < (spb / 2 + hat_window / 2)) {
+            self.noise_state = self
+                .noise_state
+                .wrapping_mul(1664525)
+                .wrapping_add(1013904223);
+            ((self.noise_state >> 24) as i8 as i32) * 38
+        } else {
+            0
+        };
+
+        (bass_wave + lead_wave + kick + hat) / 2
     }
 
     fn sfx_sample(&mut self) -> i32 {
@@ -167,8 +182,10 @@ impl RetroSynth {
         }
 
         if self.eat_samples_left > 0 {
+            let t = self.sample_rate / 9 - self.eat_samples_left;
+            let hz = 1800_u32.saturating_sub(t * 6).max(500);
             self.eat_samples_left -= 1;
-            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(1200));
+            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz));
             return if self.lead_phase < 0x8000_0000 {
                 7000
             } else {
