@@ -6,11 +6,15 @@ use crate::aurex::wram::Wram;
 
 pub struct PrimeIgnition {
     frame: u32,
+    confirming: bool,
 }
 
 impl PrimeIgnition {
     pub fn new() -> Self {
-        Self { frame: 0 }
+        Self {
+            frame: 0,
+            confirming: false,
+        }
     }
 
     pub fn update(
