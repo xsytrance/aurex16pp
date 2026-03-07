@@ -1,6 +1,6 @@
 use crate::aurex::DmaController;
 use crate::aurex::dma::command::{DmaCommand, VramRegion};
-use crate::aurex::ppu::framebuffer::FB_W;
+use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
 use crate::aurex::ppu::ppu::{
     PPU_BG0_ENABLE, PPU_BG0_SCROLL_X, PPU_BG0_SCROLL_Y, PPU_BG1_ENABLE, Ppu,
 };

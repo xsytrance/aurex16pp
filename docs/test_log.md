@@ -1,3 +1,13 @@
+## 2026-03-07 17:41:58Z — SDL Event Robustness Validation
+- ✅ `cargo fmt --all`
+- ✅ `cargo check -q`
+- ⚠️ `cargo test -q` (fails in this environment due to missing native SDL2 linker library: `-lSDL2`)
+
+Verification focus:
+- Build remains stable after event-loop restructuring.
+- Input/start flow remains state-polled and functional.
+- Panic-prone SDL event decode path is no longer used.
+
 ## 2026-03-07 17:29:13Z — Visual/Sound Polish Validation
 - ✅ `cargo fmt --all`
 - ✅ `cargo check -q`

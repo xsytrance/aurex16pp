@@ -1,3 +1,18 @@
+## 2026-03-07 17:41:58Z — SDL Event Robustness Fix + Warning Cleanup
+
+### Summary
+Addressed a Windows runtime panic path from SDL event decoding (`invalid enum value 0x607`) and reduced warning noise for known intentional placeholders.
+
+### Technical Changes
+- Reworked main-loop input handling to avoid `poll_iter()` enum decoding on every event.
+- Switched to `pump_events()` + keyboard/controller state polling for robust cross-device input handling.
+- Added explicit comment documenting why raw event enum decoding was avoided.
+- Renamed internal temporary PPU locals to underscore-prefixed forms to silence noisy unused-variable warnings.
+
+### Impact
+- Prevents crash path observed with certain controllers/drivers emitting event values not decoded by the current rust-sdl2 release.
+- Keeps existing gameplay/input behavior while improving runtime resilience.
+
 ## 2026-03-07 17:29:13Z — Visual/Sound Polish Pass (Snake Scene)
 
 ### Summary
