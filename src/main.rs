@@ -1,6 +1,5 @@
 mod aurex;
 
-use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, dispatch_runtime_events,
@@ -120,8 +119,14 @@ fn main() {
         system.drain_events(&mut runtime_events);
 
         for event in &runtime_events {
-            if let aurex::runtime::RuntimeEvent::SceneChanged(scene) = event {
-                println!("Scene changed: {:?}", scene);
+            match event {
+                aurex::runtime::RuntimeEvent::SceneChanged(scene) => {
+                    println!("Scene changed: {:?}", scene);
+                }
+                aurex::runtime::RuntimeEvent::TitleLaunchRequested(title) => {
+                    println!("Launch requested: {title}");
+                }
+                aurex::runtime::RuntimeEvent::Audio(_) => {}
             }
         }
 
