@@ -201,6 +201,7 @@ Input is ignored for scene transitions during timed boot and only accepted in `A
 A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
 
 - `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` captures library launch intent as typed telemetry.
 - Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
 - This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
 
@@ -248,3 +249,60 @@ Current boundaries are now explicit and suitable for team/agent handoff:
    - Owns event buffering and draining semantics.
 4. **Host Dispatch** (`dispatch_runtime_events`)
    - Owns side effects from emitted runtime intents.
+
+
+## Library AV Feedback Pass (2026-03-08 01:08:00Z)
+
+Library runtime now includes explicit launch-feedback channels across visual, audio, and host diagnostics layers:
+
+- Visual: deterministic footer audio meter + launch status pulse tint.
+- Audio: `AudioCue::LaunchRequest` triggers dedicated launch stinger SFX.
+- Architecture: `collect_runtime_diagnostics(&[RuntimeEvent]) -> RuntimeDiagnostics` centralizes non-audio event interpretation for host orchestration.
+
+This keeps scene simulation deterministic while improving UX clarity and reducing host-loop branching noise.
+
+
+## Launch Intent Lifecycle (2026-03-08 01:37:00Z)
+
+Library launch flow now has bidirectional intent states:
+- Request: `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
+- Clear: `RuntimeEvent::TitleLaunchCanceled`
+
+Audio intent cues now distinguish user actions:
+- `AudioCue::LaunchRequest`
+- `AudioCue::Cancel`
+
+Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centralized.
+
+
+## Launch Domain Controller (2026-03-08 02:02:00Z)
+
+Launch orchestration now includes a dedicated runtime domain component:
+- `LaunchIntentController`
+- `LaunchStage::Idle | LaunchStage::Pending(&'static str)`
+
+Core scene update emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions, and host loop consumes this through `RuntimeDiagnostics`.
+
+
+## LLM Cartridge SDK Contract (2026-03-08 02:28:00Z)
+
+Aurex is explicitly designed for structured LLM cartridge generation.
+
+Canonical authoring docs:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+
+Runtime launch descriptors now include both display and build identity:
+- `title`
+- `cartridge_id`
+
+This keeps host/runtime launch orchestration aligned with deterministic, prompt-structured cartridge output.
+
+
+## Launch Descriptor Validation (2026-03-08 02:56:00Z)
+
+Launch requests now pass deterministic descriptor validation before stage transition:
+- `validate_launch_descriptor(LaunchDescriptor)`
+- rejection telemetry: `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`
+
+This is a pre-validation guardrail for future cartridge loading stages.
