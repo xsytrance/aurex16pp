@@ -93,9 +93,17 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                let cue = self.library.update(input);
-                if !matches!(cue, AudioCue::None) {
-                    self.events.push(RuntimeEvent::Audio(cue));
+                let update = self.library.update(input);
+                if !matches!(update.audio_cue, AudioCue::None) {
+                    self.events.push(RuntimeEvent::Audio(update.audio_cue));
+                }
+                if update.launch_requested {
+                    self.events.push(RuntimeEvent::TitleLaunchRequested(
+                        self.library.current_title(),
+                    ));
+                }
+                if update.launch_canceled {
+                    self.events.push(RuntimeEvent::TitleLaunchCanceled);
                 }
             }
         }

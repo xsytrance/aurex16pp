@@ -308,6 +308,25 @@ END OF CANON
   - Host loop drains and dispatches side effects
 
 
+
+
+## Library Feedback Canon (2026-03-08 01:08:00Z)
+
+- Launch-intent UX now includes a deterministic audio stinger cue:
+  - `AudioCue::LaunchRequest`
+- Library scene visual feedback includes deterministic footer pulse + meter animation.
+- Host interpretation of non-audio runtime events should prefer runtime diagnostics collection over ad-hoc per-loop matching.
+
+
+
+## Launch Intent Lifecycle Canon (2026-03-08 01:37:00Z)
+
+- Launch selection intent is reversible before host-side cartridge boot is attached.
+- Runtime event set for library intent now includes:
+  - `RuntimeEvent::TitleLaunchRequested(&'static str)`
+  - `RuntimeEvent::TitleLaunchCanceled`
+- Audio cue set now includes explicit cancel intent (`AudioCue::Cancel`).
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
@@ -318,6 +337,8 @@ Scene lifecycle contract:
 Event contract:
 - `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
+- `RuntimeEvent::TitleLaunchRequested(&'static str)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.
