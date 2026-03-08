@@ -13,6 +13,7 @@ const WAVE_SIZE: usize = 256;
 const MIX_SHIFT: i32 = 10;
 const TICK_HZ: u32 = 120;
 const PATTERN_STEPS: usize = 16;
+const MASTER_LIMIT: i32 = 28_000;
 
 const WAVE_SINE: usize = 0;
 const WAVE_SQUARE: usize = 1;
@@ -186,6 +187,8 @@ pub struct AudioEngine {
     sfx_play_samples: u32,
     sfx_kind: AudioSfx,
     noise_state: u32,
+    mix_lp_l: i32,
+    mix_lp_r: i32,
 }
 
 impl AudioEngine {
@@ -213,6 +216,8 @@ impl AudioEngine {
             sfx_play_samples: 0,
             sfx_kind: AudioSfx::None,
             noise_state: 0xC001_FEED,
+            mix_lp_l: 0,
+            mix_lp_r: 0,
         }
     }
 
@@ -319,8 +324,15 @@ impl AudioEngine {
             mix_l += sfx_l;
             mix_r += sfx_r;
 
-            out[frame * 2] = mix_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
-            out[frame * 2 + 1] = mix_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+            mix_l = (mix_l * 3) / 8;
+            mix_r = (mix_r * 3) / 8;
+            self.mix_lp_l += (mix_l - self.mix_lp_l) / 4;
+            self.mix_lp_r += (mix_r - self.mix_lp_r) / 4;
+            let out_l = Self::soft_clip(self.mix_lp_l);
+            let out_r = Self::soft_clip(self.mix_lp_r);
+
+            out[frame * 2] = out_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+            out[frame * 2 + 1] = out_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
             self.sample_clock = self.sample_clock.wrapping_add(1);
         }
     }
@@ -360,17 +372,23 @@ impl AudioEngine {
                 (AudioMode::Game, _) => 2,
             };
 
-            self.note_on(i, hz, inst as u8);
+            self.note_on(i, hz, inst as u8, mode);
         }
     }
 
-    fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8) {
+    fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8, mode: AudioMode) {
         let inst = INSTRUMENTS[(instrument_id as usize) % INSTRUMENTS.len()];
         let v = &mut self.voices[idx];
         v.instrument_id = instrument_id;
         v.waveform_id = inst.waveform_id;
         v.pitch = hz;
-        v.volume = if hz == 0 { 0 } else { 800 };
+        v.volume = if hz == 0 {
+            0
+        } else if matches!(mode, AudioMode::Boot) {
+            560
+        } else {
+            680
+        };
         v.envelope_state = if hz == 0 {
             EnvelopeState::Release
         } else {
@@ -379,11 +397,12 @@ impl AudioEngine {
         v.env_counter = 0;
         v.pan_l = ((VOICE_COUNT - idx) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.pan_r = ((idx + 1) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
-        v.fx = match idx % 4 {
-            0 => 0b0001,
-            1 => 0b0010,
-            2 => 0b0100,
-            _ => 0b1000,
+        v.fx = match (mode, idx % 4) {
+            (AudioMode::Boot, 0) => 0b0001,
+            (AudioMode::Boot, _) => 0,
+            (AudioMode::Game, 0) => 0b0001,
+            (AudioMode::Game, 1) => 0b0010,
+            (AudioMode::Game, _) => 0,
         };
     }
 
@@ -519,6 +538,13 @@ impl AudioEngine {
         shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
     }
 
+    fn soft_clip(sample: i32) -> i32 {
+        let abs = sample.abs();
+        let sign = if sample < 0 { -1 } else { 1 };
+        let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
+        sign * mag
+    }
+
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
             return (0, 0);
@@ -574,6 +600,15 @@ mod tests {
         let mut block = [0i16; 64];
         engine.render_block(AudioMode::Boot, &mut block);
         assert!(block.iter().any(|s| *s != 0));
+    }
+
+    #[test]
+    fn diagnostics_peak_stays_below_hard_clip() {
+        let engine = AudioEngine::new(48_000);
+        let boot = engine.diagnostics_for_frames(AudioMode::Boot, 48_000);
+        let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
+        assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
+        assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
     }
 }
 
