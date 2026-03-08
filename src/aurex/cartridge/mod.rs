@@ -9,6 +9,12 @@ const MAX_DMA_PER_FRAME: usize = 4;
 const STAGING_START: usize = 0x20000;
 const STAGING_CHUNK_BYTES: usize = 4096;
 
+#[derive(Debug)]
+pub enum CartridgeResolveError {
+    MissingManifest,
+    InvalidManifest(String),
+}
+
 #[derive(Clone)]
 struct Upload {
     region: VramRegion,
@@ -23,16 +29,22 @@ pub struct CartridgeRuntime {
 }
 
 impl CartridgeRuntime {
-    pub fn from_cartridge_id(cartridge_id: &str) -> Result<Self, String> {
+    pub fn from_cartridge_id(cartridge_id: &str) -> Result<Self, CartridgeResolveError> {
         let manifest_path = Path::new("cartridges")
             .join(cartridge_id)
             .join("manifest.txt");
-        Self::from_manifest(&manifest_path)
+
+        if !manifest_path.exists() {
+            return Err(CartridgeResolveError::MissingManifest);
+        }
+
+        Self::from_manifest_with_expected_id(&manifest_path, Some(cartridge_id))
+            .map_err(CartridgeResolveError::InvalidManifest)
     }
 
     pub fn discover_default() -> Option<Self> {
         let manifest_path = Path::new("cartridges/default/manifest.txt");
-        match Self::from_manifest(manifest_path) {
+        match Self::from_manifest_with_expected_id(manifest_path, None) {
             Ok(cart) => Some(cart),
             Err(err) => {
                 eprintln!(
@@ -44,7 +56,10 @@ impl CartridgeRuntime {
         }
     }
 
-    fn from_manifest(path: &Path) -> Result<Self, String> {
+    fn from_manifest_with_expected_id(
+        path: &Path,
+        expected_game_id: Option<&str>,
+    ) -> Result<Self, String> {
         let root = path
             .parent()
             .ok_or_else(|| "manifest has no parent directory".to_string())?;
@@ -52,6 +67,7 @@ impl CartridgeRuntime {
             .map_err(|e| format!("failed to read manifest {}: {e}", path.display()))?;
 
         let mut name = String::from("unnamed");
+        let mut game_id: Option<String> = None;
         let mut uploads = Vec::new();
 
         for (line_no, raw) in text.lines().enumerate() {
@@ -62,6 +78,27 @@ impl CartridgeRuntime {
 
             if let Some(rest) = line.strip_prefix("name=") {
                 name = rest.trim().to_string();
+                continue;
+            }
+
+            if let Some(rest) = line.strip_prefix("game_id=") {
+                let id = rest.trim();
+                if id.is_empty() {
+                    return Err(format!("manifest line {}: empty game_id", line_no + 1));
+                }
+
+                let valid = id
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+                if !valid {
+                    return Err(format!(
+                        "manifest line {}: invalid game_id '{}'",
+                        line_no + 1,
+                        id
+                    ));
+                }
+
+                game_id = Some(id.to_string());
                 continue;
             }
 
@@ -114,6 +151,17 @@ impl CartridgeRuntime {
                 line_no + 1,
                 line
             ));
+        }
+
+        if let Some(expected) = expected_game_id {
+            let parsed =
+                game_id.ok_or_else(|| "manifest missing required game_id field".to_string())?;
+            if parsed != expected {
+                return Err(format!(
+                    "manifest game_id '{}' does not match requested cartridge_id '{}'",
+                    parsed, expected
+                ));
+            }
         }
 
         if uploads.is_empty() {
@@ -173,5 +221,66 @@ fn parse_region(s: &str) -> Option<VramRegion> {
         "Mode7Tex" => Some(VramRegion::Mode7Tex),
         "Palettes" => Some(VramRegion::Palettes),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CartridgeResolveError, CartridgeRuntime};
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_temp_dir() -> std::path::PathBuf {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        std::env::temp_dir().join(format!("aurex_cart_test_{stamp}"))
+    }
+
+    #[test]
+    fn from_cartridge_id_requires_game_id_field() {
+        let old = std::env::current_dir().expect("cwd");
+        let root = unique_temp_dir();
+        fs::create_dir_all(root.join("cartridges/test_game")).expect("mkdir");
+        fs::write(
+            root.join("cartridges/test_game/manifest.txt"),
+            "name=TEST\nupload=BgTiles,0,tile.bin\n",
+        )
+        .expect("write manifest");
+        fs::write(root.join("cartridges/test_game/tile.bin"), [0u8; 32]).expect("write tile");
+
+        std::env::set_current_dir(&root).expect("chdir root");
+        let result = CartridgeRuntime::from_cartridge_id("test_game");
+        std::env::set_current_dir(old).expect("restore cwd");
+
+        assert!(matches!(
+            result,
+            Err(CartridgeResolveError::InvalidManifest(_))
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn from_cartridge_id_rejects_mismatched_game_id() {
+        let old = std::env::current_dir().expect("cwd");
+        let root = unique_temp_dir();
+        fs::create_dir_all(root.join("cartridges/test_game")).expect("mkdir");
+        fs::write(
+            root.join("cartridges/test_game/manifest.txt"),
+            "name=TEST\ngame_id=other_game\nupload=BgTiles,0,tile.bin\n",
+        )
+        .expect("write manifest");
+        fs::write(root.join("cartridges/test_game/tile.bin"), [0u8; 32]).expect("write tile");
+
+        std::env::set_current_dir(&root).expect("chdir root");
+        let result = CartridgeRuntime::from_cartridge_id("test_game");
+        std::env::set_current_dir(old).expect("restore cwd");
+
+        assert!(matches!(
+            result,
+            Err(CartridgeResolveError::InvalidManifest(_))
+        ));
+        let _ = fs::remove_dir_all(root);
     }
 }

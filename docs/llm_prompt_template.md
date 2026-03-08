@@ -37,3 +37,9 @@ FAILSAFE_RULES:
 OUTPUT_FILES:
 - cartridges/neon_circuit/manifest.txt
 - cartridges/neon_circuit/*.bin
+
+
+Manifest snippet:
+name=NEON CIRCUIT
+game_id=neon_circuit
+upload=BgTiles,0,bg_tiles.bin

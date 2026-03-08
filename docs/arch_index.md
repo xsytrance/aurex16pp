@@ -257,3 +257,5 @@ Responsibilities:
 - Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.
 
 - Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.
+
+- Manifest identity enforcement: `game_id` must exist and match requested `cartridge_id` during resolve gate.

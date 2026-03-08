@@ -372,6 +372,7 @@ END OF CANON
 - `Ready` stage is now followed by deterministic cartridge resolution check by `cartridge_id`.
 - Successful resolution emits `TitleLaunchResolved(LaunchDescriptor)`.
 - Missing cartridge manifests force `Rejected(CartridgeMissing)` before any boot handoff.
+Invalid manifests force `Rejected(CartridgeManifestInvalid)` before any boot handoff.
 
 ## Runtime Handoff Contract (Current)
 

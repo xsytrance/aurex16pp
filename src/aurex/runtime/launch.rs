@@ -9,6 +9,7 @@ pub enum LaunchValidationError {
     EmptyCartridgeId,
     InvalidCartridgeId,
     CartridgeMissing,
+    CartridgeManifestInvalid,
 }
 
 pub fn validate_launch_descriptor(desc: LaunchDescriptor) -> Result<(), LaunchValidationError> {

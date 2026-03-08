@@ -40,6 +40,7 @@ LLM-created cartridge assets should be placed under:
 ## Manifest Baseline
 Current loader accepts:
 - `name=<display name>`
+- `game_id=<lower_snake_case id>` (required for resolver path)
 - `upload=<Region,dst_offset,file>`
 
 Future SDK revisions will add validated metadata fields, but this baseline is required now.

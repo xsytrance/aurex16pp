@@ -134,15 +134,31 @@ impl Aurex {
                     self.events.push(RuntimeEvent::LaunchStageChanged(stage));
                     if let LaunchStage::Ready(desc) = stage {
                         self.events.push(RuntimeEvent::TitleLaunchReady(desc));
-                        if CartridgeRuntime::from_cartridge_id(desc.cartridge_id).is_ok() {
-                            self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
-                        } else {
-                            self.launch.reject(LaunchValidationError::CartridgeMissing);
-                            self.events.push(RuntimeEvent::TitleLaunchRejected(
-                                LaunchValidationError::CartridgeMissing,
-                            ));
-                            self.events
-                                .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                        match CartridgeRuntime::from_cartridge_id(desc.cartridge_id) {
+                            Ok(_) => {
+                                self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
+                            }
+                            Err(
+                                crate::aurex::cartridge::CartridgeResolveError::MissingManifest,
+                            ) => {
+                                self.launch.reject(LaunchValidationError::CartridgeMissing);
+                                self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                    LaunchValidationError::CartridgeMissing,
+                                ));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                            Err(
+                                crate::aurex::cartridge::CartridgeResolveError::InvalidManifest(_),
+                            ) => {
+                                self.launch
+                                    .reject(LaunchValidationError::CartridgeManifestInvalid);
+                                self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                    LaunchValidationError::CartridgeManifestInvalid,
+                                ));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
                         }
                     }
                 }

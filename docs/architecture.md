@@ -323,3 +323,6 @@ After validation reaches `Ready`, runtime performs cartridge resolution by `cart
 - failure transitions to rejected state and emits launch rejection telemetry
 
 This prevents host boot handoff from firing on unresolved cartridge IDs.
+
+
+Resolver failures now distinguish missing manifests from invalid manifests; invalid manifests map to `CartridgeManifestInvalid` rejection telemetry.

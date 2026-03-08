@@ -1,3 +1,22 @@
+## 2026-03-08 04:02:00Z — Manifest Identity Enforcement for LLM Cartridges
+
+### Summary
+Added strict manifest identity enforcement so runtime cartridge resolution validates `game_id` against requested `cartridge_id`.
+
+### Runtime / Architecture
+- `CartridgeRuntime::from_cartridge_id` now returns typed resolve errors:
+  - `MissingManifest`
+  - `InvalidManifest(String)`
+- Resolver now requires `game_id=` in manifest and checks equality with launch `cartridge_id`.
+- Launch pipeline now maps invalid manifest to `LaunchValidationError::CartridgeManifestInvalid`.
+
+### SDK
+- LLM SDK guide now documents required `game_id` manifest field.
+- Prompt template now includes a manifest snippet with `game_id`.
+
+### Progress
+This closes a key identity loophole and makes generated cartridge folders + manifests verifiable before boot attach.
+
 ## 2026-03-08 03:44:00Z — Launch Resolve Gate + Library Stage HUD Messaging
 
 ### Summary
