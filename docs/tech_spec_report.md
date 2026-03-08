@@ -1,3 +1,5 @@
+> **Addendum (2026-03-08):** PrimeAwakens is now the canonical boot visual module and ASU-32 boot audio includes anti-fuzz stabilization (non-retrigger policy for unchanged active notes + reduced boot percussion harshness). Refer to `docs/architecture.md` and `docs/ai_handoff_2026-03-08_runtime_av_stage3.md` for current operational details.
+
 # AUREX-16++ Technical Specification Report (2026-03-08)
 
 This report consolidates current canonical hardware/runtime capabilities into one reference.
