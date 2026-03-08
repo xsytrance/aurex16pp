@@ -165,6 +165,7 @@ struct Voice {
     delay_line: [i16; 32],
     delay_index: usize,
     lp_state: i32,
+    prev_env_gain: u16,
 }
 
 impl Voice {
@@ -185,6 +186,7 @@ impl Voice {
             delay_line: [0; 32],
             delay_index: 0,
             lp_state: 0,
+            prev_env_gain: 0,
         }
     }
 }
@@ -688,10 +690,13 @@ impl AudioEngine {
         let wave = self.read_wave(wave_id, phase_idx);
         let mut sample = wave as i32;
         sample = (sample * vol as i32) >> MIX_SHIFT;
-        // Anti-click: smooth envelope at boundaries (blend current and previous env_level)
-        let smooth_gain = (env_gain as u32 + self.voices[idx].prev_env_gain as u32) >> 1;
-        self.voices[idx].prev_env_gain = env_gain;
-        sample = (sample * smooth_gain as i32) >> MIX_SHIFT;
+        let smooth_gain = {
+            let v = &mut self.voices[idx];
+            let sg = ((env_gain as u32 + v.prev_env_gain as u32) >> 1) as i32;
+            v.prev_env_gain = env_gain;
+            sg
+        };
+        sample = (sample * smooth_gain) >> MIX_SHIFT;
         sample = self.apply_effects(idx, sample, inst, fx);
 
         let l = (sample * pan_l as i32) >> MIX_SHIFT;

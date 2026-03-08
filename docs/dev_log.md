@@ -1256,3 +1256,27 @@ Continued core architecture + sound/graphics development with a deterministic au
 1. Add profile-aware regression assertions (crest/clipping deltas across profiles).
 2. Add deterministic boot palette profile path for graphics hardware tone calibration.
 3. Reduce module-wide dead-code allow usage by moving to targeted item-level allowances as implementation catches up.
+
+
+## 2026-03-08 12:10:00Z — Core AV continuation: beat-step API compatibility + envelope smoothing state
+
+### Summary
+Continued core architecture/sound/graphics integration by aligning runtime signatures for boot beat-step plumbing and adding envelope gain smoothing state to remove compile drift seen in downstream environments.
+
+### Runtime/Integration
+- Updated `Aurex::run_frame` signature to accept `boot_beat_step: Option<u8>` and threaded that parameter through boot overlay rendering path.
+- Updated host callsites (main loop + replay smoke helper + `run()`) to pass explicit `None` for now, preserving current behavior while unlocking deterministic beat-step wiring later.
+
+### Audio
+- Added `prev_env_gain` voice state and applied per-voice envelope gain smoothing during voice sampling to reduce transient harshness and prevent missing-field compile mismatches in mixed-branch environments.
+
+### Graphics
+- Boot overlay now consumes beat-step input parameter and applies a small beat bias to wordmark animation timing (no behavior change when beat-step is absent).
+
+### Progress report
+- Core AV architecture is now better aligned for future shared beat-clock synchronization between boot graphics and audio without breaking existing deterministic flow.
+
+### Next planned work
+1. Implement actual boot beat-step source from sequencer diagnostics and feed it into `run_frame(...)` instead of `None`.
+2. Add profile-aware audio regression assertions and expose profile in baseline artifact metadata.
+3. Add deterministic boot palette profiles to continue graphics hardware tone calibration.

@@ -2,29 +2,21 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (deterministic mix profiles + duplicate/warning hygiene continuation)
+## Latest validation pass (beat-step API compatibility + envelope smoothing field)
 
 ### Commands executed
 
-1. `cargo fmt -- --check && cargo check --all-targets`
+1. `cargo fmt && cargo check --all-targets && AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh && cargo check --tests`
    - Result: PASS
-   - Notes: compile succeeds; warning backlog is now intentionally suppressed in unfinished modules via module-level `#![allow(dead_code)]`.
+   - Notes: compile/preflight checks pass with docs-sync shell fallback active in link-limited mode.
 
-2. `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh`
-   - Result: PASS
-   - Output excerpt:
-     - `[preflight] docs-sync check (shell fallback)`
-     - `[preflight] docs-sync check passed (shell fallback)`
-
-3. `cargo check --tests`
-   - Result: PASS
-
-4. `cargo test -q`
+2. `cargo test -q`
    - Result: ENV-LIMITED
    - Output excerpt:
      - `rust-lld: error: unable to find library -lSDL2`
 
 ## Interpretation
 
-- Mix profile architecture compiles cleanly and is available to diagnostics/baseline/runtime init paths.
-- Full test execution remains blocked until system SDL2 is available.
+- Integration signature drift is resolved in this branch for `run_frame(..., boot_beat_step)` and boot overlay API alignment.
+- Voice envelope smoothing state compiles cleanly and no missing-field errors remain.
+- Full binary-linked test execution remains blocked without system SDL2.

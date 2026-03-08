@@ -99,7 +99,6 @@ impl Aurex {
         }
     }
 
-    /// Run one frame. When in Boot mode, pass `boot_beat_step` (e.g. from AudioEngine::pattern_step) to sync overlay pulse with sequencer.
     pub fn run_frame(&mut self, input: InputState, boot_beat_step: Option<u8>) {
         self.clock.begin_frame();
         self.pdu.begin_frame();

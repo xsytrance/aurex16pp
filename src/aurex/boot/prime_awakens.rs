@@ -34,13 +34,13 @@ impl PrimeAwakens {
         self.frame = self.frame.wrapping_add(1);
     }
 
-    /// Draw boot overlay. `boot_beat_step` is the sequencer step (0..16) when in sync with audio; use for beat-aligned pulses.
     pub fn draw_overlay(&self, fb: &mut Framebuffer, boot_beat_step: Option<u8>) {
         let t = self.frame;
+        let beat_bias = boot_beat_step.unwrap_or(0) as u32;
         self.draw_boot_backdrop(fb, t);
         self.draw_energy_grid(fb, t);
         self.draw_boot_ring(fb, t);
-        self.draw_aurex_wordmark(fb, t);
+        self.draw_aurex_wordmark(fb, t.wrapping_add(beat_bias));
         self.draw_status_panels(fb, t);
         self.draw_prompt(fb, t);
     }
