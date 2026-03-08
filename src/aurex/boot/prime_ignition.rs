@@ -67,6 +67,9 @@ impl PrimeIgnition {
             );
         }
 
+        self.draw_accent_rails(fb, t);
+        self.draw_boot_meter(fb, t);
+
         if self.waiting_for_start {
             if (self.frame / 16) % 2 == 0 {
                 draw_text(
@@ -83,6 +86,51 @@ impl PrimeIgnition {
         }
     }
 
+    fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
+        let pulse = ((t >> 2) & 0x07) as i32;
+        for i in 0..6 {
+            let x0 = 36 + i * 64;
+            let glow = (pulse + i as i32) & 0x07;
+            fill_rect(
+                fb,
+                x0,
+                34,
+                x0 + 44,
+                38,
+                rgb555(
+                    (2 + (glow / 3)) as u8,
+                    (12 + glow as u8).min(31),
+                    (22 + glow as u8).min(31),
+                ),
+            );
+        }
+    }
+
+    fn draw_boot_meter(&self, fb: &mut Framebuffer, t: u32) {
+        let meter_x = 152;
+        let meter_y = 184;
+        fill_rect(
+            fb,
+            meter_x - 8,
+            meter_y - 6,
+            meter_x + 132,
+            meter_y + 18,
+            rgb555(1, 6, 10),
+        );
+
+        for bar in 0..16i32 {
+            let wave = (((t as i32 >> 1) + bar * 5) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = meter_x + bar * 8;
+            let c = rgb555(
+                (4 + ((bar >> 2) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(fb, x0, meter_y + 8 - h, x0 + 5, meter_y + 8, c);
+        }
+    }
+
     fn draw_backdrop(&self, fb: &mut Framebuffer, t: u32) {
         let pixels = fb.pixels_mut();
         for y in 0..FB_H {
@@ -91,7 +139,13 @@ impl PrimeIgnition {
                 let b = (3 + (y as i32 * 11 / FB_H as i32) + scan as i32).clamp(0, 31) as u8;
                 let g = (2 + (scan / 2) + ((t >> 5) & 1)).min(31) as u8;
                 let r = (((x as u32 + t) >> 7) & 1) as u8;
-                pixels[y * FB_W + x] = rgb555(r, g, b);
+                let star = (((x as u32 * 13 + y as u32 * 29 + t * 3) & 127) == 0) as u8;
+                let sc = if star == 1 {
+                    rgb555(26, 30, 31)
+                } else {
+                    rgb555(r, g, b)
+                };
+                pixels[y * FB_W + x] = sc;
             }
         }
 

@@ -132,15 +132,15 @@ impl AudioEngine {
             return 0;
         }
 
-        const BPM: u32 = 154;
+        const BPM: u32 = 166;
         const BASS: [u32; 16] = [
-            73, 73, 98, 73, 82, 82, 110, 82, 73, 73, 98, 73, 65, 65, 87, 65,
+            73, 73, 82, 92, 98, 98, 110, 123, 82, 82, 92, 98, 65, 65, 73, 82,
         ];
         const LEAD: [u32; 16] = [
-            294, 392, 440, 392, 349, 392, 523, 392, 294, 392, 440, 392, 262, 330, 392, 330,
+            330, 392, 494, 523, 440, 392, 587, 523, 392, 440, 494, 523, 330, 392, 440, 494,
         ];
 
-        let body = self.pattern_sample(BPM, &BASS, &LEAD, 8200, 6400, true);
+        let body = self.pattern_sample(BPM, &BASS, &LEAD, 8600, 6900, true);
         let tail = (BOOT_SAMPLES - self.sample_clock).min(44_100) as i32;
         (body * tail) / 44_100
     }
