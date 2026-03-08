@@ -926,4 +926,18 @@ mod tests {
 
         assert!(max_active <= 9, "max_active={max_active}");
     }
+
+    #[test]
+    fn boot_beat_step_tracks_sequencer_progression() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut block = [0i16; 2];
+
+        assert_eq!(engine.boot_beat_step(), 0);
+        for expected in 1..=3u8 {
+            for _ in 0..engine.tick_samples {
+                engine.render_block(AudioMode::Boot, &mut block);
+            }
+            assert_eq!(engine.boot_beat_step(), expected % super::PATTERN_STEPS as u8);
+        }
+    }
 }

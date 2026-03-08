@@ -1299,3 +1299,21 @@ Completed the next integration step by wiring live audio sequencer beat-step dat
 1. Add a tiny deterministic integration test that verifies boot beat-step propagation influences overlay timing path without changing game path.
 2. Surface beat-step in runtime diagnostics output to aid host-side debugging and sync validation.
 3. Continue profile-aware regression checks (crest/clipping deltas) and metadata enrichment in baseline artifacts.
+
+
+## 2026-03-08 17:50:00Z — Fast follow: deterministic beat-step progression test
+
+### Summary
+Added a focused deterministic audio unit test to lock in boot beat-step progression semantics and improve confidence while iterating quickly.
+
+### Validation/Tests
+- Added `boot_beat_step_tracks_sequencer_progression` in `runtime/audio` tests.
+- Test advances exactly `tick_samples` per sequencer step and verifies `boot_beat_step()` increments deterministically.
+
+### Progress report
+- Beat-step runtime wiring now has a regression guard, reducing risk of silent API drift during future sequencer refactors.
+
+### Next planned work
+1. Add a compact runtime diagnostics field exposing current boot beat-step for host telemetry.
+2. Add profile-aware assertion coverage for crest/clipping deltas in diagnostics baseline generation.
+3. Continue reducing broad `dead_code` allowances as modules stabilize.
