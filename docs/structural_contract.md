@@ -345,3 +345,16 @@ If a suggestion introduces a rename that conflicts with the registry:
 It must be rejected.
 
 END OF CONTRACT
+
+
+11. LLM Prompt Structure Governance
+
+Aurex cartridge authoring must use deterministic, pre-structured prompt contracts.
+
+Reference files:
+- docs/llm_sdk_guide.md
+- docs/llm_prompt_template.md
+
+Changes to prompt contract sections must be documented before runtime behavior depending on those sections is introduced.
+
+- docs/human_game_creation_guide.md
