@@ -101,17 +101,18 @@ Hardware limits locked.
 
 ---
 
-## AUDIO SYSTEM (ASU)
+## AUDIO SYSTEM
 
-File:
+Files:
 
-- src/aurex/asu/
+- `src/aurex/runtime/audio.rs`
+- `src/aurex/game/mod.rs` (AudioCue contract)
 
 Core:
 
-- Voice
-- Envelope
-- Sequencer
+- `AudioEngine`
+- deterministic envelope lane shaping
+- cue-driven stingers (`LaunchRequest`, `Cancel`)
 
 Integer-only audio logic required.
 
@@ -233,3 +234,48 @@ Core objects:
 Responsibilities:
 - Emit explicit scene transition telemetry
 - Keep scene lifecycle observable at host/runtime layer
+
+
+## LLM SDK / Cartridge Authoring
+
+Files:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+- `docs/human_game_creation_guide.md`
+- `src/aurex/runtime/launch.rs`
+
+Core objects:
+- `LaunchDescriptor { title, cartridge_id }`
+- `LaunchStage`
+- `LaunchIntentController`
+
+Responsibilities:
+- enforce prompt-structured cartridge authoring expectations
+- bridge library selection to cartridge identity (`cartridge_id`)
+- provide deterministic launch lifecycle domain state
+
+- Launch validation: `validate_launch_descriptor` + `TitleLaunchRejected` telemetry prior to pending stage.
+
+- Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.
+
+- Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.
+
+- Manifest identity enforcement: `game_id` must exist and match requested `cartridge_id` during resolve gate.
+
+
+## Technical Specification Reference
+
+Files:
+- `docs/tech_spec_report.md`
+
+Purpose:
+- single-page consolidated hardware/runtime capability report for operators and handoff consumers
+
+
+## PLATFORM COMPARISON REFERENCE
+
+Files:
+- `docs/aurex_vs_neo_geo.md`
+
+Purpose:
+- target-position comparison ensuring Aurex vision is >= Neo-Geo while preserving creative constraints

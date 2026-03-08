@@ -14,7 +14,7 @@
 
 use super::command::DmaCommand;
 use crate::aurex::dma::command::VramRegion;
-use crate::aurex::ppu::vram::{VRAM_I_BASE, VRAM_I_END, Vram};
+use crate::aurex::ppu::vram::{MAX_PALETTE_ENTRIES, VRAM_I_BASE, VRAM_I_END, Vram};
 use crate::aurex::wram::Wram;
 
 const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
@@ -73,6 +73,20 @@ impl DmaController {
 
         // Validate VRAM bounds
         let region_len = vram.region_len(&cmd.region);
+
+        if cmd.region == VramRegion::Palettes {
+            let palette_bytes = MAX_PALETTE_ENTRIES * 2;
+            if cmd.dst_offset + cmd.bytes > palette_bytes {
+                debug_assert!(
+                    cmd.dst_offset + cmd.bytes <= palette_bytes,
+                    "palette DMA overflow: dst={} bytes={} limit={}\n",
+                    cmd.dst_offset,
+                    cmd.bytes,
+                    palette_bytes
+                );
+                return self.reject();
+            }
+        }
 
         // -------------------------------------------------------------------------
         // HARDWARE ENFORCEMENT: REGION BOUNDARY
@@ -167,6 +181,24 @@ impl DmaController {
             let dst_slice = vram.region_mut(&cmd.region);
 
             let dst = &mut dst_slice[cmd.dst_offset..cmd.dst_offset + cmd.bytes];
+
+            if cmd.region == VramRegion::Palettes {
+                debug_assert_eq!(
+                    cmd.dst_offset % 2,
+                    0,
+                    "palette DMA offset must be 16-bit aligned"
+                );
+                debug_assert_eq!(cmd.bytes % 2, 0, "palette DMA size must be 16-bit aligned");
+                let start_index = cmd.dst_offset / 2;
+                let entry_count = cmd.bytes / 2;
+                debug_assert!(
+                    start_index + entry_count <= MAX_PALETTE_ENTRIES,
+                    "palette entry overflow: start={} count={} max={}",
+                    start_index,
+                    entry_count,
+                    MAX_PALETTE_ENTRIES
+                );
+            }
 
             dst.copy_from_slice(src);
         }
