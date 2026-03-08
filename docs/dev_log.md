@@ -1163,3 +1163,164 @@ Extended the runtime event model with explicit scene transition telemetry and do
 
 ### Rationale
 Improves observability and handoff-readiness without increasing coupling. Future options/menus/router features can consume transition telemetry through existing event channels.
+
+
+## 2026-03-08 10:20:00Z — Runtime AV Stage 3 follow-through (baseline artifact + regressions + docs-sync + telemetry polish)
+
+### Summary
+Implemented the next handoff focus items in order: deterministic audio/replay baseline artifact generation path, regression tests for retrigger and boot voice density policies, preflight docs-sync gate, and launch telemetry formatting normalization.
+
+### Runtime/Tooling
+- Added `--generate-runtime-baseline [--frames N] [--out PATH]` to write deterministic JSON containing audio diagnostics baseline + replay-capture smoke summary.
+- Added `--docs-sync-check` and wired preflight to run docs-sync before cartridge audit (unless link-limited skip mode is enabled).
+- Normalized launch telemetry strings for stage/rejection lines into parser-friendly lower-case formats.
+
+### Audio regression tests
+- Added regression coverage asserting unchanged active note+instrument pairs do not retrigger envelope attack.
+- Added boot sequencer density guard asserting active boot voices stay under defined threshold.
+
+### Validation notes
+- `cargo check` and `cargo check --tests` pass in this container.
+- `cargo test` remains blocked by missing system `SDL2` linker dependency (`-lSDL2`).
+
+
+## 2026-03-08 11:05:00Z — Audio diagnostics depth + preflight docs-sync fallback hardening
+
+### Summary
+Continued planned runtime AV/tooling development by strengthening audio quality diagnostics and hardening preflight docs-sync behavior in SDL2-link-limited environments.
+
+### Runtime/Audio
+- Extended `AudioDiagnostics` with deterministic quality counters: `crest_l_q10`, `crest_r_q10`, `clipped_l`, `clipped_r`.
+- Updated `--audio-diagnostics` human-readable output to include crest/clipping metrics for quick quality triage.
+- Added regression assertions that boot/game diagnostics retain non-trivial crest and zero clipping in baseline path.
+
+### Tooling/Preflight
+- Fixed `scripts/preflight.sh` behavior so `AUREX_SKIP_AUDIT_LINK=1` still runs docs-sync checks via shell marker fallback before skipping audit execution.
+- This closes prior drift risk where skip mode bypassed docs-sync entirely (or required link-dependent `cargo run`).
+
+### Validation
+- `cargo fmt` / `cargo check --all-targets` / `cargo check --tests` pass (warnings only).
+- `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh` passes and now explicitly reports shell docs-sync fallback pass.
+- `cargo test -q` remains SDL2-link-limited in this container.
+
+
+## 2026-03-08 11:40:00Z — Core AV architecture continuation: deterministic mix profiles
+
+### Summary
+Continued core architecture + sound/graphics development with a deterministic audio-mix profile system and host tooling exposure for profile-aware diagnostics/baselines.
+
+### Runtime/Audio
+- Added `MixProfile` (`soft`, `default`, `arcade`) with fixed integer coefficients for gain, LP smoothing, and HP decay.
+- Added `AudioEngine::new_with_profile(...)` and carried profile through diagnostics simulation path for deterministic parity.
+- Wired profile coefficients into master mix shaping path in `render_block(...)`.
+
+### Tooling/CLI
+- Added `--audio-profile soft|default|arcade` handling for `--audio-diagnostics`, `--generate-runtime-baseline`, and runtime playback initialization.
+- Non-JSON diagnostics output now reports selected profile alongside crest/clipping metrics.
+
+### Progress report
+- Core architecture now has a profile dimension for deterministic AV tuning rather than hard-coded one-size output shaping.
+- This makes upcoming quality calibration (Neo-Geo-target voicing and cabinet/consumer presets) much easier without contract drift.
+
+### Next planned work
+1. Add profile-aware regression assertions (crest/clipping deltas across profiles).
+2. Add deterministic boot palette profile path for graphics hardware tone calibration.
+3. Reduce module-wide dead-code allow usage by moving to targeted item-level allowances as implementation catches up.
+
+
+## 2026-03-08 12:10:00Z — Core AV continuation: beat-step API compatibility + envelope smoothing state
+
+### Summary
+Continued core architecture/sound/graphics integration by aligning runtime signatures for boot beat-step plumbing and adding envelope gain smoothing state to remove compile drift seen in downstream environments.
+
+### Runtime/Integration
+- Updated `Aurex::run_frame` signature to accept `boot_beat_step: Option<u8>` and threaded that parameter through boot overlay rendering path.
+- Updated host callsites (main loop + replay smoke helper + `run()`) to pass explicit `None` for now, preserving current behavior while unlocking deterministic beat-step wiring later.
+
+### Audio
+- Added `prev_env_gain` voice state and applied per-voice envelope gain smoothing during voice sampling to reduce transient harshness and prevent missing-field compile mismatches in mixed-branch environments.
+
+### Graphics
+- Boot overlay now consumes beat-step input parameter and applies a small beat bias to wordmark animation timing (no behavior change when beat-step is absent).
+
+### Progress report
+- Core AV architecture is now better aligned for future shared beat-clock synchronization between boot graphics and audio without breaking existing deterministic flow.
+
+### Next planned work
+1. Implement actual boot beat-step source from sequencer diagnostics and feed it into `run_frame(...)` instead of `None`.
+2. Add profile-aware audio regression assertions and expose profile in baseline artifact metadata.
+3. Add deterministic boot palette profiles to continue graphics hardware tone calibration.
+
+
+## 2026-03-08 17:35:00Z — Fast follow: boot beat-step wiring from audio sequencer
+
+### Summary
+Completed the next integration step by wiring live audio sequencer beat-step data into boot frame rendering so boot overlay timing can track runtime musical step state instead of using a placeholder `None` path.
+
+### Runtime/Integration
+- Added `AudioEngine::boot_beat_step()` accessor to expose the deterministic sequencer step as a compact `u8`.
+- Updated main loop to pass `Some(synth.boot_beat_step())` to `run_frame(...)` during boot-phase audio mode.
+- Kept game-phase behavior unchanged (`None`) to avoid coupling game visuals to boot-only timing semantics.
+
+### Progress report
+- Boot overlay beat bias is now driven by real runtime sequencer state, closing the immediate API plumbing loop and reducing AV drift risk.
+
+### Next planned work
+1. Add a tiny deterministic integration test that verifies boot beat-step propagation influences overlay timing path without changing game path.
+2. Surface beat-step in runtime diagnostics output to aid host-side debugging and sync validation.
+3. Continue profile-aware regression checks (crest/clipping deltas) and metadata enrichment in baseline artifacts.
+
+
+## 2026-03-08 17:50:00Z — Fast follow: deterministic beat-step progression test
+
+### Summary
+Added a focused deterministic audio unit test to lock in boot beat-step progression semantics and improve confidence while iterating quickly.
+
+### Validation/Tests
+- Added `boot_beat_step_tracks_sequencer_progression` in `runtime/audio` tests.
+- Test advances exactly `tick_samples` per sequencer step and verifies `boot_beat_step()` increments deterministically.
+
+### Progress report
+- Beat-step runtime wiring now has a regression guard, reducing risk of silent API drift during future sequencer refactors.
+
+### Next planned work
+1. Add a compact runtime diagnostics field exposing current boot beat-step for host telemetry.
+2. Add profile-aware assertion coverage for crest/clipping deltas in diagnostics baseline generation.
+3. Continue reducing broad `dead_code` allowances as modules stabilize.
+
+
+## 2026-03-08 18:05:00Z — Fast follow: expose boot beat-step in audio diagnostics
+
+### Summary
+Implemented the next telemetry step by exposing deterministic sequencer beat-step in `AudioDiagnostics` outputs (JSON + human-readable CLI), improving host-side AV sync visibility.
+
+### Runtime/Tooling
+- Extended `AudioDiagnostics` with `boot_beat_step` and included it in `to_json()` serialization.
+- Updated `--audio-diagnostics` text output to print `boot_beat_step`.
+- Added assertions in diagnostics regression test to validate deterministic beat-step value after a fixed frame window.
+
+### Progress report
+- Beat-step telemetry is now visible in diagnostics artifacts and command-line triage output, reducing debugging turnaround for sync issues.
+
+### Next planned work
+1. Include profile metadata at top-level runtime baseline JSON payload for faster host-side grouping.
+2. Add a tiny parser test for diagnostics JSON field presence/shape to avoid accidental telemetry regressions.
+3. Continue tightening warning hygiene by replacing broad `dead_code` allows with targeted item-level allowances.
+
+
+## 2026-03-08 18:20:00Z — Fast follow: baseline payload profile metadata
+
+### Summary
+Added top-level `audio_profile` metadata to runtime baseline JSON generation for faster host-side grouping and cross-profile diff workflows.
+
+### Runtime/Tooling
+- Updated `--generate-runtime-baseline` payload shape to include `"audio_profile":"soft|default|arcade"` at the top level.
+- Keeps existing baseline and replay-smoke payloads unchanged for backward-compatible content use.
+
+### Progress report
+- Baseline artifacts now self-describe profile context, reducing triage and indexing overhead in CI/host pipelines.
+
+### Next planned work
+1. Add a tiny JSON shape regression test to assert baseline payload includes `audio_profile` and diagnostics beat-step fields.
+2. Add profile-aware crest/clipping delta assertions to baseline validation flow.
+3. Continue dead-code allowance cleanup in stabilized modules.
