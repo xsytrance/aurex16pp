@@ -101,9 +101,9 @@ impl Aurex {
                 }
 
                 if update.launch_requested {
-                    let title = self.library.current_title();
-                    if self.launch.request(title) {
-                        self.events.push(RuntimeEvent::TitleLaunchRequested(title));
+                    let req = self.library.current_launch_descriptor();
+                    if self.launch.request(req) {
+                        self.events.push(RuntimeEvent::TitleLaunchRequested(req));
                         self.events
                             .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
                     }

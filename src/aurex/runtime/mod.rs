@@ -17,12 +17,12 @@ pub use render::present_frame;
 pub use frame_pacer::FramePacer;
 
 pub use event::{RuntimeEvent, RuntimeEventQueue, SceneId};
-pub use launch::{LaunchIntentController, LaunchStage};
+pub use launch::{LaunchDescriptor, LaunchIntentController, LaunchStage};
 
 #[derive(Default)]
 pub struct RuntimeDiagnostics {
     pub scene_changed: Option<SceneId>,
-    pub launch_requested: Option<&'static str>,
+    pub launch_requested: Option<LaunchDescriptor>,
     pub launch_canceled: bool,
     pub launch_stage_changed: Option<LaunchStage>,
 }
@@ -33,31 +33,9 @@ pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostic
     for event in events {
         match event {
             RuntimeEvent::SceneChanged(scene) => out.scene_changed = Some(*scene),
-            RuntimeEvent::TitleLaunchRequested(title) => out.launch_requested = Some(*title),
+            RuntimeEvent::TitleLaunchRequested(req) => out.launch_requested = Some(*req),
             RuntimeEvent::TitleLaunchCanceled => out.launch_canceled = true,
             RuntimeEvent::LaunchStageChanged(stage) => out.launch_stage_changed = Some(*stage),
-            RuntimeEvent::Audio(_) => {}
-        }
-    }
-
-    out
-}
-
-#[derive(Default)]
-pub struct RuntimeDiagnostics {
-    pub scene_changed: Option<SceneId>,
-    pub launch_requested: Option<&'static str>,
-    pub launch_canceled: bool,
-}
-
-pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostics {
-    let mut out = RuntimeDiagnostics::default();
-
-    for event in events {
-        match event {
-            RuntimeEvent::SceneChanged(scene) => out.scene_changed = Some(*scene),
-            RuntimeEvent::TitleLaunchRequested(title) => out.launch_requested = Some(*title),
-            RuntimeEvent::TitleLaunchCanceled => out.launch_canceled = true,
             RuntimeEvent::Audio(_) => {}
         }
     }

@@ -1,3 +1,20 @@
+## 2026-03-08 02:28:00Z — LLM SDK Groundwork + Launch Descriptor Identity
+
+### Summary
+Started the explicit LLM authoring SDK path and aligned runtime launch identity with cartridge build identity.
+
+### Runtime / Architecture
+- Launch descriptor now carries `{ title, cartridge_id }`.
+- `RuntimeEvent::TitleLaunchRequested` now transports full launch descriptor identity.
+- Host diagnostics logging now prints both display title and cartridge ID.
+
+### LLM SDK
+- Added `docs/llm_sdk_guide.md` with required prompt contract sections and deterministic output rules.
+- Added `docs/llm_prompt_template.md` as the baseline prompt skeleton for cartridge generation.
+
+### Progress
+This pass establishes deterministic prompt-structure governance and begins bridging runtime launch to cartridge folder identity.
+
 ## 2026-03-08 02:02:00Z — Launch Controller Integration + Pending Stage HUD
 
 ### Summary

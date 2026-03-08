@@ -122,8 +122,8 @@ fn main() {
         if let Some(scene) = diagnostics.scene_changed {
             println!("Scene changed: {:?}", scene);
         }
-        if let Some(title) = diagnostics.launch_requested {
-            println!("Launch requested: {title}");
+        if let Some(req) = diagnostics.launch_requested {
+            println!("Launch requested: {} ({})", req.title, req.cartridge_id);
         }
         if diagnostics.launch_canceled {
             println!("Launch request cleared");

@@ -233,3 +233,21 @@ Core objects:
 Responsibilities:
 - Emit explicit scene transition telemetry
 - Keep scene lifecycle observable at host/runtime layer
+
+
+## LLM SDK / Cartridge Authoring
+
+Files:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+- `src/aurex/runtime/launch.rs`
+
+Core objects:
+- `LaunchDescriptor { title, cartridge_id }`
+- `LaunchStage`
+- `LaunchIntentController`
+
+Responsibilities:
+- enforce prompt-structured cartridge authoring expectations
+- bridge library selection to cartridge identity (`cartridge_id`)
+- provide deterministic launch lifecycle domain state

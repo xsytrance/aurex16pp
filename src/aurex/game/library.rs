@@ -24,6 +24,7 @@ enum IconKind {
 #[derive(Clone, Copy)]
 struct TitleProfile {
     title: &'static str,
+    cartridge_id: &'static str,
     track_id: u8,
     theme: ColorTheme,
     icon: IconKind,
@@ -32,6 +33,7 @@ struct TitleProfile {
 const PROFILES: [TitleProfile; 6] = [
     TitleProfile {
         title: "NEON CIRCUIT",
+        cartridge_id: "neon_circuit",
         track_id: 0,
         theme: ColorTheme {
             bg_r: 1,
@@ -45,6 +47,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "SKYLINE DRIFT",
+        cartridge_id: "skyline_drift",
         track_id: 1,
         theme: ColorTheme {
             bg_r: 2,
@@ -58,6 +61,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "PIXEL SENTINEL",
+        cartridge_id: "pixel_sentinel",
         track_id: 2,
         theme: ColorTheme {
             bg_r: 2,
@@ -71,6 +75,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "VOID CARTOGRAPHER",
+        cartridge_id: "void_cartographer",
         track_id: 3,
         theme: ColorTheme {
             bg_r: 3,
@@ -84,6 +89,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "MECHA RIFT",
+        cartridge_id: "mecha_rift",
         track_id: 4,
         theme: ColorTheme {
             bg_r: 5,
@@ -97,6 +103,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "ORBITAL RUSH",
+        cartridge_id: "orbital_rush",
         track_id: 5,
         theme: ColorTheme {
             bg_r: 2,
@@ -171,6 +178,14 @@ impl LibraryScreen {
         PROFILES[self.selected].title
     }
 
+    pub fn current_launch_descriptor(&self) -> crate::aurex::runtime::LaunchDescriptor {
+        let p = PROFILES[self.selected];
+        crate::aurex::runtime::LaunchDescriptor {
+            title: p.title,
+            cartridge_id: p.cartridge_id,
+        }
+    }
+
     pub fn set_launch_pending(&mut self, pending: bool) {
         self.launch_pending = pending;
         if pending {
@@ -179,11 +194,7 @@ impl LibraryScreen {
                 tint: PROFILES[self.selected].theme,
             };
         } else if self.launch_flash_frames == 0 {
-            if !self.launch_pending {
-                if !self.launch_pending {
-                    self.status_message = StatusMessage::idle();
-                }
-            }
+            self.status_message = StatusMessage::idle();
         }
     }
 

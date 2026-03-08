@@ -1,7 +1,13 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LaunchDescriptor {
+    pub title: &'static str,
+    pub cartridge_id: &'static str,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LaunchStage {
     Idle,
-    Pending(&'static str),
+    Pending(LaunchDescriptor),
 }
 
 pub struct LaunchIntentController {
@@ -23,12 +29,12 @@ impl LaunchIntentController {
         matches!(self.stage, LaunchStage::Pending(_))
     }
 
-    pub fn request(&mut self, title: &'static str) -> bool {
-        if matches!(self.stage, LaunchStage::Pending(current) if current == title) {
+    pub fn request(&mut self, request: LaunchDescriptor) -> bool {
+        if matches!(self.stage, LaunchStage::Pending(current) if current == request) {
             return false;
         }
 
-        self.stage = LaunchStage::Pending(title);
+        self.stage = LaunchStage::Pending(request);
         true
     }
 
@@ -44,15 +50,20 @@ impl LaunchIntentController {
 
 #[cfg(test)]
 mod tests {
-    use super::{LaunchIntentController, LaunchStage};
+    use super::{LaunchDescriptor, LaunchIntentController, LaunchStage};
 
     #[test]
     fn request_sets_pending_and_cancel_resets_idle() {
         let mut launch = LaunchIntentController::new();
         assert_eq!(launch.stage(), LaunchStage::Idle);
 
-        assert!(launch.request("NEON CIRCUIT"));
-        assert_eq!(launch.stage(), LaunchStage::Pending("NEON CIRCUIT"));
+        let req = LaunchDescriptor {
+            title: "NEON CIRCUIT",
+            cartridge_id: "neon_circuit",
+        };
+
+        assert!(launch.request(req));
+        assert_eq!(launch.stage(), LaunchStage::Pending(req));
         assert!(launch.is_pending());
 
         assert!(launch.cancel());

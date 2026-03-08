@@ -323,7 +323,7 @@ END OF CANON
 
 - Launch selection intent is reversible before host-side cartridge boot is attached.
 - Runtime event set for library intent now includes:
-  - `RuntimeEvent::TitleLaunchRequested(&'static str)`
+  - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
   - `RuntimeEvent::TitleLaunchCanceled`
 - Audio cue set now includes explicit cancel intent (`AudioCue::Cancel`).
 
@@ -337,6 +337,16 @@ END OF CANON
 - Stage transitions emit `RuntimeEvent::LaunchStageChanged(LaunchStage)`.
 - Library HUD presents pending stage visually (`PENDING` marker + boosted meter bars).
 
+
+
+## LLM SDK Canon (2026-03-08 02:28:00Z)
+
+- Cartridge generation is prompt-structured, not free-form.
+- Required authoring references:
+  - `docs/llm_sdk_guide.md`
+  - `docs/llm_prompt_template.md`
+- Launch descriptor identity includes `cartridge_id` to bridge library selection and cartridge asset folders.
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
@@ -347,7 +357,7 @@ Scene lifecycle contract:
 Event contract:
 - `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
-- `RuntimeEvent::TitleLaunchRequested(&'static str)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
 - `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
 - `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
 
