@@ -1354,3 +1354,22 @@ Added top-level `audio_profile` metadata to runtime baseline JSON generation for
 1. Add a tiny JSON shape regression test to assert baseline payload includes `audio_profile` and diagnostics beat-step fields.
 2. Add profile-aware crest/clipping delta assertions to baseline validation flow.
 3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 18:45:00Z — Fast follow: baseline JSON shape regression guard
+
+### Summary
+Added a focused regression guard for runtime baseline JSON shape so profile metadata and diagnostics beat-step telemetry cannot silently drift.
+
+### Runtime/Tooling
+- Added `runtime_baseline_json(...)` helper in `main.rs` to centralize baseline payload assembly.
+- `--generate-runtime-baseline` now uses the helper, keeping behavior equivalent while improving testability.
+- Added unit test `runtime_baseline_json_contains_profile_and_diagnostics_fields` asserting payload includes top-level `audio_profile` and nested diagnostics `boot_beat_step` markers.
+
+### Progress report
+- Baseline artifact contract now has explicit automated shape protection for host/CI consumers.
+
+### Next planned work
+1. Add profile-aware crest/clipping delta assertions to baseline validation flow.
+2. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates.
+3. Continue dead-code allowance cleanup in stabilized modules.

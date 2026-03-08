@@ -53,6 +53,15 @@ fn parse_mix_profile(args: &[String]) -> MixProfile {
     MixProfile::Default
 }
 
+fn runtime_baseline_json(profile: MixProfile, baseline_json: &str, replay_json: &str) -> String {
+    format!(
+        "{{\"audio_profile\":\"{}\",\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
+        profile.as_str(),
+        baseline_json,
+        replay_json
+    )
+}
+
 fn replay_capture_smoke_summary_json() -> String {
     let mut cap = aurex::runtime::ReplayCapture::new();
     let mut system = aurex::Aurex::new();
@@ -225,12 +234,7 @@ fn main() {
         let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
         let baseline = engine.diagnostics_baseline(frames);
         let replay = replay_capture_smoke_summary_json();
-        let json = format!(
-            "{{\"audio_profile\":\"{}\",\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
-            profile.as_str(),
-            baseline.to_json(),
-            replay
-        );
+        let json = runtime_baseline_json(profile, &baseline.to_json(), &replay);
 
         if let Some(parent) = std::path::Path::new(&out).parent() {
             if !parent.as_os_str().is_empty() {
@@ -432,5 +436,24 @@ fn main() {
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
 
         pacer.wait_next_frame();
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::{MixProfile, runtime_baseline_json};
+
+    #[test]
+    fn runtime_baseline_json_contains_profile_and_diagnostics_fields() {
+        let baseline = "{\"sample_rate\":48000,\"frames\":32,\"boot\":{\"frames\":32,\"boot_beat_step\":3},\"game\":{\"frames\":32,\"boot_beat_step\":3}}";
+        let replay = "{\"frames\":120,\"events\":0}";
+        let json = runtime_baseline_json(MixProfile::Arcade, baseline, replay);
+
+        assert!(json.contains("\"audio_profile\":\"arcade\""));
+        assert!(json.contains("\"audio_diagnostics_baseline\":"));
+        assert!(json.contains("\"replay_capture_smoke\":"));
+        assert!(json.contains("\"boot_beat_step\":3"));
     }
 }
