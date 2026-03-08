@@ -8,7 +8,7 @@
 
 use super::framebuffer::{FB_H, FB_W, Framebuffer};
 use super::oam::Oam;
-use super::vram::Vram;
+use super::vram::{MAX_PALETTE_ENTRIES, Vram};
 use crate::aurex::ppu::oam::BlendMode;
 
 // === AUREX HARDWARE: PPU REGISTER ADDRESS MAP ===
@@ -367,7 +367,7 @@ impl Ppu {
         x: u16,
         y: u16,
         tile: u16,
-        palette: u8,
+        palette: u16,
         priority: u8,
         size_16: bool,
         hflip: bool,
@@ -476,7 +476,7 @@ impl Ppu {
         // BG0 Bring-up (v0.1)
         // - Tilemap source: vram. bg0_tilemap (start)
         // - Pattern source: vram.bg_tiles (start)
-        // - Palette source: vram.palettes (first 256 RGB555 entries, little-endian)
+        // - Palette source: vram.palettes (first MAX_PALETTE_ENTRIES RGB555 entries, little-endian)
         //
         // Tile encoding (LOCKED for now):
         // - 8x8, 4bpp packed, 32 bytes per tile
@@ -485,9 +485,7 @@ impl Ppu {
         //
         // Tilemap entry (u16) bits:
         // 0..9   tile_index
-        // 10..11 palette_select (0..3) => palette bank * 16
-        // 12     hflip
-        // 13     vflip
+        // 10..13 palette_select (0..15) => palette bank * 16
         // 14..15 priority (ignored in v0.1)
         // ---------------------------------------------------------------------
 
@@ -532,11 +530,9 @@ impl Ppu {
                 let bg_prio = ((entry >> 14) & 0x1) as u8;
 
                 let tile_index = (entry & 0x03FF) as usize;
-                let pal_sel = ((entry >> 10) & 0x3) as u8;
-                let hflip = ((entry >> 12) & 0x1) != 0;
-                let vflip = ((entry >> 13) & 0x1) != 0;
+                let pal_sel = ((entry >> 10) & 0xF) as u8;
 
-                let row = if vflip { 7 - row_in_tile } else { row_in_tile };
+                let row = row_in_tile;
 
                 // Pattern base: 32 bytes per tile
                 let tile_base = tile_index * 32;
@@ -558,8 +554,7 @@ impl Ppu {
                         continue;
                     }
 
-                    // Determine source pixel index with optional hflip
-                    let src_px = if hflip { 7 - px } else { px };
+                    let src_px = px;
 
                     // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
                     let (byte, shift_hi) = match src_px {
@@ -584,11 +579,18 @@ impl Ppu {
                     // -----------------------------------------------------------------------------
                     let bg_transparent = pix4 == 0;
 
-                    // Palette bank: 0..3 => 0,16,32,48
+                    // Palette bank: 0..15 => bank * 16
                     let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
 
-                    // Palette lookup: first 256 entries are RGB555 u16 LE
+                    // Palette lookup: expanded palette entries are RGB555 u16 LE
                     let pal_ofs = color_index * 2;
+                    if pal_ofs + 1 >= vram.palettes.len() {
+                        debug_assert!(
+                            pal_ofs + 1 < vram.palettes.len(),
+                            "bg palette lookup overflow: offset={pal_ofs}"
+                        );
+                        continue;
+                    }
                     let plo = vram.palettes[pal_ofs] as u16;
                     let phi = vram.palettes[pal_ofs + 1] as u16;
                     let rgb555 = plo | (phi << 8);
@@ -652,11 +654,9 @@ impl Ppu {
                 let bg_prio = ((entry >> 14) & 0x1) as u8;
 
                 let tile_index = (entry & 0x03FF) as usize;
-                let pal_sel = ((entry >> 10) & 0x3) as u8;
-                let hflip = ((entry >> 12) & 0x1) != 0;
-                let vflip = ((entry >> 13) & 0x1) != 0;
+                let pal_sel = ((entry >> 10) & 0xF) as u8;
 
-                let row = if vflip { 7 - row_in_tile } else { row_in_tile };
+                let row = row_in_tile;
 
                 // Pattern base: 32 bytes per tile
                 let tile_base = tile_index * 32;
@@ -685,8 +685,7 @@ impl Ppu {
                         continue;
                     }
 
-                    // Determine source pixel index with optional hflip
-                    let src_px = if hflip { 7 - px } else { px };
+                    let src_px = px;
 
                     // Packed nibble extraction (hi nibble = even pixel, lo nibble = odd pixel)
                     let (byte, shift_hi) = match src_px {
@@ -711,11 +710,18 @@ impl Ppu {
                     // -----------------------------------------------------------------------------
                     let bg_transparent = pix4 == 0;
 
-                    // Palette bank: 0..3 => 0,16,32,48
+                    // Palette bank: 0..15 => bank * 16
                     let color_index = (pal_sel as usize) * 16 + (pix4 as usize);
 
-                    // Palette lookup: first 256 entries are RGB555 u16 LE
+                    // Palette lookup: expanded palette entries are RGB555 u16 LE
                     let pal_ofs = color_index * 2;
+                    if pal_ofs + 1 >= vram.palettes.len() {
+                        debug_assert!(
+                            pal_ofs + 1 < vram.palettes.len(),
+                            "bg palette lookup overflow: offset={pal_ofs}"
+                        );
+                        continue;
+                    }
                     let plo = vram.palettes[pal_ofs] as u16;
                     let phi = vram.palettes[pal_ofs + 1] as u16;
                     let rgb555 = plo | (phi << 8);
@@ -816,8 +822,15 @@ impl Ppu {
                             continue;
                         }
 
-                        let palette_offset = sprite.palette as usize * 16;
-                        let palette_index = palette_offset + color_index as usize;
+                        let palette_index = sprite.palette as usize + color_index as usize;
+
+                        if palette_index >= MAX_PALETTE_ENTRIES {
+                            debug_assert!(
+                                palette_index < MAX_PALETTE_ENTRIES,
+                                "sprite palette index overflow: {palette_index}"
+                            );
+                            continue;
+                        }
 
                         if palette_index * 2 + 1 >= vram.palettes.len() {
                             continue;
@@ -850,5 +863,72 @@ impl Ppu {
 
     pub fn sprite_overflow_scanlines(&self) -> u32 {
         self.sprite_overflow_scanlines
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write_palette_entry(vram: &mut Vram, index: usize, value: u16) {
+        let offset = index * 2;
+        vram.palettes[offset] = (value & 0xFF) as u8;
+        vram.palettes[offset + 1] = (value >> 8) as u8;
+    }
+
+    #[test]
+    fn vram_palette_keeps_legacy_first_256_zeroed() {
+        let vram = Vram::new();
+        for idx in 0..256usize {
+            let offset = idx * 2;
+            assert_eq!(vram.palettes[offset], 0);
+            assert_eq!(vram.palettes[offset + 1], 0);
+        }
+    }
+
+    #[test]
+    fn bg_palette_uses_4bit_tilemap_bank_selection() {
+        let mut ppu = Ppu::new();
+        let mut vram = Vram::new();
+        let mut fb = Framebuffer::new();
+
+        ppu.bg1_enable = false;
+        ppu.sprite_enable = false;
+
+        // Tile 0, first pixel uses color index 1.
+        vram.bg_tiles[0] = 0x10;
+
+        let pal_bank = 8u16;
+        let tile_entry = (pal_bank << 10) | 0;
+        vram.bg0_tilemap[0] = (tile_entry & 0xFF) as u8;
+        vram.bg0_tilemap[1] = (tile_entry >> 8) as u8;
+
+        write_palette_entry(&mut vram, 1, 0x001F);
+        write_palette_entry(&mut vram, (pal_bank as usize) * 16 + 1, 0x7C00);
+
+        ppu.render_frame(&vram, &mut fb);
+
+        assert_eq!(fb.pixels()[0], 0x7C00);
+    }
+
+    #[test]
+    fn sprite_palette_field_is_base_index() {
+        let mut ppu = Ppu::new();
+        let mut vram = Vram::new();
+        let mut fb = Framebuffer::new();
+
+        ppu.bg0_enable = false;
+        ppu.bg1_enable = false;
+
+        // Sprite tile 0, first pixel uses color index 1.
+        vram.sprite_tiles[0] = 0x10;
+
+        let base_palette_index = 300u16;
+        write_palette_entry(&mut vram, (base_palette_index as usize) + 1, 0x03E0);
+
+        ppu.write_sprite(0, 0, 0, 0, base_palette_index, 0, false, false, false);
+        ppu.render_frame(&vram, &mut fb);
+
+        assert_eq!(fb.pixels()[0], 0x03E0);
     }
 }
