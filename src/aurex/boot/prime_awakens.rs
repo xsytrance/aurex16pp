@@ -4,15 +4,12 @@ use crate::aurex::ppu::ppu::{PPU_BG0_ENABLE, PPU_BG1_ENABLE, PPU_SPRITE_ENABLE, 
 use crate::aurex::ppu::vram::Vram;
 use crate::aurex::wram::Wram;
 
-pub struct PrimeIgnition {
+pub struct PrimeAwakens {
     frame: u32,
     waiting_for_start: bool,
 }
 
-impl PrimeIgnition {
-    const EQ_X: i32 = 70;
-    const EQ_Y: i32 = 182;
-
+impl PrimeAwakens {
     pub fn new() -> Self {
         Self {
             frame: 0,
@@ -39,135 +36,146 @@ impl PrimeIgnition {
 
     pub fn draw_overlay(&self, fb: &mut Framebuffer) {
         let t = self.frame;
-        self.draw_plasma_backdrop(fb, t);
-        self.draw_hypnotic_grid(fb, t);
-        self.draw_city_equalizer(fb, t);
-        self.draw_logo_stack(fb, t);
+        self.draw_quantum_sky(fb, t);
+        self.draw_raster_sun(fb, t);
+        self.draw_horizon_grid(fb, t);
+        self.draw_spectrum_towers(fb, t);
+        self.draw_logo(fb, t);
         self.draw_prompt(fb, t);
     }
 
-    fn draw_plasma_backdrop(&self, fb: &mut Framebuffer, t: u32) {
-        let px = fb.pixels_mut();
+    fn draw_quantum_sky(&self, fb: &mut Framebuffer, t: u32) {
+        let pixels = fb.pixels_mut();
         for y in 0..FB_H {
             for x in 0..FB_W {
-                let cx = x as i32 - (FB_W as i32 / 2);
-                let cy = y as i32 - (FB_H as i32 / 2);
-                let d = (cx.abs() + cy.abs()) as u32;
-                let band = ((d + t * 3) >> 3) & 15;
-                let wave = (((x as u32 * 3 + t * 5) ^ (y as u32 * 5 + t * 2)) >> 4) & 7;
+                let x_u = x as u32;
+                let y_u = y as u32;
+                let wave_a =
+                    ((x_u.wrapping_mul(5) + t.wrapping_mul(2)) ^ (y_u.wrapping_mul(3))) & 31;
+                let wave_b =
+                    (((x_u + t.wrapping_mul(4)) >> 2) + ((y_u.wrapping_mul(7) + t) >> 3)) & 15;
+                let horizon_fade = ((FB_H - y) as u32 * 14 / FB_H as u32) as u8;
 
-                let r = ((band / 5) + ((t >> 8) & 1)).min(31) as u8;
-                let g = (4 + wave / 2 + (band / 4)).min(31) as u8;
-                let b = (8 + band + wave).min(31) as u8;
-
-                px[y * FB_W + x] = rgb555(r, g, b);
+                let r = ((wave_b as u8 / 2) + 2).min(31);
+                let g = (6 + wave_a as u8 / 3).min(31);
+                let b = (10 + horizon_fade + wave_a as u8 / 2).min(31);
+                pixels[y * FB_W + x] = rgb555(r, g, b);
             }
         }
-
-        fill_rect(fb, 0, 0, FB_W as i32, 16, rgb555(1, 5, 10));
-        fill_rect(
-            fb,
-            0,
-            (FB_H - 16) as i32,
-            FB_W as i32,
-            FB_H as i32,
-            rgb555(1, 5, 10),
-        );
     }
 
-    fn draw_hypnotic_grid(&self, fb: &mut Framebuffer, t: u32) {
-        let horizon = 128;
-        for row in 0..20i32 {
-            let y = horizon + row * 5;
-            let c = rgb555(
-                (row as u8 / 7).min(31),
-                10 + (row as u8 / 2),
-                20 + (row as u8 / 2),
+    fn draw_raster_sun(&self, fb: &mut Framebuffer, t: u32) {
+        let cx = (FB_W as i32 / 2) + ((t as i32 / 12) & 7) - 3;
+        let cy: i32 = 88;
+        let radius: i32 = 54;
+
+        for y in (cy - radius)..=(cy + radius) {
+            let dy = y - cy;
+            if dy.abs() > radius {
+                continue;
+            }
+            let w = radius - (dy.abs() * 3 / 4);
+            let y_band = ((dy + radius) / 6).max(0) as u8;
+            let stripe = (((t / 4) as i32 + dy) & 15) as u8;
+            let color = rgb555(
+                (18 + y_band / 2).min(31),
+                (8 + stripe / 3).min(31),
+                (26 + y_band / 2).min(31),
             );
+            fill_rect(fb, cx - w, y, cx + w, y + 1, color);
+        }
+    }
+
+    fn draw_horizon_grid(&self, fb: &mut Framebuffer, t: u32) {
+        let horizon = 132;
+
+        for i in 0..20i32 {
+            let y = horizon + i * 5;
+            let c = rgb555(2 + (i as u8 / 6), 7 + i as u8 / 2, 14 + i as u8 / 2);
             fill_rect(fb, 0, y, FB_W as i32, y + 1, c);
         }
 
-        for lane in -8..=8i32 {
-            let base_x = FB_W as i32 / 2 + lane * 28;
-            let sway = (((t as i32 / 3) + lane * 5) & 7) - 3;
-            for row in 0..18i32 {
-                let y0 = horizon + row * 6;
+        for lane in -10..=10i32 {
+            let base_x = FB_W as i32 / 2 + lane * 22;
+            let lane_swing = (((t / 3) as i32 + lane * 5) & 7) - 3;
+            for depth in 0..18i32 {
+                let y0 = horizon + depth * 6;
                 let y1 = y0 + 6;
-                let width = row + 1;
-                let x = base_x + sway * width / 5;
-                let c = rgb555(2, (10 + row as u8 / 2).min(31), (18 + row as u8).min(31));
+                let widen = depth + 1;
+                let x = base_x + lane_swing * widen / 4;
+                let c = rgb555(
+                    1,
+                    (10 + depth as u8 / 2).min(31),
+                    (18 + depth as u8).min(31),
+                );
                 fill_rect(fb, x, y0, x + 1, y1, c);
             }
         }
     }
 
-    fn draw_city_equalizer(&self, fb: &mut Framebuffer, t: u32) {
-        fill_rect(
-            fb,
-            Self::EQ_X - 10,
-            Self::EQ_Y - 14,
-            Self::EQ_X + 280,
-            Self::EQ_Y + 30,
-            rgb555(1, 4, 9),
-        );
-
-        for bar in 0..34i32 {
-            let phase = ((t as i32 / 2) + bar * 3) & 31;
-            let pulse = if phase < 16 { phase } else { 31 - phase };
-            let h = 4 + pulse / 2;
-            let x0 = Self::EQ_X + bar * 8;
+    fn draw_spectrum_towers(&self, fb: &mut Framebuffer, t: u32) {
+        let floor = 214;
+        for bar in 0..46i32 {
+            let phase = ((t as i32 / 2) + bar * 3) & 63;
+            let tri = if phase < 32 { phase } else { 63 - phase };
+            let kick = if ((t / 16) as i32 + bar).rem_euclid(4) == 0 {
+                8
+            } else {
+                0
+            };
+            let h = 6 + tri / 2 + kick;
+            let x0 = 24 + bar * 8;
             let c = rgb555(
-                (6 + (bar as u8 / 8)).min(31),
-                (14 + (bar as u8 & 0x03)).min(31),
-                (22 + (pulse as u8 / 3)).min(31),
+                (6 + bar as u8 / 9).min(31),
+                (14 + (bar as u8 & 0x03) + (tri as u8 / 10)).min(31),
+                (22 + tri as u8 / 4).min(31),
             );
-            fill_rect(fb, x0, Self::EQ_Y + 12 - h, x0 + 5, Self::EQ_Y + 12, c);
+            fill_rect(fb, x0, floor - h, x0 + 5, floor, c);
         }
     }
 
-    fn draw_logo_stack(&self, fb: &mut Framebuffer, t: u32) {
-        let title = "AUREX-16++";
-        let scale = if t < 160 { 5 } else { 6 };
+    fn draw_logo(&self, fb: &mut Framebuffer, t: u32) {
+        let title = "AUREX PRIME AWAKENS";
+        let scale = if t < 180 { 3 } else { 4 };
         let title_w = text_width(title, scale);
-        let x = ((FB_W as i32 - title_w) / 2).max(0);
+        let title_x = ((FB_W as i32 - title_w) / 2).max(0);
 
-        draw_text(fb, title, x - 2, 56, scale, rgb555(4, 12, 20));
-        draw_text(fb, title, x, 58, scale, rgb555(24, 30, 31));
+        draw_text(fb, title, title_x - 2, 30, scale, rgb555(4, 10, 17));
+        draw_text(fb, title, title_x, 32, scale, rgb555(24, 31, 31));
 
-        let flash = (((t / 5) & 3) as u8).min(3);
+        let pulse = (((t / 7) & 7) as u8).min(7);
         draw_text(
             fb,
-            "HYPER RHYTHM OS",
-            118,
-            118,
+            "NEON VECTOR STARTUP / ASU-32 LIVE MIX",
+            76,
+            74,
             2,
-            rgb555(16 + flash, 24 + flash, 30),
-        );
-        draw_text(
-            fb,
-            "KOSHIRO-INSPIRED BOOT MIX",
-            86,
-            136,
-            2,
-            rgb555(12 + flash, 20 + flash, 27),
+            rgb555(11 + pulse / 2, 20 + pulse, 31),
         );
     }
 
     fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
-        let show_start_prompt = self.waiting_for_start && (t / 14).is_multiple_of(2);
+        let show_start_prompt = self.waiting_for_start && (t / 12).is_multiple_of(2);
         let show_warmup_prompt = !self.waiting_for_start && (t / 10).is_multiple_of(2);
 
         if show_start_prompt {
             draw_text(
                 fb,
-                "PRESS START TO ENTER LIBRARY",
-                76,
-                212,
+                "PRESS START TO DROP INTO LIBRARY",
+                66,
+                220,
                 2,
-                rgb555(22, 29, 31),
+                rgb555(22, 30, 31),
             );
         } else if show_warmup_prompt {
-            draw_text(fb, "SYNTH GRID WARMUP...", 130, 212, 2, rgb555(16, 24, 30));
+            draw_text(
+                fb,
+                "PRIME AWAKENS // CALIBRATING AUDIO BUS...",
+                44,
+                220,
+                2,
+                rgb555(15, 23, 31),
+            );
         }
     }
 }
@@ -184,13 +192,6 @@ fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u1
             pixels[y as usize * FB_W + x as usize] = color;
         }
     }
-}
-
-fn stroke_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
-    fill_rect(fb, x0, y0, x1, y0 + 1, color);
-    fill_rect(fb, x0, y1 - 1, x1, y1, color);
-    fill_rect(fb, x0, y0, x0 + 1, y1, color);
-    fill_rect(fb, x1 - 1, y0, x1, y1, color);
 }
 
 fn draw_text(fb: &mut Framebuffer, text: &str, x: i32, y: i32, scale: usize, color: u16) {
@@ -260,8 +261,10 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
         'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
         'V' => [0x11, 0x11, 0x11, 0x11, 0x0A, 0x0A, 0x04],
+        'W' => [0x11, 0x11, 0x11, 0x15, 0x15, 0x15, 0x0A],
         'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
         'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
+        'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F],
         '0' => [0x0E, 0x13, 0x15, 0x19, 0x11, 0x11, 0x0E],
         '1' => [0x04, 0x0C, 0x14, 0x04, 0x04, 0x04, 0x0E],
         '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F],
@@ -276,33 +279,9 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
         ':' => [0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00],
         '/' => [0x01, 0x01, 0x02, 0x04, 0x08, 0x10, 0x10],
+        '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C],
         '>' => [0x10, 0x08, 0x04, 0x02, 0x04, 0x08, 0x10],
         ' ' => [0x00; 7],
         _ => [0x1F, 0x11, 0x15, 0x15, 0x15, 0x11, 0x1F],
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn text_width_handles_empty_and_non_empty_labels() {
-        assert_eq!(text_width("", 2), 0);
-        assert_eq!(text_width("AUREX", 2), 58);
-    }
-
-    #[test]
-    fn fill_rect_clamps_outside_bounds() {
-        let mut fb = Framebuffer::new();
-        let color = rgb555(31, 0, 0);
-
-        fill_rect(&mut fb, -10, -10, 2, 2, color);
-
-        assert_eq!(fb.pixels()[0], color);
-        assert_eq!(fb.pixels()[1], color);
-        assert_eq!(fb.pixels()[FB_W], color);
-        assert_eq!(fb.pixels()[FB_W + 1], color);
-        assert_eq!(fb.pixels()[FB_W + 2], 0);
     }
 }

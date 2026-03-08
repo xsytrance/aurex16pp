@@ -156,6 +156,20 @@ const TRACK5: [u16; PATTERN_STEPS] = [
     220, 247, 262, 294, 330, 294, 262, 247, 196, 220, 247, 262, 294, 262, 247, 220,
 ];
 
+const BOOT_LEAD: [u16; PATTERN_STEPS] = [
+    262, 294, 330, 392, 440, 392, 330, 294, 262, 294, 330, 349, 392, 349, 330, 294,
+];
+const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
+    392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440,
+];
+const BOOT_BASS: [u16; PATTERN_STEPS] = [
+    65, 65, 65, 65, 73, 73, 73, 73, 82, 82, 82, 82, 73, 73, 65, 65,
+];
+const BOOT_ARP: [u16; PATTERN_STEPS] = [
+    523, 659, 784, 659, 587, 740, 880, 740, 659, 784, 988, 784, 587, 740, 880, 740,
+];
+const BOOT_GATE: [u16; PATTERN_STEPS] = [55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0];
+
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
     pub frames: usize,
@@ -345,6 +359,11 @@ impl AudioEngine {
         self.tick_counter = 0;
         self.pattern_step = (self.pattern_step + 1) % PATTERN_STEPS;
 
+        if matches!(mode, AudioMode::Boot) {
+            self.advance_boot_sequencer();
+            return;
+        }
+
         let track = match self.track_id {
             0 => &TRACK0,
             1 => &TRACK1,
@@ -363,17 +382,84 @@ impl AudioEngine {
                 track[(self.pattern_step + i * 3) % PATTERN_STEPS]
             };
 
-            let inst = match (mode, i) {
-                (AudioMode::Boot, 0..=3) => 3,
-                (AudioMode::Boot, 4..=7) => 2,
-                (AudioMode::Boot, _) => 4,
-                (AudioMode::Game, 0..=3) => 0,
-                (AudioMode::Game, 4..=7) => 1,
-                (AudioMode::Game, _) => 2,
+            let inst = match i {
+                0..=3 => 0,
+                4..=7 => 1,
+                _ => 2,
             };
 
             self.note_on(i, hz, inst as u8, mode);
         }
+    }
+
+    fn advance_boot_sequencer(&mut self) {
+        let s = self.pattern_step;
+        let arp_b = (s * 2) % PATTERN_STEPS;
+
+        self.trigger_voice(0, BOOT_LEAD[s], 3, 520, 840, 340, 0b0001);
+        self.trigger_voice(1, BOOT_COUNTER[s], 3, 420, 720, 520, 0b0001);
+        self.trigger_voice(2, BOOT_ARP[s], 0, 300, 620, 760, 0b0011);
+        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 280, 760, 620, 0b0011);
+
+        self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
+        self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
+        self.trigger_voice(6, BOOT_BASS[s], 1, 620, 840, 420, 0b0010);
+        self.trigger_voice(
+            7,
+            BOOT_BASS[(s + 8) % PATTERN_STEPS],
+            5,
+            520,
+            700,
+            700,
+            0b0100,
+        );
+
+        self.trigger_voice(8, BOOT_GATE[s], 5, 700, 640, 800, 0b1000);
+        self.trigger_voice(
+            9,
+            if s % 4 == 2 { 220 } else { 0 },
+            4,
+            620,
+            760,
+            640,
+            0b0100,
+        );
+        self.trigger_voice(
+            10,
+            if s % 2 == 1 { 900 } else { 0 },
+            4,
+            300,
+            620,
+            860,
+            0b0100,
+        );
+        self.trigger_voice(
+            11,
+            if s % 8 == 7 { BOOT_ARP[s] } else { 0 },
+            3,
+            360,
+            540,
+            860,
+            0b0001,
+        );
+    }
+
+    fn trigger_voice(
+        &mut self,
+        idx: usize,
+        hz: u16,
+        instrument_id: u8,
+        volume: u16,
+        pan_l: u16,
+        pan_r: u16,
+        fx: u8,
+    ) {
+        self.note_on(idx, hz, instrument_id, AudioMode::Boot);
+        let v = &mut self.voices[idx];
+        v.volume = if hz == 0 { 0 } else { volume };
+        v.pan_l = pan_l;
+        v.pan_r = pan_r;
+        v.fx = fx;
     }
 
     fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8, mode: AudioMode) {
@@ -610,26 +696,4 @@ mod tests {
         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
     }
-
-    #[test]
-    fn diagnostics_peak_stays_below_hard_clip() {
-        let engine = AudioEngine::new(48_000);
-        let boot = engine.diagnostics_for_frames(AudioMode::Boot, 48_000);
-        let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
-        assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
-        assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
-    }
-}
-
-fn sine_approx(phase: u16) -> i16 {
-    let x = phase as i32;
-    let tri = if x < 128 {
-        -32767 + x * 512
-    } else {
-        32767 - (x - 128) * 512
-    };
-    // Integer parabolic shaping from triangle to pseudo-sine.
-    let abs_t = tri.abs();
-    let shaped = tri * (65535 - abs_t / 2) / 65535;
-    shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
 }

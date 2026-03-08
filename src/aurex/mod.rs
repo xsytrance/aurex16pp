@@ -16,7 +16,7 @@ use crate::aurex::runtime::{
     AudioSfx, LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeAudioCommand,
     RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
 };
-use boot::prime_ignition::PrimeIgnition;
+use boot::prime_awakens::PrimeAwakens;
 use clock::Clock;
 use dma::controller::DmaController;
 use game::{AudioCue, InputState, library::LibraryScreen};
@@ -49,7 +49,7 @@ pub struct Aurex {
     vram: Vram,
     fb: ppu::framebuffer::Framebuffer,
     ppu: Ppu,
-    boot: PrimeIgnition,
+    boot: PrimeAwakens,
     library: LibraryScreen,
     mode: RunMode,
     events: RuntimeEventQueue,
@@ -71,7 +71,7 @@ impl Aurex {
             vram,
             fb: ppu::framebuffer::Framebuffer::new(),
             ppu: Ppu::new(),
-            boot: PrimeIgnition::new(),
+            boot: PrimeAwakens::new(),
             library,
             mode: RunMode::Boot,
             events: RuntimeEventQueue::with_capacity(8),
