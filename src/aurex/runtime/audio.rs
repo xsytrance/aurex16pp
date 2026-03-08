@@ -390,6 +390,8 @@ impl AudioEngine {
 
             self.note_on(i, hz, inst as u8, mode);
         }
+
+        v.env_level
     }
 
     fn advance_boot_sequencer(&mut self) {
@@ -414,10 +416,10 @@ impl AudioEngine {
             0b0100,
         );
 
-        self.trigger_voice(8, BOOT_GATE[s], 5, 700, 640, 800, 0b1000);
+        self.trigger_voice(8, BOOT_GATE[s], 5, 620, 640, 800, 0b0000);
         self.trigger_voice(
             9,
-            if s % 4 == 2 { 220 } else { 0 },
+            if s % 8 == 4 { 196 } else { 0 },
             4,
             620,
             760,
@@ -426,7 +428,7 @@ impl AudioEngine {
         );
         self.trigger_voice(
             10,
-            if s % 2 == 1 { 900 } else { 0 },
+            if s % 16 == 12 { 660 } else { 0 },
             4,
             300,
             620,
@@ -465,22 +467,42 @@ impl AudioEngine {
     fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8, mode: AudioMode) {
         let inst = INSTRUMENTS[(instrument_id as usize) % INSTRUMENTS.len()];
         let v = &mut self.voices[idx];
-        v.instrument_id = instrument_id;
-        v.waveform_id = inst.waveform_id;
-        v.pitch = hz;
-        v.volume = if hz == 0 {
-            0
-        } else if matches!(mode, AudioMode::Boot) {
+
+        let default_volume = if matches!(mode, AudioMode::Boot) {
             560
         } else {
             680
         };
-        v.envelope_state = if hz == 0 {
-            EnvelopeState::Release
+
+        if hz == 0 {
+            v.volume = 0;
+            if !matches!(
+                v.envelope_state,
+                EnvelopeState::Off | EnvelopeState::Release
+            ) {
+                v.envelope_state = EnvelopeState::Release;
+            }
         } else {
-            EnvelopeState::Attack
-        };
-        v.env_counter = 0;
+            let was_off = matches!(v.envelope_state, EnvelopeState::Off);
+            let same_note = v.pitch == hz
+                && v.instrument_id == instrument_id
+                && !matches!(
+                    v.envelope_state,
+                    EnvelopeState::Off | EnvelopeState::Release
+                );
+            if !same_note {
+                v.envelope_state = EnvelopeState::Attack;
+                v.env_counter = 0;
+                if was_off {
+                    v.phase = 0;
+                }
+            }
+            v.volume = default_volume;
+        }
+
+        v.instrument_id = instrument_id;
+        v.waveform_id = inst.waveform_id;
+        v.pitch = hz;
         v.pan_l = ((VOICE_COUNT - idx) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.pan_r = ((idx + 1) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.fx = match (mode, idx % 4) {
@@ -630,6 +652,7 @@ impl AudioEngine {
         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
         sign * mag
     }
+}
 
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
