@@ -253,3 +253,5 @@ Responsibilities:
 - provide deterministic launch lifecycle domain state
 
 - Launch validation: `validate_launch_descriptor` + `TitleLaunchRejected` telemetry prior to pending stage.
+
+- Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.

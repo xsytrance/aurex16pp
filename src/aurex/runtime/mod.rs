@@ -28,6 +28,7 @@ pub struct RuntimeDiagnostics {
     pub launch_requested: Option<LaunchDescriptor>,
     pub launch_canceled: bool,
     pub launch_stage_changed: Option<LaunchStage>,
+    pub launch_ready: Option<LaunchDescriptor>,
     pub launch_rejected: Option<LaunchValidationError>,
 }
 
@@ -40,6 +41,7 @@ pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostic
             RuntimeEvent::TitleLaunchRequested(req) => out.launch_requested = Some(*req),
             RuntimeEvent::TitleLaunchCanceled => out.launch_canceled = true,
             RuntimeEvent::LaunchStageChanged(stage) => out.launch_stage_changed = Some(*stage),
+            RuntimeEvent::TitleLaunchReady(desc) => out.launch_ready = Some(*desc),
             RuntimeEvent::TitleLaunchRejected(reason) => out.launch_rejected = Some(*reason),
             RuntimeEvent::Audio(_) => {}
         }
@@ -56,6 +58,7 @@ pub fn dispatch_runtime_events(engine: &mut AudioEngine, events: &[RuntimeEvent]
             RuntimeEvent::TitleLaunchRequested(_title) => {}
             RuntimeEvent::TitleLaunchCanceled => {}
             RuntimeEvent::LaunchStageChanged(_stage) => {}
+            RuntimeEvent::TitleLaunchReady(_desc) => {}
             RuntimeEvent::TitleLaunchRejected(_reason) => {}
         }
     }

@@ -333,7 +333,10 @@ END OF CANON
 
 - Launch intent now has an explicit runtime stage domain:
   - `LaunchStage::Idle`
-  - `LaunchStage::Pending(&'static str)`
+  - `LaunchStage::Pending(LaunchDescriptor)`
+  - `LaunchStage::Validating(LaunchDescriptor)`
+  - `LaunchStage::Ready(LaunchDescriptor)`
+  - `LaunchStage::Rejected(LaunchValidationError)`
 - Stage transitions emit `RuntimeEvent::LaunchStageChanged(LaunchStage)`.
 - Library HUD presents pending stage visually (`PENDING` marker + boosted meter bars).
 
@@ -354,6 +357,13 @@ END OF CANON
 - Launch descriptors are validated before entering pending launch stage.
 - Invalid descriptors emit `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
 - Current validation includes strict cartridge ID format enforcement (`[a-z0-9_]+`).
+
+
+
+## Launch Ready Canon (2026-03-08 03:22:00Z)
+
+- Launch flow now includes deterministic validating and ready stages.
+- `TitleLaunchReady(LaunchDescriptor)` is the runtime signal reserved for future cartridge boot handoff.
 
 ## Runtime Handoff Contract (Current)
 

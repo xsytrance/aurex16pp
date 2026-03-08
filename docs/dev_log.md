@@ -1,3 +1,20 @@
+## 2026-03-08 03:22:00Z — Multi-Stage Launch Lifecycle (Validating/Ready/Rejected)
+
+### Summary
+Extended launch orchestration from a binary pending state to a deterministic staged lifecycle suitable for cartridge boot attachment.
+
+### Runtime / Architecture
+- `LaunchStage` now models `Idle`, `Pending`, `Validating`, `Ready`, and `Rejected`.
+- `LaunchIntentController::tick()` advances deterministic validation timing.
+- Runtime now emits `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)` when stage reaches `Ready`.
+
+### Validation & Telemetry
+- Invalid descriptors now drive both rejection event and stage transition to `Rejected`.
+- Runtime diagnostics now surfaces `launch_ready` for host-side orchestration.
+
+### Progress
+Launch flow is now close to boot handoff readiness: validation and readiness are explicit states/events rather than implicit timing assumptions.
+
 ## 2026-03-08 02:56:00Z — Launch Validation Telemetry + SDK Contract Tightening
 
 ### Summary

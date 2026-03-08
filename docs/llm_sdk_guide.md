@@ -51,3 +51,8 @@ See `docs/llm_prompt_template.md`.
 ## Cartridge ID Format Rule
 - `cartridge_id` / `GAME_ID` must match: `[a-z0-9_]+`
 - Uppercase, hyphen, or spaces are invalid and should be rejected before launch orchestration.
+
+
+## Launch Lifecycle Signals
+Runtime launch now progresses through explicit stages (`Pending -> Validating -> Ready`) or `Rejected`.
+LLM-authored cartridge metadata should assume validation occurs before any boot attachment side effects.

@@ -279,7 +279,7 @@ Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centrali
 
 Launch orchestration now includes a dedicated runtime domain component:
 - `LaunchIntentController`
-- `LaunchStage::Idle | LaunchStage::Pending(&'static str)`
+- `LaunchStage::{Idle, Pending, Validating, Ready, Rejected}`
 
 Core scene update emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions, and host loop consumes this through `RuntimeDiagnostics`.
 
@@ -306,3 +306,11 @@ Launch requests now pass deterministic descriptor validation before stage transi
 - rejection telemetry: `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`
 
 This is a pre-validation guardrail for future cartridge loading stages.
+
+
+## Launch Ready Stage (2026-03-08 03:22:00Z)
+
+Runtime now emits explicit readiness telemetry:
+- `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)`
+
+This event is intended as the future handoff trigger to cartridge boot/runtime attach policy.

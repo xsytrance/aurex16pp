@@ -113,7 +113,10 @@ impl Aurex {
                             }
                         }
                         Err(reason) => {
+                            self.launch.reject(reason);
                             self.events.push(RuntimeEvent::TitleLaunchRejected(reason));
+                            self.events
+                                .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
                         }
                     }
                 }
@@ -124,7 +127,14 @@ impl Aurex {
                         .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
                 }
 
-                self.library.set_launch_pending(self.launch.is_pending());
+                if let Some(stage) = self.launch.tick() {
+                    self.events.push(RuntimeEvent::LaunchStageChanged(stage));
+                    if let crate::aurex::runtime::LaunchStage::Ready(desc) = stage {
+                        self.events.push(RuntimeEvent::TitleLaunchReady(desc));
+                    }
+                }
+
+                self.library.set_launch_pending(self.launch.is_active());
             }
         }
 

@@ -131,6 +131,9 @@ fn main() {
         if let Some(stage) = diagnostics.launch_stage_changed {
             println!("Launch stage: {:?}", stage);
         }
+        if let Some(ready) = diagnostics.launch_ready {
+            println!("Launch ready: {} ({})", ready.title, ready.cartridge_id);
+        }
         if let Some(reject) = diagnostics.launch_rejected {
             println!("Launch rejected: {:?}", reject);
         }
