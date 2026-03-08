@@ -51,9 +51,9 @@ impl PrimeIgnition {
             x - 2,
             y - 2,
             logo_scale,
-            rgb555(4, 8 + glow, 18 + glow),
+            rgb555(5, 10 + glow, 20 + glow),
         );
-        draw_text(fb, title, x, y, logo_scale, rgb555(20, 29, 31));
+        draw_text(fb, title, x, y, logo_scale, rgb555(23, 30, 31));
 
         if t > 80 {
             let alpha = ((t - 80) / 3).min(20) as u8;
@@ -63,7 +63,7 @@ impl PrimeIgnition {
                 86,
                 154,
                 2,
-                rgb555(8 + alpha / 4, 14 + alpha / 3, 18 + alpha / 2),
+                rgb555(10 + alpha / 4, 16 + alpha / 3, 20 + alpha / 2),
             );
         }
 
@@ -75,11 +75,11 @@ impl PrimeIgnition {
                     98,
                     210,
                     2,
-                    rgb555(18, 26, 30),
+                    rgb555(22, 28, 31),
                 );
             }
         } else if (220..300).contains(&t) && (t / 10) % 2 == 0 {
-            draw_text(fb, "BOOTING LIBRARY...", 122, 210, 2, rgb555(14, 22, 28));
+            draw_text(fb, "BOOTING LIBRARY...", 122, 210, 2, rgb555(16, 24, 30));
         }
     }
 
@@ -88,20 +88,21 @@ impl PrimeIgnition {
         for y in 0..FB_H {
             for x in 0..FB_W {
                 let scan = (((x as u32 + t) >> 4) ^ ((y as u32 + t * 2) >> 5)) & 7;
-                let b = (2 + (y as i32 * 10 / FB_H as i32) + scan as i32).clamp(0, 31) as u8;
-                let g = (1 + (scan / 2)) as u8;
-                pixels[y * FB_W + x] = rgb555(0, g, b);
+                let b = (3 + (y as i32 * 11 / FB_H as i32) + scan as i32).clamp(0, 31) as u8;
+                let g = (2 + (scan / 2) + ((t >> 5) & 1)).min(31) as u8;
+                let r = (((x as u32 + t) >> 7) & 1) as u8;
+                pixels[y * FB_W + x] = rgb555(r, g, b);
             }
         }
 
-        fill_rect(fb, 0, 0, FB_W as i32, 18, rgb555(1, 5, 10));
+        fill_rect(fb, 0, 0, FB_W as i32, 18, rgb555(2, 7, 12));
         fill_rect(
             fb,
             0,
             (FB_H - 18) as i32,
             FB_W as i32,
             FB_H as i32,
-            rgb555(1, 5, 10),
+            rgb555(2, 7, 12),
         );
     }
 }

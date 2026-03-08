@@ -89,6 +89,11 @@ pub fn poll_input(
             down: kb.is_scancode_pressed(Scancode::Down)
                 || kb.is_scancode_pressed(Scancode::S)
                 || pad_down,
+            accept: kb.is_scancode_pressed(Scancode::Return)
+                || kb.is_scancode_pressed(Scancode::Space)
+                || controller.is_some_and(|c| c.button(Button::A) || c.button(Button::Start)),
+            cancel: kb.is_scancode_pressed(Scancode::Escape)
+                || controller.is_some_and(|c| c.button(Button::B) || c.button(Button::Back)),
         }
     } else {
         InputState::default()
