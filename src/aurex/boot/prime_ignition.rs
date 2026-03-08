@@ -155,18 +155,19 @@ impl PrimeIgnition {
     }
 
     fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
-        if self.waiting_for_start {
-            if (t / 14).is_multiple_of(2) {
-                draw_text(
-                    fb,
-                    "PRESS START TO ENTER LIBRARY",
-                    76,
-                    212,
-                    2,
-                    rgb555(22, 29, 31),
-                );
-            }
-        } else if (t / 10).is_multiple_of(2) {
+        let show_start_prompt = self.waiting_for_start && (t / 14).is_multiple_of(2);
+        let show_warmup_prompt = !self.waiting_for_start && (t / 10).is_multiple_of(2);
+
+        if show_start_prompt {
+            draw_text(
+                fb,
+                "PRESS START TO ENTER LIBRARY",
+                76,
+                212,
+                2,
+                rgb555(22, 29, 31),
+            );
+        } else if show_warmup_prompt {
             draw_text(fb, "SYNTH GRID WARMUP...", 130, 212, 2, rgb555(16, 24, 30));
         }
     }
