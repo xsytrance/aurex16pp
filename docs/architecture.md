@@ -56,7 +56,7 @@ Aurex-16++ is a deterministic 2D fantasy console designed to be:
 - 4bpp packed format (32 bytes per tile)
 - Tilemap entry (u16):
   - 0..9 tile_index
-  - 10..11 palette select (4 banks)
+  - 10..13 palette select (16 banks)
   - 12 hflip
   - 13 vflip
   - 14..15 priority (reserved)
@@ -79,7 +79,7 @@ Each sprite contains:
 - x (u16)
 - y (u16)
 - tile_index (u16)
-- palette (u8)
+- palette (u16 base index semantic)
 - priority (u8)
 - visible (bool)
 - blend (BlendMode)
@@ -180,8 +180,8 @@ A dedicated title-profile domain now drives the library scene:
 
 - `TitleProfile` = title text + audio track id + color theme + icon kind.
 - Library selection is now a stateful domain event source.
-- Selection changes emit `AudioCue::SelectTrack(track_id)`.
-- Audio runtime resolves per-title songs by `track_id` (6 title-specific patterns).
+- Selection changes emit runtime audio commands (`PlayTrack(track_id)`).
+- Audio runtime resolves per-title songs by deterministic track id mapping.
 
 This keeps UI theming and soundtrack policy data-driven instead of hardcoded across unrelated modules.
 
@@ -256,7 +256,7 @@ Current boundaries are now explicit and suitable for team/agent handoff:
 Library runtime now includes explicit launch-feedback channels across visual, audio, and host diagnostics layers:
 
 - Visual: deterministic footer audio meter + launch status pulse tint.
-- Audio: `AudioCue::LaunchRequest` triggers dedicated launch stinger SFX.
+- Audio: launch intent triggers deterministic `PlaySfx(Launch)` runtime command.
 - Architecture: `collect_runtime_diagnostics(&[RuntimeEvent]) -> RuntimeDiagnostics` centralizes non-audio event interpretation for host orchestration.
 
 This keeps scene simulation deterministic while improving UX clarity and reducing host-loop branching noise.
@@ -268,9 +268,9 @@ Library launch flow now has bidirectional intent states:
 - Request: `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
 - Clear: `RuntimeEvent::TitleLaunchCanceled`
 
-Audio intent cues now distinguish user actions:
-- `AudioCue::LaunchRequest`
-- `AudioCue::Cancel`
+Audio runtime commands now distinguish user actions:
+- `PlaySfx(Launch)`
+- `PlaySfx(Cancel)`
 
 Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centralized.
 
@@ -377,3 +377,12 @@ This improves perceived production depth without changing core deterministic con
 
 - Reference: `docs/aurex_vs_neo_geo.md`
 - Planning rule: improvements should maintain or exceed Neo-Geo-class outcomes in each category (graphics richness, audio identity, runtime robustness, developer tooling) while preserving Aurex deterministic constraints.
+
+
+## Documentation Reliability Notes (2026-03-08)
+
+To reduce repeat regressions between docs and code:
+- Prefer impl-scoped helpers for module-local math utilities to avoid duplicate symbol drift during merge stacking.
+- Explicitly mark overflow-sensitive integer math paths as wrapping/saturating where required by deterministic intent.
+- Keep event terminology synchronized with runtime code (`RuntimeAudioCommand`, typed launch events), and avoid stale cue-only wording in architecture summaries.
+- Treat all rollout/testing statements as environment-specific; only claim full runtime execution when linker/runtime prerequisites are present.

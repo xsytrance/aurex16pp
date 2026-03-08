@@ -1,3 +1,21 @@
+## 2026-03-08 11:20:00Z — Documentation Reliability Pass (Architecture/Handoff/SDK/Prompt)
+
+### Summary
+Performed a thorough docs synchronization pass to align architecture, handoff canon, SDK, and prompt templates with the current ASU-32/runtime event model and to capture concrete anti-regression guidance.
+
+### Documentation
+- Updated architecture to use current palette semantics (`10..13` bank bits, sprite palette base index) and runtime audio command terminology.
+- Updated handoff canon library/audio references from legacy cue wording to runtime command wording.
+- Rewrote LLM SDK guide to v0.3 with 512 KB audio RAM, ASU-32 command contract, and explicit validation checklist.
+- Rewrote LLM prompt template to v0.3 with updated budgets/contracts and final self-check items.
+- Updated master prompt hardware memory section (Audio RAM 512 KB) and added documentation reliability guardrails.
+
+### Lessons Learned / Anti-Regression
+- Avoid global helper symbol drift in fast iteration; prefer impl-scoped helpers when utility scope is local.
+- Make integer overflow intent explicit in deterministic arithmetic paths.
+- Keep docs terminology synchronized with actual runtime APIs before shipping claims.
+- Keep test/run claims strictly environment-verified.
+
 ## 2026-03-08 10:55:00Z — ASU-32 Sine Helper De-dup Hardening
 
 ### Summary

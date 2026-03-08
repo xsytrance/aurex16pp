@@ -299,7 +299,7 @@ END OF CANON
   - track id
   - color theme
   - icon kind
-- Selection emits `AudioCue::SelectTrack`.
+- Selection emits deterministic runtime track command (`PlayTrack`).
 - Audio engine uses track id mapping for deterministic per-title song playback.
 
 
@@ -312,8 +312,7 @@ END OF CANON
 
 ## Library Feedback Canon (2026-03-08 01:08:00Z)
 
-- Launch-intent UX now includes a deterministic audio stinger cue:
-  - `AudioCue::LaunchRequest`
+- Launch-intent UX now includes deterministic runtime SFX command: `PlaySfx(Launch)`.
 - Library scene visual feedback includes deterministic footer pulse + meter animation.
 - Host interpretation of non-audio runtime events should prefer runtime diagnostics collection over ad-hoc per-loop matching.
 
@@ -325,7 +324,7 @@ END OF CANON
 - Runtime event set for library intent now includes:
   - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
   - `RuntimeEvent::TitleLaunchCanceled`
-- Audio cue set now includes explicit cancel intent (`AudioCue::Cancel`).
+- Runtime audio command set includes explicit cancel intent (`PlaySfx(Cancel)`).
 
 
 
@@ -403,6 +402,12 @@ Event contract:
 Host contract:
 - Drain runtime events every frame after `run_frame`.
 - Route side effects in host/runtime dispatch layer, not inside scene simulation logic.
+
+## Documentation / Handoff Integrity Notes (2026-03-08)
+
+- Keep canon terminology aligned with implementation symbols: `RuntimeAudioCommand`/`AudioSfx`, typed launch lifecycle events, and ASU-32 constraints.
+- For integer math used in runtime table generation, overflow behavior must be explicit (`wrapping_*` / `saturating_*`) to avoid debug/release drift.
+- Canon updates should not include unverifiable environment-specific claims (for example, local full runtime execution when platform link dependencies are absent).
 
 
 ---

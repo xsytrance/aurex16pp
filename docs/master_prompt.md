@@ -93,7 +93,7 @@ Palettes
 
 Audio RAM
 
-256 KB
+512 KB
 
 Strictly separated from VRAM
 
@@ -404,3 +404,9 @@ Non-negotiables:
 - fixed frame model
 - strict budget rejection
 - deterministic playback/replay potential
+
+
+Documentation reliability guardrails (2026-03-08):
+- Do not claim full runtime validation unless the environment actually links and runs the target binary.
+- Keep prompt/runtime naming synchronized (RuntimeAudioCommand, AudioSfx, launch event names).
+- Require explicit overflow intent in integer table-generation arithmetic.
