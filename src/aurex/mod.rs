@@ -1,4 +1,5 @@
 pub mod boot;
+pub mod cartridge;
 pub mod clock;
 pub mod dma;
 pub mod game;
@@ -8,10 +9,12 @@ pub mod runtime;
 pub mod vm32;
 pub mod wram;
 
+use crate::aurex::cartridge::CartridgeRuntime;
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
 use crate::aurex::runtime::{
-    LaunchIntentController, RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+    LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeEvent, RuntimeEventQueue,
+    SceneId, validate_launch_descriptor,
 };
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
@@ -129,12 +132,22 @@ impl Aurex {
 
                 if let Some(stage) = self.launch.tick() {
                     self.events.push(RuntimeEvent::LaunchStageChanged(stage));
-                    if let crate::aurex::runtime::LaunchStage::Ready(desc) = stage {
+                    if let LaunchStage::Ready(desc) = stage {
                         self.events.push(RuntimeEvent::TitleLaunchReady(desc));
+                        if CartridgeRuntime::from_cartridge_id(desc.cartridge_id).is_ok() {
+                            self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
+                        } else {
+                            self.launch.reject(LaunchValidationError::CartridgeMissing);
+                            self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                LaunchValidationError::CartridgeMissing,
+                            ));
+                            self.events
+                                .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                        }
                     }
                 }
 
-                self.library.set_launch_pending(self.launch.is_active());
+                self.library.set_launch_stage(self.launch.stage());
             }
         }
 

@@ -15,6 +15,7 @@ pub enum RuntimeEvent {
     TitleLaunchCanceled,
     LaunchStageChanged(LaunchStage),
     TitleLaunchReady(LaunchDescriptor),
+    TitleLaunchResolved(LaunchDescriptor),
     TitleLaunchRejected(LaunchValidationError),
 }
 

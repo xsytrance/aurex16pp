@@ -186,16 +186,35 @@ impl LibraryScreen {
         }
     }
 
-    pub fn set_launch_pending(&mut self, pending: bool) {
-        self.launch_pending = pending;
-        if pending {
-            self.status_message = StatusMessage {
+    pub fn set_launch_stage(&mut self, stage: crate::aurex::runtime::LaunchStage) {
+        self.launch_pending = !matches!(stage, crate::aurex::runtime::LaunchStage::Idle);
+
+        self.status_message = match stage {
+            crate::aurex::runtime::LaunchStage::Idle => StatusMessage::idle(),
+            crate::aurex::runtime::LaunchStage::Pending(_) => StatusMessage {
                 text: "LAUNCH INTENT ARMED",
                 tint: PROFILES[self.selected].theme,
-            };
-        } else if self.launch_flash_frames == 0 {
-            self.status_message = StatusMessage::idle();
-        }
+            },
+            crate::aurex::runtime::LaunchStage::Validating(_) => StatusMessage {
+                text: "VALIDATING CARTRIDGE",
+                tint: PROFILES[self.selected].theme,
+            },
+            crate::aurex::runtime::LaunchStage::Ready(_) => StatusMessage {
+                text: "CARTRIDGE READY",
+                tint: PROFILES[self.selected].theme,
+            },
+            crate::aurex::runtime::LaunchStage::Rejected(_) => StatusMessage {
+                text: "CARTRIDGE REJECTED",
+                tint: ColorTheme {
+                    bg_r: 2,
+                    bg_g: 3,
+                    bg_b: 6,
+                    cover_r: 29,
+                    cover_g: 9,
+                    cover_b: 9,
+                },
+            },
+        };
     }
 
     pub fn update(&mut self, input: InputState) -> LibraryUpdate {

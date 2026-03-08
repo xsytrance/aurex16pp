@@ -255,3 +255,5 @@ Responsibilities:
 - Launch validation: `validate_launch_descriptor` + `TitleLaunchRejected` telemetry prior to pending stage.
 
 - Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.
+
+- Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.

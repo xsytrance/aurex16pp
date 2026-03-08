@@ -56,3 +56,8 @@ See `docs/llm_prompt_template.md`.
 ## Launch Lifecycle Signals
 Runtime launch now progresses through explicit stages (`Pending -> Validating -> Ready`) or `Rejected`.
 LLM-authored cartridge metadata should assume validation occurs before any boot attachment side effects.
+
+
+## Resolver expectation
+Runtime attempts to resolve `cartridge_id` to `cartridges/<cartridge_id>/manifest.txt` before boot handoff.
+LLM outputs must ensure this path exists and is valid.

@@ -1,3 +1,21 @@
+## 2026-03-08 03:44:00Z — Launch Resolve Gate + Library Stage HUD Messaging
+
+### Summary
+Continued launch pipeline development by adding cartridge resolution at ready stage and upgrading library HUD messaging for staged launch lifecycle.
+
+### Runtime / Architecture
+- Added `CartridgeRuntime::from_cartridge_id(...)` resolver hook.
+- When launch reaches `Ready`, runtime now attempts cartridge resolution and emits:
+  - `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)` on success
+  - `RuntimeEvent::TitleLaunchRejected(CartridgeMissing)` + `LaunchStage::Rejected` on failure
+- Added `RuntimeDiagnostics::launch_resolved` for host orchestration/logging.
+
+### Library Screen
+- Library status messaging now reflects full stage state (`Pending`, `Validating`, `Ready`, `Rejected`) rather than simple pending-only text.
+
+### Progress
+The launch pipeline now has explicit resolver gating before future boot attach, reducing ambiguity between “ready” and “actually loadable”.
+
 ## 2026-03-08 03:22:00Z — Multi-Stage Launch Lifecycle (Validating/Ready/Rejected)
 
 ### Summary

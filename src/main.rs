@@ -134,6 +134,12 @@ fn main() {
         if let Some(ready) = diagnostics.launch_ready {
             println!("Launch ready: {} ({})", ready.title, ready.cartridge_id);
         }
+        if let Some(resolved) = diagnostics.launch_resolved {
+            println!(
+                "Cartridge resolved: {} ({})",
+                resolved.title, resolved.cartridge_id
+            );
+        }
         if let Some(reject) = diagnostics.launch_rejected {
             println!("Launch rejected: {:?}", reject);
         }

@@ -314,3 +314,12 @@ Runtime now emits explicit readiness telemetry:
 - `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)`
 
 This event is intended as the future handoff trigger to cartridge boot/runtime attach policy.
+
+
+## Launch Resolver Gate (2026-03-08 03:44:00Z)
+
+After validation reaches `Ready`, runtime performs cartridge resolution by `cartridge_id`:
+- success emits `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)`
+- failure transitions to rejected state and emits launch rejection telemetry
+
+This prevents host boot handoff from firing on unresolved cartridge IDs.

@@ -23,6 +23,13 @@ pub struct CartridgeRuntime {
 }
 
 impl CartridgeRuntime {
+    pub fn from_cartridge_id(cartridge_id: &str) -> Result<Self, String> {
+        let manifest_path = Path::new("cartridges")
+            .join(cartridge_id)
+            .join("manifest.txt");
+        Self::from_manifest(&manifest_path)
+    }
+
     pub fn discover_default() -> Option<Self> {
         let manifest_path = Path::new("cartridges/default/manifest.txt");
         match Self::from_manifest(manifest_path) {

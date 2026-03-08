@@ -365,6 +365,14 @@ END OF CANON
 - Launch flow now includes deterministic validating and ready stages.
 - `TitleLaunchReady(LaunchDescriptor)` is the runtime signal reserved for future cartridge boot handoff.
 
+
+
+## Launch Resolve Canon (2026-03-08 03:44:00Z)
+
+- `Ready` stage is now followed by deterministic cartridge resolution check by `cartridge_id`.
+- Successful resolution emits `TitleLaunchResolved(LaunchDescriptor)`.
+- Missing cartridge manifests force `Rejected(CartridgeMissing)` before any boot handoff.
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
@@ -378,6 +386,9 @@ Event contract:
 - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
 - `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
 - `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
+- `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)` for launch-ready handoff telemetry.
+- `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)` for successful cartridge resolution telemetry.
+- `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)` for deterministic launch validation/loading rejects.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.
