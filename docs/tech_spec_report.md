@@ -15,6 +15,7 @@ This report consolidates current canonical hardware/runtime capabilities into on
 - Frame rate target: **60 FPS fixed timestep**
 - Pixel format: **RGB555** (15-bit)
 - Palette capacity: **4096 RGB555 entries** (8192 bytes)
+- Max colors on screen: **4096** (all palette entries addressable; 4bpp tiles/sprites use 16 colors per bank)
 - Legacy compatibility: first 256 entries retain prior initialization behavior
 
 ## 3. Processor / Compute Budget
@@ -34,7 +35,7 @@ This report consolidates current canonical hardware/runtime capabilities into on
 - Used for BG/sprite/palette and cartridge VRAM usage domains
 
 ### Audio RAM
-- Size: **256 KB**
+- Size: **512 KB**
 - Strictly separated from VRAM policy
 
 ## 5. DMA / Transfer Constraints
@@ -46,15 +47,15 @@ This report consolidates current canonical hardware/runtime capabilities into on
 
 ## 6. Rendering Pipeline Capabilities (Current)
 - Deterministic scanline-oriented composition model
-- BG0 and sprite-centric runtime flow in active path
-- Sprite system supports priority/blend flags with overflow telemetry
+- BG0, BG1, and sprite layers; **16 sprites per scanline** (overflow if more; 128 sprites total)
+- Sprite sizes: 8×8 and 16×16 (OAM `size_16`); priority and blend (Normal/Additive) with overflow telemetry
 - Launch/library UX overlays rendered in framebuffer stage
 
 ## 7. Audio Runtime Capabilities (Current Host Path + Positioning)
 - Host audio queue sample rate: **48 kHz**
 - Host channel config (current main loop): **stereo (2 channels)**
 - Runtime synthesis supports:
-  - ASU-32 12-voice deterministic engine
+  - ASU-32 16-voice deterministic engine
   - static instrument table (ADSR + vibrato)
   - wavetable bank in 512 KB audio RAM (sine/square/triangle/saw/noise)
   - fixed-tick deterministic pattern sequencer

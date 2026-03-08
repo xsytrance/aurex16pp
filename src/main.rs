@@ -385,6 +385,10 @@ fn main() {
         }
 
         let input = polled.gameplay;
+        let boot_beat_step = match flow.phase() {
+            FlowPhase::Boot | FlowPhase::AwaitStart => Some(synth.pattern_step() as u8),
+            FlowPhase::Game => None,
+        };
 
         system.run_frame(input, None);
         runtime_events.clear();
