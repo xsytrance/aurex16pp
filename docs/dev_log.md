@@ -1,3 +1,16 @@
+## 2026-03-08 07:10:00Z — Neo-Geo Comparison Canon + Documentation/SDK/Prompt Alignment
+
+### Summary
+Completed a full documentation and instruction alignment pass and introduced an explicit Aurex-vs-Neo-Geo target comparison document to guide future phases.
+
+### Documentation / SDK / LLM Instruction Updates
+- Updated SDK guidance and prompt template to reflect current palette/audio semantics and hard constraints.
+- Updated architecture/handoff/tech-spec/index docs to reference Neo-Geo comparison planning.
+- Added `docs/aurex_vs_neo_geo.md` with category-by-category target verdicts requiring Aurex >= Neo-Geo outcomes while preserving deterministic creative constraints.
+
+### Progress
+This gives a unified planning reference for future upgrades and keeps both human and LLM authoring paths aligned with the project vision.
+
 ## 2026-03-08 06:40:00Z — Phase Upgrade: Deterministic Audio Lane Depth + Neo-Geo Gap Closure Plan
 
 ### Summary

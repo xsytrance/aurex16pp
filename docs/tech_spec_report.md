@@ -137,3 +137,8 @@ Next capability unlock for “generated games fully runnable”:
 - Runtime
   - add deterministic capture/replay for launch + audio + input events
   - add cartridge static analyzer command that fails builds on budget/schema violations
+
+
+## 15. Neo-Geo Comparison Reference
+- See: `docs/aurex_vs_neo_geo.md`
+- This comparison is used as target guidance for phase planning and authoring policy.

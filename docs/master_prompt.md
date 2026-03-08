@@ -129,17 +129,13 @@ Tilemap Entry (u16, little-endian)
 
 Bits 0–9: tile index (0..1023)
 
-Bits 10–11: palette select (0..3 → bank ×16)
-
-Bit 12: hflip
-
-Bit 13: vflip
+Bits 10–13: palette select (0..15 → bank ×16)
 
 Bits 14–15: priority (reserved)
 
 Palette
 
-First 256 entries = RGB555 (u16 little-endian)
+4096 entries = RGB555 (u16 little-endian), with legacy first-256 compatibility
 
 Deterministic integer math only
 
@@ -154,7 +150,7 @@ y (u16)
 
 tile_index (u16)
 
-palette (u8)
+palette (u16 base index)
 
 priority (u8)
 
@@ -397,3 +393,14 @@ Launch descriptor IDs must be lowercase snake_case (`[a-z0-9_]+`) to align with 
 
 
 Human operators directing LLM cartridge creation should use docs/human_game_creation_guide.md to stay aligned with deterministic contract rules.
+
+
+AUREX VS NEO-GEO TARGET POSITIONING
+
+Aurex-16++ aims to be >= Neo-Geo in curated presentation quality, determinism, tooling clarity, and authoring velocity while remaining creatively constrained.
+
+Non-negotiables:
+- no float in core simulation
+- fixed frame model
+- strict budget rejection
+- deterministic playback/replay potential

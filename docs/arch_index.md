@@ -101,17 +101,18 @@ Hardware limits locked.
 
 ---
 
-## AUDIO SYSTEM (ASU)
+## AUDIO SYSTEM
 
-File:
+Files:
 
-- src/aurex/asu/
+- `src/aurex/runtime/audio.rs`
+- `src/aurex/game/mod.rs` (AudioCue contract)
 
 Core:
 
-- Voice
-- Envelope
-- Sequencer
+- `AudioEngine`
+- deterministic envelope lane shaping
+- cue-driven stingers (`LaunchRequest`, `Cancel`)
 
 Integer-only audio logic required.
 
@@ -269,3 +270,12 @@ Files:
 
 Purpose:
 - single-page consolidated hardware/runtime capability report for operators and handoff consumers
+
+
+## PLATFORM COMPARISON REFERENCE
+
+Files:
+- `docs/aurex_vs_neo_geo.md`
+
+Purpose:
+- target-position comparison ensuring Aurex vision is >= Neo-Geo while preserving creative constraints

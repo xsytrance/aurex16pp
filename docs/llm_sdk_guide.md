@@ -69,3 +69,7 @@ Aurex targets **creative constraints with premium polish**, not unrestricted sim
 - Avoid asking runtime to violate fixed budgets for “next-gen” effects.
 
 See `docs/llm_prompt_template.md` for a structured generation template.
+
+
+## Comparison target reference
+- See `docs/aurex_vs_neo_geo.md` for target-level capability comparison criteria used by prompt and cartridge planning.

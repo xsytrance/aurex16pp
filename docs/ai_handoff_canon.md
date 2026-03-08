@@ -432,3 +432,9 @@ Host contract:
 - Lane model includes bass + sub + lead + arp + percussion accents.
 - Envelope shaping is deterministic per-step (no random drift, no float interpolation).
 - No frame-timing changes were introduced by audio richness pass.
+
+
+# 13. External Target Comparison Reference
+
+- Neo-Geo target comparison doc: `docs/aurex_vs_neo_geo.md`.
+- Canon policy: Aurex roadmap should be >= Neo-Geo in capability categories while preserving deterministic creative constraints.

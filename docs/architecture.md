@@ -371,3 +371,9 @@ Implemented in runtime audio path:
 - zero-allocation per-sample synthesis path retained
 
 This improves perceived production depth without changing core deterministic constraints or introducing floating-point math.
+
+
+## Neo-Geo Comparison Planning
+
+- Reference: `docs/aurex_vs_neo_geo.md`
+- Planning rule: improvements should maintain or exceed Neo-Geo-class outcomes in each category (graphics richness, audio identity, runtime robustness, developer tooling) while preserving Aurex deterministic constraints.
