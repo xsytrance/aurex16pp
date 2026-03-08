@@ -320,8 +320,9 @@ impl LibraryScreen {
     fn draw_header(&self, fb: &mut Framebuffer, profile: TitleProfile) {
         self.fill_rect(fb, 12, 10, (FB_W - 12) as i32, 46, rgb555(2, 8, 14));
         self.draw_text(fb, "AUREX-16++ DEEP LIBRARY", 22, 16, 2, rgb555(23, 30, 31));
-        self.draw_text(fb, profile.style, 24, 32, 1, rgb555(18, 24, 30));
-        self.draw_text(fb, profile.tag, 234, 32, 1, rgb555(20, 28, 31));
+        self.draw_text(fb, "HI-FI SYNTH MODE", 24, 32, 1, rgb555(19, 26, 31));
+        self.draw_text(fb, profile.style, 150, 32, 1, rgb555(18, 24, 30));
+        self.draw_text(fb, profile.tag, 300, 32, 1, rgb555(20, 28, 31));
     }
 
     fn draw_cards(&self, fb: &mut Framebuffer, frame: u64) {
