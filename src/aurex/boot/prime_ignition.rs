@@ -101,6 +101,67 @@ impl PrimeIgnition {
             FB_H as i32,
             rgb555(2, 7, 12),
         );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = meter_x + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(fb, x0, meter_y + 8 - h, x0 + 5, meter_y + 10, c);
+        }
+    }
+
+    fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_tunnel(fb, t);
+    }
+
+    fn draw_boot_meter(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_equalizer(fb, t);
+    }
+
+    fn draw_tunnel(&self, fb: &mut Framebuffer, t: u32) {
+        for i in 0..8 {
+            let s = 20 + i * 16 + ((t as i32 + i * 5) & 7);
+            let x0 = FB_W as i32 / 2 - s;
+            let y0 = FB_H as i32 / 2 - (s / 2);
+            let x1 = FB_W as i32 / 2 + s;
+            let y1 = FB_H as i32 / 2 + (s / 2);
+            let c = rgb555(
+                (2 + i as u8 / 2).min(31),
+                (10 + i as u8).min(31),
+                (18 + i as u8).min(31),
+            );
+            stroke_rect(fb, x0, y0, x1, y1, c);
+        }
+    }
+
+    fn draw_equalizer(&self, fb: &mut Framebuffer, t: u32) {
+        let meter_x = 108;
+        let meter_y = 176;
+        fill_rect(
+            fb,
+            meter_x - 10,
+            meter_y - 10,
+            meter_x + 212,
+            meter_y + 24,
+            rgb555(1, 6, 10),
+        );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = meter_x + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(fb, x0, meter_y + 8 - h, x0 + 5, meter_y + 10, c);
+        }
     }
 
     fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
