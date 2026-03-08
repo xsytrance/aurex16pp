@@ -11,6 +11,7 @@ pub struct AudioEngine {
     bass_phase: u32,
     lead_phase: u32,
     arp_phase: u32,
+    sub_phase: u32,
     sample_rate: u32,
     confirm_samples_left: u32,
     launch_samples_left: u32,
@@ -26,6 +27,7 @@ impl AudioEngine {
             bass_phase: 0,
             lead_phase: 0,
             arp_phase: 0,
+            sub_phase: 0,
             sample_rate,
             confirm_samples_left: 0,
             launch_samples_left: 0,
@@ -164,11 +166,21 @@ impl AudioEngine {
         let step = beat % 16;
         let sub = (self.sample_clock % spb as u64) as u32;
 
-        self.bass_phase = self.bass_phase.wrapping_add(self.step_from_hz(bass[step]));
+        let bass_hz = bass[step];
+        self.bass_phase = self.bass_phase.wrapping_add(self.step_from_hz(bass_hz));
+        self.sub_phase = self
+            .sub_phase
+            .wrapping_add(self.step_from_hz((bass_hz / 2).max(20)));
+
         let bass_wave = if self.bass_phase < 0x8000_0000 {
             bass_amp
         } else {
             -bass_amp
+        };
+        let sub_wave = if self.sub_phase < 0x8000_0000 {
+            bass_amp / 3
+        } else {
+            -(bass_amp / 3)
         };
 
         let lead_hz = lead[step];
@@ -220,7 +232,7 @@ impl AudioEngine {
             0
         };
 
-        (bass_wave + lead_wave + arp_wave + kick + hat) / 2
+        (bass_wave + sub_wave + lead_wave + arp_wave + kick + hat) / 2
     }
 
     fn sfx_sample(&mut self) -> i32 {

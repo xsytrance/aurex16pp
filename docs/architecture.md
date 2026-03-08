@@ -336,3 +336,28 @@ A human-facing cartridge authoring guide now complements the LLM SDK docs:
 Purpose:
 - help designers/producers request LLM-generated games using the same strict contract and hardware limits
 - keep human workflow aligned with deterministic runtime constraints
+
+
+---
+
+## 2026-03-08 Canon Refresh (Palette + AV Direction)
+
+### Graphics updates now in force
+- Palette storage expanded to **4096 RGB555 entries**.
+- Legacy compatibility preserved: the first 256 palette entries initialize exactly as before.
+- Sprite palette reference is now a base index (`u16` domain behavior).
+- BG tilemap palette select now uses bits **10..13** (16 banks).
+- Deterministic scanline renderer model remains unchanged.
+- Tile and sprite payload formats remain unchanged.
+
+### Audio positioning vs Neo-Geo
+Current Aurex audio is intentionally constrained and deterministic (44.1 kHz mono integer synth). It has strong style control but does **not yet match Neo-Geo's historical multi-voice production depth**.
+
+Near-term upgrade path (still within Aurex vision):
+1. Deterministic 4-operator voice lanes (bass/lead/arp/percussion lanes as explicit budgeted channels).
+2. Pattern-instrument envelope table (attack/decay/sustain/release presets as integer lookups).
+3. Track macro sequencing (per-title motif blocks) with zero runtime allocation.
+4. Optional stereo widening stage in host presentation only (simulation remains deterministic mono core).
+
+### Vision discipline
+Goal is “better than Neo-Geo in curated presentation consistency and deterministic tooling,” not by removing constraints.

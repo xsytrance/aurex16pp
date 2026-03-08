@@ -403,3 +403,24 @@ Event contract:
 Host contract:
 - Drain runtime events every frame after `run_frame`.
 - Route side effects in host/runtime dispatch layer, not inside scene simulation logic.
+
+
+---
+
+# 10. Palette Expansion Canon (2026-03-08)
+
+- `MAX_PALETTE_ENTRIES = 4096`.
+- Palette format remains RGB555 little-endian (`u16` per entry).
+- Sprite palette reference is interpreted as base index (u16 semantic range).
+- Sprite final lookup model: `palette[sprite.palette + color_index]`.
+- BG tilemap palette select: bits `10..13` (16 banks).
+- Deterministic scanline composition unchanged.
+- No float math introduced.
+- No DMA model change introduced.
+
+# 11. Audio Positioning Canon
+
+- Current runtime audio: deterministic integer synth at host 44.1 kHz mono.
+- Quality target: curated style consistency + deterministic reproducibility.
+- Not yet equivalent to Neo-Geo-era multi-chip production depth.
+- Planned upgrades must remain deterministic and budget-bounded.

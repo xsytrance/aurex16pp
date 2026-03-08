@@ -1,66 +1,70 @@
-# AUREX-16++ LLM SDK GUIDE (v0.1)
+# AUREX-16++ LLM SDK GUIDE (v0.2)
 
 ## Purpose
-This guide defines the deterministic prompt structure LLMs must follow to generate Aurex cartridges.
+Deterministic contract for generating Aurex cartridges that run inside hard hardware-style limits.
 
-Human-facing companion guide: `docs/human_game_creation_guide.md`.
+Companion: `docs/human_game_creation_guide.md`.
 
-Aurex is not free-form: cartridge outputs must conform to hardware caps and a strict manifest schema.
+## Hard Platform Caps (must be respected)
+- Resolution: `426x240 @ 60 FPS`
+- CPU budget: `200,000 ops/frame`
+- WRAM: `512 KB`
+- VRAM: `1 MB`
+- Audio RAM: `256 KB`
+- DMA caps: `4 commands/frame`, `64 KB VRAM/frame`, `16 KB audio/frame`
+- Palette store: `4096 RGB555 entries` (legacy-first behavior preserved)
+- Core math: integer-only (no float simulation paths)
 
-## Prompt Contract (Required Sections)
-Every generation prompt for a cartridge should include these sections in order:
+## Prompt Contract (required sections, in order)
+1. `GAME_ID`
+2. `TITLE`
+3. `GENRE_TAG`
+4. `LOOP_SPEC`
+5. `INPUT_MAP`
+6. `ASSET_BUDGET`
+7. `DMA_PLAN`
+8. `PALETTE_PLAN`
+9. `AUDIO_PLAN`
+10. `FAILSAFE_RULES`
+11. `OUTPUT_FILES`
 
-1. `GAME_ID` — lowercase snake_case identifier (example: `neon_circuit`)
-2. `TITLE` — display title
-3. `GENRE_TAG` — short controlled tag (platformer, racer, shooter, puzzle, tactics)
-4. `LOOP_SPEC` — deterministic frame loop summary
-5. `INPUT_MAP` — fixed actions and buttons
-6. `ASSET_BUDGET` — VRAM/audio usage goals under hard caps
-7. `DMA_PLAN` — upload regions/chunk policy
-8. `AUDIO_PLAN` — track IDs/voice expectations
-9. `FAILSAFE_RULES` — rejection rules when budgets are exceeded
-10. `OUTPUT_FILES` — exact files to generate
+Missing section => invalid prompt.
 
-Any missing section = invalid prompt.
+## Cartridge Identity Rules
+- `GAME_ID` and runtime `cartridge_id` must match regex: `[a-z0-9_]+`
+- Files live at:
+  - `cartridges/<cartridge_id>/manifest.txt`
+  - `cartridges/<cartridge_id>/...assets...`
+- Manifest minimum:
+  - `name=<display name>`
+  - `game_id=<cartridge_id>`
+  - `upload=<Region,dst_offset,file>`
 
-## Deterministic Output Rules
-- No floating-point gameplay state.
-- No runtime randomness without deterministic seed progression.
-- No implicit budget expansion.
-- No direct PPU internals mutation from cartridge logic.
-- DMA must respect region and per-frame caps.
+## Palette + Tile/Sprite Rules (v0.2)
+- RGB555 remains unchanged.
+- Palette address space supports `0..4095` entries.
+- Sprite field `palette` is a **base palette index** (`u16` semantics).
+  - Lookup model: `final = palette[sprite.palette + color_index]`
+- BG tilemap palette select uses bits `10..13` (16 banks).
+- Tile payload format remains unchanged (4bpp packed, 32 bytes/tile).
+- Sprite tile payload format remains unchanged.
 
-## Cartridge Descriptor Mapping
-Library launch now emits a descriptor:
-- `title`
-- `cartridge_id`
+## Launch + Resolver Contract
+Runtime launch stages are typed and deterministic:
+- `Pending -> Validating -> Ready`
+- failure path: `Rejected`
 
-LLM-created cartridge assets should be placed under:
-- `cartridges/<cartridge_id>/`
-- `cartridges/<cartridge_id>/manifest.txt`
+Resolver gate requires manifest `game_id` match before attach/load side effects.
 
-## Manifest Baseline
-Current loader accepts:
-- `name=<display name>`
-- `game_id=<lower_snake_case id>` (required for resolver path)
-- `upload=<Region,dst_offset,file>`
+## Audio Contract (current)
+- Host mix: 44.1 kHz mono.
+- Integer-only synthesis.
+- Cues supported: track select, launch request, cancel.
+- Cartridge outputs should provide deterministic track intent, not unrestricted procedural audio.
 
-Future SDK revisions will add validated metadata fields, but this baseline is required now.
+## Quality Target Guidance
+Aurex targets **creative constraints with premium polish**, not unrestricted simulation complexity.
+- Prefer stronger art direction, tighter motif design, and deterministic audio identity.
+- Avoid asking runtime to violate fixed budgets for “next-gen” effects.
 
-## Example Prompt Skeleton
-See `docs/llm_prompt_template.md`.
-
-
-## Cartridge ID Format Rule
-- `cartridge_id` / `GAME_ID` must match: `[a-z0-9_]+`
-- Uppercase, hyphen, or spaces are invalid and should be rejected before launch orchestration.
-
-
-## Launch Lifecycle Signals
-Runtime launch now progresses through explicit stages (`Pending -> Validating -> Ready`) or `Rejected`.
-LLM-authored cartridge metadata should assume validation occurs before any boot attachment side effects.
-
-
-## Resolver expectation
-Runtime attempts to resolve `cartridge_id` to `cartridges/<cartridge_id>/manifest.txt` before boot handoff.
-LLM outputs must ensure this path exists and is valid.
+See `docs/llm_prompt_template.md` for a structured generation template.

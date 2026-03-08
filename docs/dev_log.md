@@ -1,3 +1,29 @@
+## 2026-03-08 06:05:00Z — Palette 4096 Canon + AV Direction Refresh + Neo-Geo Positioning
+
+### Summary
+Consolidated documentation around the expanded 4096-entry palette system, refreshed architecture/handoff/sdk guidance, and clarified audio positioning versus Neo-Geo while preserving deterministic constraints.
+
+### Runtime/Graphics
+- Palette storage now documented as 4096 RGB555 entries.
+- Sprite palette semantics documented as base-index lookup behavior.
+- BG tilemap palette selection documented as 4-bit bank field (bits 10..13).
+- Boot/library visual tone refreshed toward stronger contrast and richer color accents.
+
+### Audio
+- Canon docs now explicitly state that current audio quality is stylistically strong but not yet equivalent to Neo-Geo production depth.
+- Added constrained upgrade path: deterministic voice lanes, envelope tables, and motif sequencing.
+
+### Documentation
+- Updated:
+  - `docs/llm_sdk_guide.md`
+  - `docs/architecture.md`
+  - `docs/ai_handoff_canon.md`
+  - `docs/tech_spec_report.md`
+  - `docs/dev_log.md`
+
+### Progress
+This aligns implementation + docs around a single “premium but constrained” vision: better tooling and deterministic polish, not unconstrained complexity.
+
 ## 2026-03-08 04:48:00Z — Consolidated Technical Specification Report
 
 ### Summary

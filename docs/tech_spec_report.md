@@ -12,7 +12,8 @@ This report consolidates current canonical hardware/runtime capabilities into on
 - Render resolution: **426 x 240** (16:9)
 - Frame rate target: **60 FPS fixed timestep**
 - Pixel format: **RGB555** (15-bit)
-- On-screen color budget: **256 colors max**
+- Palette capacity: **4096 RGB555 entries** (8192 bytes)
+- Legacy compatibility: first 256 entries retain prior initialization behavior
 
 ## 3. Processor / Compute Budget
 - CPU model: **VM-32**
@@ -47,13 +48,17 @@ This report consolidates current canonical hardware/runtime capabilities into on
 - Sprite system supports priority/blend flags with overflow telemetry
 - Launch/library UX overlays rendered in framebuffer stage
 
-## 7. Audio Runtime Capabilities (Current Host Path)
+## 7. Audio Runtime Capabilities (Current Host Path + Positioning)
 - Host audio queue sample rate: **44.1 kHz**
 - Host channel config (current main loop): **mono (1 channel)**
 - Runtime synthesis supports:
   - boot music mode
   - per-title library track selection
   - launch/cancel cue stingers
+- Neo-Geo positioning:
+  - current Aurex audio is deterministic and stylistically solid
+  - does **not yet** match Neo-Geo multi-voice production depth
+  - targeted improvement path is richer channel architecture under fixed deterministic budgets
 
 ## 8. Input / Control Model (Current)
 - Keyboard + game controller polling
@@ -104,3 +109,17 @@ Aurex is currently capable of:
 Next capability unlock for “generated games fully runnable”:
 - attach/load execution after `TitleLaunchResolved`
 - manifest/schema expansion for richer cartridge metadata
+
+
+## 13. Suggested Upgrade Stack (Constrained “Beyond Neo-Geo” Path)
+- Graphics:
+  - palette tooling (bank heatmap/debug view)
+  - per-title palette animation utilities with deterministic frame scripts
+  - richer boot/library scene shaders expressed as integer LUT effects
+- Audio:
+  - explicit 4-lane instrument engine with deterministic ADSR tables
+  - motif sequencer + per-title macro patterns
+  - optional host stereo widener while preserving mono simulation core
+- Tooling:
+  - cartridge lint tool enforcing budget + identity + manifest schema
+  - golden-frame regression snapshots for deterministic render validation
