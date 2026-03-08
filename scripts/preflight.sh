@@ -15,5 +15,8 @@ if [[ "${AUREX_SKIP_AUDIT_LINK:-0}" == "1" ]]; then
   exit 0
 fi
 
+echo "[preflight] docs-sync check"
+cargo run -- --docs-sync-check
+
 echo "[preflight] cartridge audit (json)"
 cargo run -- --audit-cartridges --json
