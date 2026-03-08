@@ -33,6 +33,14 @@ The remaining “beat Neo-Geo” work is primarily about **content quality depth
 - No tile/sprite/palette memory contract drift without explicit canon update.
 
 ## Suggested Upgrade Stack (Next)
+
+Execution status (2026-03-08):
+- replay capture scaffold: implemented (`--replay-capture-smoke`)
+- audio diagnostics scaffold: implemented (`--audio-diagnostics`)
+- cartridge analyzer v2 scaffold: implemented (`--analyze-cartridges`)
+- palette heatmap scaffold: implemented (`--palette-heatmap`)
+
+
 1. Deterministic replay + golden capture
    - launch/input/audio event capture
    - golden-frame and golden-audio regression snapshots

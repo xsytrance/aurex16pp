@@ -236,6 +236,39 @@ impl Vram {
         }
     }
 
+    pub fn bg0_palette_bank_heatmap(&self) -> [u32; 16] {
+        let mut heatmap = [0u32; 16];
+        for chunk in self.bg0_tilemap.chunks_exact(2) {
+            let entry = u16::from_le_bytes([chunk[0], chunk[1]]);
+            let bank = ((entry >> 10) & 0x0F) as usize;
+            heatmap[bank] = heatmap[bank].saturating_add(1);
+        }
+        heatmap
+    }
+
+    pub fn bg0_palette_bank_heatmap_json(&self) -> String {
+        let h = self.bg0_palette_bank_heatmap();
+        format!(
+            "{{\"bank0\":{},\"bank1\":{},\"bank2\":{},\"bank3\":{},\"bank4\":{},\"bank5\":{},\"bank6\":{},\"bank7\":{},\"bank8\":{},\"bank9\":{},\"bank10\":{},\"bank11\":{},\"bank12\":{},\"bank13\":{},\"bank14\":{},\"bank15\":{}}}",
+            h[0],
+            h[1],
+            h[2],
+            h[3],
+            h[4],
+            h[5],
+            h[6],
+            h[7],
+            h[8],
+            h[9],
+            h[10],
+            h[11],
+            h[12],
+            h[13],
+            h[14],
+            h[15]
+        )
+    }
+
     pub fn region_mut(&mut self, region: &VramRegion) -> &mut [u8] {
         match region {
             VramRegion::BgTiles => &mut self.bg_tiles,

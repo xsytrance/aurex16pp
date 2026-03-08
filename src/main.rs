@@ -26,6 +26,106 @@ fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<Ga
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--analyze-cartridges") {
+        let report = aurex::cartridge::CartridgeRuntime::analyze_default_cartridges();
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", report.to_json());
+        } else {
+            println!(
+                "Cartridge analyze: {} valid / {} invalid",
+                report.valid_count(),
+                report.invalid_count()
+            );
+            for entry in &report.entries {
+                if entry.ok {
+                    println!(
+                        "[OK] {} uploads={} bytes={} palette_bytes={}",
+                        entry.cartridge_id,
+                        entry.upload_count,
+                        entry.total_upload_bytes,
+                        entry.palette_upload_bytes
+                    );
+                } else {
+                    println!(
+                        "[FAIL] {}: {}",
+                        entry.cartridge_id,
+                        entry.issue.as_deref().unwrap_or("unknown error")
+                    );
+                }
+            }
+        }
+
+        if report.all_valid() {
+            return;
+        }
+
+        std::process::exit(2);
+    }
+
+    if args.iter().any(|a| a == "--audio-diagnostics") {
+        let mut frames = 48_000usize;
+        for i in 0..args.len().saturating_sub(1) {
+            if args[i] == "--frames" {
+                if let Ok(v) = args[i + 1].parse::<usize>() {
+                    frames = v.max(1);
+                }
+            }
+        }
+
+        let mode = if args.iter().any(|a| a == "--boot") {
+            aurex::runtime::AudioMode::Boot
+        } else {
+            aurex::runtime::AudioMode::Game
+        };
+
+        let engine = aurex::runtime::AudioEngine::new(48_000);
+        let diag = engine.diagnostics_for_frames(mode, frames);
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", diag.to_json());
+        } else {
+            println!(
+                "Audio diagnostics frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={}",
+                diag.frames, diag.peak_l, diag.peak_r, diag.avg_abs_l, diag.avg_abs_r
+            );
+        }
+        return;
+    }
+
+    if args.iter().any(|a| a == "--palette-heatmap") {
+        let v = aurex::ppu::vram::Vram::new();
+        println!("{}", v.bg0_palette_bank_heatmap_json());
+        return;
+    }
+
+    if args.iter().any(|a| a == "--replay-capture-smoke") {
+        let mut cap = aurex::runtime::ReplayCapture::new();
+        let mut system = aurex::Aurex::new();
+        let mut events = Vec::with_capacity(8);
+
+        for frame in 0..120u32 {
+            let input = aurex::game::InputState {
+                up: frame % 2 == 0,
+                down: frame % 3 == 0,
+                accept: frame % 11 == 0,
+                cancel: frame % 17 == 0,
+                ..Default::default()
+            };
+
+            cap.capture_input(input);
+            system.run_frame(input);
+            events.clear();
+            system.drain_events(&mut events);
+            for (i, _event) in events.iter().enumerate() {
+                cap.capture_event_tag((frame as u64) << 16 | i as u64);
+            }
+            cap.capture_framebuffer(system.framebuffer().pixels());
+            cap.end_frame();
+        }
+
+        println!("{}", cap.summary_json());
+        return;
+    }
+
     if args.iter().any(|a| a == "--audit-cartridges") {
         let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
         if args.iter().any(|a| a == "--json") {

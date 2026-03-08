@@ -81,3 +81,10 @@ See `docs/llm_prompt_template.md` for a structured generation template.
 
 ## Comparison target reference
 - See `docs/aurex_vs_neo_geo.md` for target-level capability comparison criteria used by prompt and cartridge planning.
+
+
+## Tooling commands (recommended preflight)
+- `cargo run -- --audit-cartridges --json`
+- `cargo run -- --analyze-cartridges --json`
+- `cargo run -- --audio-diagnostics --json --frames 48000`
+- `cargo run -- --replay-capture-smoke`

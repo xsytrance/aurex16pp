@@ -131,6 +131,14 @@ Next capability unlock for “generated games fully runnable”:
 
 
 ## 14. Additional Suggested Upgrades (Agent Proposals)
+
+Implemented scaffolds:
+- cartridge static analyzer v2 CLI path: `cargo run -- --analyze-cartridges --json`
+- audio diagnostics CLI path: `cargo run -- --audio-diagnostics --json --frames <N>`
+- replay capture smoke path: `cargo run -- --replay-capture-smoke`
+- palette bank heatmap JSON path: `cargo run -- --palette-heatmap`
+
+
 - Deterministic audio
   - add per-track instrument preset tables (wave mix + envelope profile IDs)
   - add fixed-point tempo swing table (no random timing drift)

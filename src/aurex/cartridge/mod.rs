@@ -69,6 +69,79 @@ pub struct CartridgeAuditReport {
     pub entries: Vec<CartridgeAuditEntry>,
 }
 
+#[derive(Debug)]
+pub struct CartridgeAnalysisEntry {
+    pub cartridge_id: String,
+    pub ok: bool,
+    pub issue: Option<String>,
+    pub upload_count: usize,
+    pub total_upload_bytes: usize,
+    pub palette_upload_bytes: usize,
+}
+
+#[derive(Debug, Default)]
+pub struct CartridgeAnalysisReport {
+    pub entries: Vec<CartridgeAnalysisEntry>,
+}
+
+impl CartridgeAnalysisReport {
+    pub fn valid_count(&self) -> usize {
+        self.entries.iter().filter(|e| e.ok).count()
+    }
+
+    pub fn invalid_count(&self) -> usize {
+        self.entries.len().saturating_sub(self.valid_count())
+    }
+
+    pub fn all_valid(&self) -> bool {
+        self.invalid_count() == 0
+    }
+
+    pub fn to_json(&self) -> String {
+        fn esc(s: &str) -> String {
+            s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+        }
+
+        let mut out = String::new();
+        out.push_str("{\"valid\":");
+        out.push_str(&self.valid_count().to_string());
+        out.push_str(",\"invalid\":");
+        out.push_str(&self.invalid_count().to_string());
+        out.push_str(",\"entries\":[");
+
+        for (i, e) in self.entries.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str("{\"cartridge_id\":\"");
+            out.push_str(&esc(&e.cartridge_id));
+            out.push_str("\",\"ok\":");
+            out.push_str(if e.ok { "true" } else { "false" });
+            out.push_str(",\"issue\":");
+            match &e.issue {
+                Some(issue) => {
+                    out.push('"');
+                    out.push_str(&esc(issue));
+                    out.push('"');
+                }
+                None => out.push_str("null"),
+            }
+            out.push_str(",\"upload_count\":");
+            out.push_str(&e.upload_count.to_string());
+            out.push_str(",\"total_upload_bytes\":");
+            out.push_str(&e.total_upload_bytes.to_string());
+            out.push_str(",\"palette_upload_bytes\":");
+            out.push_str(&e.palette_upload_bytes.to_string());
+            out.push('}');
+        }
+
+        out.push_str("]}");
+        out
+    }
+}
+
 impl CartridgeAuditReport {
     pub fn valid_count(&self) -> usize {
         self.entries.iter().filter(|e| e.ok).count()
@@ -198,6 +271,78 @@ impl CartridgeRuntime {
 
     pub fn audit_default_cartridges() -> CartridgeAuditReport {
         Self::audit_cartridges_root(Path::new("cartridges"))
+    }
+
+    pub fn analyze_cartridges_root(root: &Path) -> CartridgeAnalysisReport {
+        let mut report = CartridgeAnalysisReport::default();
+
+        let mut dirs = Vec::new();
+        if let Ok(read_dir) = fs::read_dir(root) {
+            for entry in read_dir.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs.push(path);
+                }
+            }
+        }
+
+        dirs.sort();
+
+        for dir in dirs {
+            let Some(name) = dir.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+
+            let manifest = dir.join("manifest.txt");
+            if !manifest.exists() {
+                report.entries.push(CartridgeAnalysisEntry {
+                    cartridge_id: name.to_string(),
+                    ok: false,
+                    issue: Some("missing manifest.txt".to_string()),
+                    upload_count: 0,
+                    total_upload_bytes: 0,
+                    palette_upload_bytes: 0,
+                });
+                continue;
+            }
+
+            match Self::from_manifest_with_expected_id(&manifest, Some(name)) {
+                Ok(cart) => {
+                    let mut total = 0usize;
+                    let mut palette = 0usize;
+                    for u in &cart.uploads {
+                        total += u.data.len();
+                        if matches!(u.region, VramRegion::Palettes) {
+                            palette += u.data.len();
+                        }
+                    }
+
+                    let overlap_issue = find_first_overlap(&cart.uploads);
+                    report.entries.push(CartridgeAnalysisEntry {
+                        cartridge_id: name.to_string(),
+                        ok: overlap_issue.is_none(),
+                        issue: overlap_issue,
+                        upload_count: cart.uploads.len(),
+                        total_upload_bytes: total,
+                        palette_upload_bytes: palette,
+                    });
+                }
+                Err(err) => report.entries.push(CartridgeAnalysisEntry {
+                    cartridge_id: name.to_string(),
+                    ok: false,
+                    issue: Some(err),
+                    upload_count: 0,
+                    total_upload_bytes: 0,
+                    palette_upload_bytes: 0,
+                }),
+            }
+        }
+
+        report
+    }
+
+    pub fn analyze_default_cartridges() -> CartridgeAnalysisReport {
+        Self::analyze_cartridges_root(Path::new("cartridges"))
     }
 
     fn from_manifest_with_expected_id(
@@ -386,6 +531,29 @@ impl CartridgeRuntime {
     pub fn uploads_complete(&self) -> bool {
         self.uploads.iter().all(|u| u.cursor >= u.data.len())
     }
+}
+
+fn find_first_overlap(uploads: &[Upload]) -> Option<String> {
+    for i in 0..uploads.len() {
+        let a = &uploads[i];
+        let a_end = a.dst_offset.saturating_add(a.data.len());
+        for b in uploads.iter().skip(i + 1) {
+            if a.region != b.region {
+                continue;
+            }
+
+            let b_end = b.dst_offset.saturating_add(b.data.len());
+            let disjoint = a_end <= b.dst_offset || b_end <= a.dst_offset;
+            if !disjoint {
+                return Some(format!(
+                    "overlapping uploads in {:?} ({}..{} overlaps {}..{})",
+                    a.region, a.dst_offset, a_end, b.dst_offset, b_end
+                ));
+            }
+        }
+    }
+
+    None
 }
 
 fn manifest_key_known(key: &str) -> bool {
@@ -590,6 +758,39 @@ upload=BgTiles,0,tile.bin
             result,
             Err(CartridgeResolveError::InvalidManifest(_))
         ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn analyze_cartridges_reports_overlap_issue() {
+        let root = unique_temp_dir();
+        let carts = root.join("cartridges");
+        fs::create_dir_all(carts.join("overlap_game")).expect("mkdir overlap");
+
+        fs::write(
+            carts.join("overlap_game/manifest.txt"),
+            "name=OVER
+game_id=overlap_game
+upload=BgTiles,0,a.bin
+upload=BgTiles,16,b.bin
+",
+        )
+        .expect("write overlap manifest");
+        fs::write(carts.join("overlap_game/a.bin"), [1u8; 32]).expect("write a");
+        fs::write(carts.join("overlap_game/b.bin"), [2u8; 32]).expect("write b");
+
+        let report = CartridgeRuntime::analyze_cartridges_root(&carts);
+        assert_eq!(report.entries.len(), 1);
+        let entry = &report.entries[0];
+        assert!(!entry.ok);
+        assert!(
+            entry
+                .issue
+                .as_deref()
+                .unwrap_or("")
+                .contains("overlapping uploads")
+        );
+
         let _ = fs::remove_dir_all(root);
     }
 

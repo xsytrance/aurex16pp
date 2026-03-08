@@ -290,6 +290,9 @@ Files:
 Command:
 - `cargo run -- --audit-cartridges`
 - `cargo run -- --audit-cartridges --json`
+- `cargo run -- --analyze-cartridges --json`
+- `cargo run -- --audio-diagnostics --json --frames 48000`
+- `cargo run -- --replay-capture-smoke`
 - `scripts/preflight.sh`
 
 Purpose:

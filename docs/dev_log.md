@@ -1,3 +1,35 @@
+## 2026-03-08 12:45:00Z — Suggestion Stack Deepening (Replay+Analyzer)
+
+### Summary
+Extended the initial tooling scaffolds with deterministic replay framebuffer hashing and stronger cartridge analyzer diagnostics.
+
+### Runtime/Tooling
+- Replay smoke now runs real `Aurex` frames and hashes deterministic framebuffer samples in addition to input/event tags.
+- Cartridge analyzer v2 now flags overlapping upload ranges within the same VRAM region.
+- Added analyzer overlap test coverage for deterministic regression protection.
+
+### Progress
+Tooling path moved from placeholder smoke metrics toward actionable deterministic regression signals.
+
+## 2026-03-08 12:20:00Z — Suggestion Stack Execution Pass (Tooling Scaffolds)
+
+### Summary
+Executed the suggested-upgrade stack with deterministic tooling scaffolds for replay capture, audio diagnostics, cartridge analyzer v2, and palette bank heatmap reporting.
+
+### Runtime/Tooling
+- Added cartridge analyzer v2 report path with per-cartridge upload metrics and JSON output.
+- Added ASU-32 audio diagnostics report path (peak/average absolute channel metrics over deterministic frame windows).
+- Added deterministic replay capture scaffold with hash-based summary output for input/event streams.
+- Added BG0 palette bank heatmap JSON utility.
+- Added CLI switches in `main.rs`:
+  - `--analyze-cartridges [--json]`
+  - `--audio-diagnostics [--json] --frames <N> [--boot]`
+  - `--palette-heatmap`
+  - `--replay-capture-smoke`
+
+### Progress
+This completes first-pass implementation for all documented suggestions and sets up next-phase regression tooling without altering core render/CPU/DMA budgets.
+
 ## 2026-03-08 11:50:00Z — Neo-Geo Comparison + SDK/LLM Instruction Refresh (Post-Upgrade)
 
 ### Summary

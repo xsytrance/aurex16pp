@@ -5,6 +5,7 @@ mod frame_pacer;
 mod input;
 mod launch;
 mod render;
+mod replay;
 
 pub use flow::{FlowController, FlowPhase};
 
@@ -15,6 +16,8 @@ pub use input::poll_input;
 pub use render::present_frame;
 
 pub use frame_pacer::FramePacer;
+
+pub use replay::ReplayCapture;
 
 pub use event::{AudioSfx, RuntimeAudioCommand, RuntimeEvent, RuntimeEventQueue, SceneId};
 pub use launch::{

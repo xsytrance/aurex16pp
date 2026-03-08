@@ -149,6 +149,24 @@ const TRACK3: [u16; PATTERN_STEPS] = [
     330, 392, 494, 523, 440, 392, 587, 523, 392, 440, 494, 523, 330, 392, 440, 494,
 ];
 
+#[derive(Debug, Clone, Copy)]
+pub struct AudioDiagnostics {
+    pub frames: usize,
+    pub peak_l: i16,
+    pub peak_r: i16,
+    pub avg_abs_l: i16,
+    pub avg_abs_r: i16,
+}
+
+impl AudioDiagnostics {
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{}}}",
+            self.frames, self.peak_l, self.peak_r, self.avg_abs_l, self.avg_abs_r
+        )
+    }
+}
+
 pub struct AudioEngine {
     sample_clock: u64,
     sample_rate: u32,
@@ -237,6 +255,44 @@ impl AudioEngine {
                     voice.envelope_state = EnvelopeState::Release;
                 }
             }
+        }
+    }
+
+    pub fn diagnostics_for_frames(&self, mode: AudioMode, frames: usize) -> AudioDiagnostics {
+        let mut sim = Self::new(self.sample_rate.max(SAMPLE_RATE_HZ));
+        sim.track_id = self.track_id;
+
+        let mut peak_l = 0i32;
+        let mut peak_r = 0i32;
+        let mut abs_sum_l: i64 = 0;
+        let mut abs_sum_r: i64 = 0;
+        let mut block = [0i16; 512];
+
+        let mut remain = frames;
+        while remain > 0 {
+            let step = remain.min(block.len() / 2);
+            let slice_len = step * 2;
+            sim.render_block(mode, &mut block[..slice_len]);
+
+            for i in 0..step {
+                let l = block[i * 2] as i32;
+                let r = block[i * 2 + 1] as i32;
+                peak_l = peak_l.max(l.abs());
+                peak_r = peak_r.max(r.abs());
+                abs_sum_l += l.abs() as i64;
+                abs_sum_r += r.abs() as i64;
+            }
+
+            remain -= step;
+        }
+
+        let denom = frames.max(1) as i64;
+        AudioDiagnostics {
+            frames,
+            peak_l: peak_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
+            peak_r: peak_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
+            avg_abs_l: (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
+            avg_abs_r: (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
         }
     }
 
