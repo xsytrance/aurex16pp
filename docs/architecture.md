@@ -200,7 +200,7 @@ Input is ignored for scene transitions during timed boot and only accepted in `A
 
 A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
 
-- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- `RuntimeEvent::Audio(RuntimeAudioCommand)` is emitted by core system logic.
 - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` captures library launch intent as typed telemetry.
 - Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
 - This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
@@ -351,13 +351,13 @@ Purpose:
 - Tile and sprite payload formats remain unchanged.
 
 ### Audio positioning vs Neo-Geo
-Current Aurex audio is intentionally constrained and deterministic (44.1 kHz mono integer synth). It has strong style control but does **not yet match Neo-Geo's historical multi-voice production depth**.
+Current Aurex audio is deterministic integer ASU-32 synthesis (48 kHz stereo, 12 voices, 512 KB audio RAM).
 
 Near-term upgrade path (still within Aurex vision):
-1. Deterministic 4-operator voice lanes (bass/lead/arp/percussion lanes as explicit budgeted channels).
+1. Deterministic 12-voice engine with fixed-point stereo pan/mix.
 2. Pattern-instrument envelope table (attack/decay/sustain/release presets as integer lookups).
 3. Track macro sequencing (per-title motif blocks) with zero runtime allocation.
-4. Optional stereo widening stage in host presentation only (simulation remains deterministic mono core).
+4. Integer-only per-voice FX (delay/echo/bitcrush/distortion) under deterministic budgets.
 
 ### Vision discipline
 Goal is “better than Neo-Geo in curated presentation consistency and deterministic tooling,” not by removing constraints.

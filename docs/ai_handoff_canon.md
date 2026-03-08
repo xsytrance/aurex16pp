@@ -20,7 +20,7 @@ Memory:
 
 - 512 KB WRAM (locked)
 - 1 MB VRAM (partitioned)
-- 256 KB Audio RAM
+- 512 KB Audio RAM
 
 DMA Limits:
 
@@ -391,7 +391,7 @@ Scene lifecycle contract:
 - Entering library emits a scene transition event.
 
 Event contract:
-- `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
+- `RuntimeEvent::Audio(RuntimeAudioCommand)` for deterministic ASU-32 soundtrack/SFX commands (`PlayTrack`, `PlaySfx`, `StopTrack`).
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
 - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
 - `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
@@ -420,7 +420,7 @@ Host contract:
 
 # 11. Audio Positioning Canon
 
-- Current runtime audio: deterministic integer synth at host 44.1 kHz mono.
+- Current runtime audio: deterministic integer ASU-32 at host 48 kHz stereo, 12 voices.
 - Quality target: curated style consistency + deterministic reproducibility.
 - Not yet equivalent to Neo-Geo-era multi-chip production depth.
 - Planned upgrades must remain deterministic and budget-bounded.
@@ -429,7 +429,7 @@ Host contract:
 # 12. Audio Lane Canon (2026-03-08 Phase 2)
 
 - Runtime synthesis keeps integer-only deterministic sample generation.
-- Lane model includes bass + sub + lead + arp + percussion accents.
+- Voice model includes 12 deterministic voices with static instrument table and wavetable bank in 512 KB audio RAM.
 - Envelope shaping is deterministic per-step (no random drift, no float interpolation).
 - No frame-timing changes were introduced by audio richness pass.
 
@@ -438,26 +438,3 @@ Host contract:
 
 - Neo-Geo target comparison doc: `docs/aurex_vs_neo_geo.md`.
 - Canon policy: Aurex roadmap should be >= Neo-Geo in capability categories while preserving deterministic creative constraints.
-
-# 14. ### ASU-32 Audio System Unit
-
-Aurex includes a deterministic audio processor named ASU-32.
-
-Specifications:
-
-sample rate: 48 kHz
-output: stereo
-voices: 12
-audio RAM: 512 KB
-
-Voice architecture:
-
-wavetable synthesis
-instrument preset tables
-deterministic envelope generation
-
-Mixer:
-
-fixed-point stereo mixer
-
-All ASU math must remain integer-only.

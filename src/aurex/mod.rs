@@ -13,13 +13,23 @@ use crate::aurex::cartridge::CartridgeRuntime;
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
 use crate::aurex::runtime::{
-    LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeEvent, RuntimeEventQueue,
-    SceneId, validate_launch_descriptor,
+    AudioSfx, LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeAudioCommand,
+    RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
 };
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
 use game::{AudioCue, InputState, library::LibraryScreen};
+
+fn to_audio_command(cue: AudioCue) -> Option<RuntimeAudioCommand> {
+    match cue {
+        AudioCue::None => None,
+        AudioCue::SelectTrack(track) => Some(RuntimeAudioCommand::PlayTrack(track)),
+        AudioCue::LaunchRequest => Some(RuntimeAudioCommand::PlaySfx(AudioSfx::Launch)),
+        AudioCue::Cancel => Some(RuntimeAudioCommand::PlaySfx(AudioSfx::Cancel)),
+    }
+}
+
 use pdu::Pdu;
 use ppu::vram::Vram;
 use vm32::core::Vm32;
@@ -75,7 +85,11 @@ impl Aurex {
         self.events
             .push(RuntimeEvent::SceneChanged(SceneId::Library));
         self.events
-            .push(RuntimeEvent::Audio(self.library.current_audio_cue()));
+            .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlayTrack(0)));
+        self.events
+            .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlaySfx(
+                AudioSfx::Confirm,
+            )));
     }
 
     pub fn run(&mut self) -> ! {
@@ -101,8 +115,8 @@ impl Aurex {
             }
             RunMode::Game => {
                 let update = self.library.update(input);
-                if !matches!(update.audio_cue, AudioCue::None) {
-                    self.events.push(RuntimeEvent::Audio(update.audio_cue));
+                if let Some(cmd) = to_audio_command(update.audio_cue) {
+                    self.events.push(RuntimeEvent::Audio(cmd));
                 }
 
                 if update.launch_requested {

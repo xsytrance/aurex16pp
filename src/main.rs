@@ -64,8 +64,8 @@ fn main() {
         .expect("SDL game controller init failed");
 
     let desired = AudioSpecDesired {
-        freq: Some(44_100),
-        channels: Some(1),
+        freq: Some(48_000),
+        channels: Some(2),
         samples: Some(1024),
     };
 
@@ -137,8 +137,8 @@ fn main() {
             FlowPhase::Game => AudioMode::Game,
         };
 
-        if queue.size() < 16_384 {
-            let mut block = [0i16; 2048];
+        if queue.size() < 32_768 {
+            let mut block = [0i16; 4096];
             synth.render_block(audio_mode, &mut block);
             let _ = queue.queue_audio(&block);
         }

@@ -56,41 +56,12 @@ Runtime launch stages are typed and deterministic:
 
 Resolver gate requires manifest `game_id` match before attach/load side effects.
 
-## Audio Contract (ASU-32)
-
-Aurex uses the ASU-32 deterministic audio engine.
-
-Properties:
-
-48 kHz sample rate
-true stereo output
-12 synthesis voices
-wavetable + envelope instruments
-
-LLM cartridges must define an AUDIO_PLAN including:
-
-tempo
-instrument assignments
-pattern sequences
-voice allocation
-
-Example:
-
-AUDIO_PLAN:
-
-tempo: 128
-
-voices:
- 0: kick
- 1: snare
- 2: hihat
- 3: bass
- 4: lead
- 5: harmony
-
-instrument presets are referenced by instrument_id.
-
-Audio generation must remain deterministic.
+## Audio Contract (current)
+- Host mix: 44.1 kHz mono.
+- Integer-only synthesis.
+- Cues supported: track select, launch request, cancel.
+- Cartridge outputs should provide deterministic track intent, not unrestricted procedural audio.
+- `AUDIO_PLAN` should describe lane intent (bass/sub/lead/arp/percussion accents) under fixed deterministic budgets.
 
 ## Quality Target Guidance
 Aurex targets **creative constraints with premium polish**, not unrestricted simulation complexity.

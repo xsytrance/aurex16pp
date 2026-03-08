@@ -1,3 +1,20 @@
+## 2026-03-08 10:10:00Z — ASU-32 Audio Engine (48k Stereo / 12 Voices)
+
+### Summary
+Implemented ASU-32 runtime audio path with deterministic 48 kHz stereo synthesis, 12 voices, fixed-point mixing, static instruments, wavetable RAM, and runtime audio command dispatch.
+
+### Runtime/Tooling
+- Replaced legacy cue-driven mono synth internals with ASU-32 voice engine (`voice[12]`) + ADSR/vibrato instrument table.
+- Added wavetable bank generation for sine/square/triangle/saw/noise stored in 512 KB audio RAM.
+- Added deterministic fixed-tick pattern sequencer and integer-only stereo mixer with pan weights.
+- Added integer-only per-voice optional FX path (delay/echo/bitcrush/distortion).
+- Extended runtime audio event model from `AudioCue` intent to `RuntimeAudioCommand` (`PlayTrack`, `PlaySfx`, `StopTrack`) and wired dispatch path.
+- Updated host audio queue path to 48 kHz stereo output blocks.
+- Updated canon/architecture/tech-spec docs for ASU-32 semantics.
+
+### Progress
+Audio runtime now matches ASU-32 implementation target while preserving deterministic execution and integer-only synthesis in the sample loop.
+
 ## 2026-03-08 09:05:00Z — CI/Local Preflight Entrypoint Script
 
 ### Summary

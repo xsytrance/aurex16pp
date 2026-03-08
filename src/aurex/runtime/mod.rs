@@ -16,7 +16,7 @@ pub use render::present_frame;
 
 pub use frame_pacer::FramePacer;
 
-pub use event::{RuntimeEvent, RuntimeEventQueue, SceneId};
+pub use event::{AudioSfx, RuntimeAudioCommand, RuntimeEvent, RuntimeEventQueue, SceneId};
 pub use launch::{
     LaunchDescriptor, LaunchIntentController, LaunchStage, LaunchValidationError,
     validate_launch_descriptor,
@@ -55,7 +55,7 @@ pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostic
 pub fn dispatch_runtime_events(engine: &mut AudioEngine, events: &[RuntimeEvent]) {
     for event in events {
         match event {
-            RuntimeEvent::Audio(cue) => engine.trigger_cue(*cue),
+            RuntimeEvent::Audio(cmd) => engine.trigger_command(*cmd),
             RuntimeEvent::SceneChanged(_scene) => {}
             RuntimeEvent::TitleLaunchRequested(_title) => {}
             RuntimeEvent::TitleLaunchCanceled => {}
