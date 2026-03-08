@@ -1182,3 +1182,23 @@ Implemented the next handoff focus items in order: deterministic audio/replay ba
 ### Validation notes
 - `cargo check` and `cargo check --tests` pass in this container.
 - `cargo test` remains blocked by missing system `SDL2` linker dependency (`-lSDL2`).
+
+
+## 2026-03-08 11:05:00Z — Audio diagnostics depth + preflight docs-sync fallback hardening
+
+### Summary
+Continued planned runtime AV/tooling development by strengthening audio quality diagnostics and hardening preflight docs-sync behavior in SDL2-link-limited environments.
+
+### Runtime/Audio
+- Extended `AudioDiagnostics` with deterministic quality counters: `crest_l_q10`, `crest_r_q10`, `clipped_l`, `clipped_r`.
+- Updated `--audio-diagnostics` human-readable output to include crest/clipping metrics for quick quality triage.
+- Added regression assertions that boot/game diagnostics retain non-trivial crest and zero clipping in baseline path.
+
+### Tooling/Preflight
+- Fixed `scripts/preflight.sh` behavior so `AUREX_SKIP_AUDIT_LINK=1` still runs docs-sync checks via shell marker fallback before skipping audit execution.
+- This closes prior drift risk where skip mode bypassed docs-sync entirely (or required link-dependent `cargo run`).
+
+### Validation
+- `cargo fmt` / `cargo check --all-targets` / `cargo check --tests` pass (warnings only).
+- `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh` passes and now explicitly reports shell docs-sync fallback pass.
+- `cargo test -q` remains SDL2-link-limited in this container.

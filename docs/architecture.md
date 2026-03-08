@@ -160,13 +160,15 @@ Key commands:
 
 - `--audit-cartridges [--json]`
 - `--analyze-cartridges [--json]`
-- `--audio-diagnostics [--boot] [--frames N] [--json]`
+- `--audio-diagnostics [--boot] [--frames N] [--json]` (includes crest + clipping counters)
 - `--generate-runtime-baseline [--frames N] [--out PATH]`
 - `--docs-sync-check`
 - `--palette-heatmap`
 - `--replay-capture-smoke`
 
 Plus `scripts/preflight.sh` for formatting/check + docs-sync + cartridge audit gate.
+
+In SDL2-link-limited environments (`AUREX_SKIP_AUDIT_LINK=1`), preflight now uses a shell docs-sync fallback marker check so docs contract drift is still caught without `cargo run` linking.
 
 ---
 
