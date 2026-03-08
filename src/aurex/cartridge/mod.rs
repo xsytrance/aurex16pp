@@ -44,12 +44,6 @@ pub enum CartridgeResolveError {
     InvalidManifest(String),
 }
 
-#[derive(Debug)]
-pub enum CartridgeResolveError {
-    MissingManifest,
-    InvalidManifest(String),
-}
-
 #[derive(Clone)]
 struct Upload {
     region: VramRegion,
@@ -279,7 +273,7 @@ impl CartridgeRuntime {
 
                 let region = parse_region(parts[0]).ok_or_else(|| {
                     format!(
-                        "manifest line {}: invalid region '{}",
+                        "manifest line {}: invalid region '{}'",
                         line_no + 1,
                         parts[0]
                     )
