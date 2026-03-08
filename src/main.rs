@@ -2,12 +2,14 @@ mod aurex;
 
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
-    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, collect_runtime_diagnostics,
-    dispatch_runtime_events, poll_input, present_frame,
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
+    LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
+    poll_input, present_frame,
 };
 use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::GameController;
+use std::fs;
 use std::time::Duration;
 
 fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
@@ -22,6 +24,126 @@ fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<Ga
         }
     }
     None
+}
+
+fn parse_usize_arg(args: &[String], flag: &str, default: usize) -> usize {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] == flag {
+            if let Ok(v) = args[i + 1].parse::<usize>() {
+                return v.max(1);
+            }
+        }
+    }
+    default
+}
+
+fn parse_string_arg(args: &[String], flag: &str) -> Option<String> {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] == flag {
+            return Some(args[i + 1].clone());
+        }
+    }
+    None
+}
+
+fn parse_mix_profile(args: &[String]) -> MixProfile {
+    if let Some(raw) = parse_string_arg(args, "--audio-profile") {
+        return MixProfile::parse(&raw).unwrap_or(MixProfile::Default);
+    }
+    MixProfile::Default
+}
+
+fn replay_capture_smoke_summary_json() -> String {
+    let mut cap = aurex::runtime::ReplayCapture::new();
+    let mut system = aurex::Aurex::new();
+    let mut events = Vec::with_capacity(8);
+
+    for frame in 0..120u32 {
+        let input = aurex::game::InputState {
+            up: frame % 2 == 0,
+            down: frame % 3 == 0,
+            accept: frame % 11 == 0,
+            cancel: frame % 17 == 0,
+            ..Default::default()
+        };
+
+        cap.capture_input(input);
+        system.run_frame(input, None);
+        events.clear();
+        system.drain_events(&mut events);
+        for (i, _event) in events.iter().enumerate() {
+            cap.capture_event_tag((frame as u64) << 16 | i as u64);
+        }
+        cap.capture_framebuffer(system.framebuffer().pixels());
+        cap.end_frame();
+    }
+
+    cap.summary_json()
+}
+
+fn format_launch_stage(stage: LaunchStage) -> String {
+    match stage {
+        LaunchStage::Idle => "idle".to_string(),
+        LaunchStage::Pending(desc) => {
+            format!(
+                "pending title={} cartridge={}",
+                desc.title, desc.cartridge_id
+            )
+        }
+        LaunchStage::Validating(desc) => {
+            format!(
+                "validating title={} cartridge={}",
+                desc.title, desc.cartridge_id
+            )
+        }
+        LaunchStage::Ready(desc) => {
+            format!("ready title={} cartridge={}", desc.title, desc.cartridge_id)
+        }
+        LaunchStage::Rejected(reason) => {
+            format!("rejected reason={}", format_launch_validation_error(reason))
+        }
+    }
+}
+
+fn format_launch_validation_error(reason: LaunchValidationError) -> &'static str {
+    match reason {
+        LaunchValidationError::EmptyCartridgeId => "empty_cartridge_id",
+        LaunchValidationError::InvalidCartridgeId => "invalid_cartridge_id",
+        LaunchValidationError::CartridgeMissing => "cartridge_missing",
+        LaunchValidationError::CartridgeManifestInvalid => "cartridge_manifest_invalid",
+    }
+}
+
+fn docs_sync_check() -> Result<(), String> {
+    let architecture = fs::read_to_string("docs/architecture.md")
+        .map_err(|e| format!("read docs/architecture.md failed: {e}"))?;
+    let canon = fs::read_to_string("docs/ai_handoff_canon.md")
+        .map_err(|e| format!("read docs/ai_handoff_canon.md failed: {e}"))?;
+
+    let expected = [
+        "--generate-runtime-baseline",
+        "--docs-sync-check",
+        "Launch stage: pending",
+        "Launch stage: validating",
+        "Launch stage: ready",
+    ];
+
+    for needle in expected {
+        if !architecture.contains(needle) {
+            return Err(format!(
+                "docs sync check failed: docs/architecture.md missing marker '{needle}'"
+            ));
+        }
+    }
+
+    if !canon.contains("Audio diagnostics baseline artifact generation is required") {
+        return Err(
+            "docs sync check failed: docs/ai_handoff_canon.md missing baseline discipline line"
+                .to_string(),
+        );
+    }
+
+    Ok(())
 }
 
 fn main() {
@@ -63,14 +185,7 @@ fn main() {
     }
 
     if args.iter().any(|a| a == "--audio-diagnostics") {
-        let mut frames = 48_000usize;
-        for i in 0..args.len().saturating_sub(1) {
-            if args[i] == "--frames" {
-                if let Ok(v) = args[i + 1].parse::<usize>() {
-                    frames = v.max(1);
-                }
-            }
-        }
+        let frames = parse_usize_arg(&args, "--frames", 48_000);
 
         let mode = if args.iter().any(|a| a == "--boot") {
             aurex::runtime::AudioMode::Boot
@@ -78,17 +193,66 @@ fn main() {
             aurex::runtime::AudioMode::Game
         };
 
-        let engine = aurex::runtime::AudioEngine::new(48_000);
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
         let diag = engine.diagnostics_for_frames(mode, frames);
         if args.iter().any(|a| a == "--json") {
             println!("{}", diag.to_json());
         } else {
             println!(
-                "Audio diagnostics frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={}",
-                diag.frames, diag.peak_l, diag.peak_r, diag.avg_abs_l, diag.avg_abs_r
+                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={}",
+                profile.as_str(),
+                diag.frames,
+                diag.peak_l,
+                diag.peak_r,
+                diag.avg_abs_l,
+                diag.avg_abs_r,
+                diag.crest_l_q10,
+                diag.crest_r_q10,
+                diag.clipped_l,
+                diag.clipped_r
             );
         }
         return;
+    }
+
+    if args.iter().any(|a| a == "--generate-runtime-baseline") {
+        let frames = parse_usize_arg(&args, "--frames", 48_000);
+        let out = parse_string_arg(&args, "--out")
+            .unwrap_or_else(|| "artifacts/runtime_audio_diag_baseline.json".to_string());
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
+        let baseline = engine.diagnostics_baseline(frames);
+        let replay = replay_capture_smoke_summary_json();
+        let json = format!(
+            "{{\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
+            baseline.to_json(),
+            replay
+        );
+
+        if let Some(parent) = std::path::Path::new(&out).parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent).expect("baseline output directory create failed");
+            }
+        }
+
+        fs::write(&out, &json).expect("baseline output write failed");
+        println!("Baseline artifact written: {}", out);
+        println!("{}", json);
+        return;
+    }
+
+    if args.iter().any(|a| a == "--docs-sync-check") {
+        match docs_sync_check() {
+            Ok(()) => {
+                println!("Docs sync check: PASS");
+                return;
+            }
+            Err(err) => {
+                eprintln!("Docs sync check: FAIL: {err}");
+                std::process::exit(2);
+            }
+        }
     }
 
     if args.iter().any(|a| a == "--palette-heatmap") {
@@ -98,31 +262,7 @@ fn main() {
     }
 
     if args.iter().any(|a| a == "--replay-capture-smoke") {
-        let mut cap = aurex::runtime::ReplayCapture::new();
-        let mut system = aurex::Aurex::new();
-        let mut events = Vec::with_capacity(8);
-
-        for frame in 0..120u32 {
-            let input = aurex::game::InputState {
-                up: frame % 2 == 0,
-                down: frame % 3 == 0,
-                accept: frame % 11 == 0,
-                cancel: frame % 17 == 0,
-                ..Default::default()
-            };
-
-            cap.capture_input(input);
-            system.run_frame(input);
-            events.clear();
-            system.drain_events(&mut events);
-            for (i, _event) in events.iter().enumerate() {
-                cap.capture_event_tag((frame as u64) << 16 | i as u64);
-            }
-            cap.capture_framebuffer(system.framebuffer().pixels());
-            cap.end_frame();
-        }
-
-        println!("{}", cap.summary_json());
+        println!("{}", replay_capture_smoke_summary_json());
         return;
     }
 
@@ -173,7 +313,8 @@ fn main() {
         .open_queue::<i16, _>(None, &desired)
         .expect("audio queue open failed");
 
-    let mut synth = AudioEngine::new(queue.spec().freq as u32);
+    let profile = parse_mix_profile(&args);
+    let mut synth = AudioEngine::new_with_profile(queue.spec().freq as u32, profile);
     queue.resume();
 
     let scale: u32 = 3;
@@ -244,8 +385,13 @@ fn main() {
         }
 
         let input = polled.gameplay;
+        let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
+            Some(synth.boot_beat_step())
+        } else {
+            None
+        };
 
-        system.run_frame(input);
+        system.run_frame(input, boot_beat_step);
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
 
@@ -260,7 +406,7 @@ fn main() {
             println!("Launch request cleared");
         }
         if let Some(stage) = diagnostics.launch_stage_changed {
-            println!("Launch stage: {:?}", stage);
+            println!("Launch stage: {}", format_launch_stage(stage));
         }
         if let Some(ready) = diagnostics.launch_ready {
             println!("Launch ready: {} ({})", ready.title, ready.cartridge_id);
@@ -272,7 +418,10 @@ fn main() {
             );
         }
         if let Some(reject) = diagnostics.launch_rejected {
-            println!("Launch rejected: {:?}", reject);
+            println!(
+                "Launch rejected: reason={}",
+                format_launch_validation_error(reject)
+            );
         }
 
         dispatch_runtime_events(&mut synth, &runtime_events);
