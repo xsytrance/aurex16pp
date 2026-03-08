@@ -326,10 +326,11 @@ impl Ppu {
     }
 
     // -------------------------------------------------------------------------
-    // Sprite Scanline Evaluation
+    // Sprite Scanline Evaluation (max 16 sprites per scanline; overflow if more)
     // -------------------------------------------------------------------------
-    fn evaluate_sprites_for_scanline(&self, y: usize) -> ([usize; 8], usize, bool) {
-        let mut visible_indices = [0usize; 8];
+    fn evaluate_sprites_for_scanline(&self, y: usize) -> ([usize; 16], usize, bool) {
+        const MAX_SPRITES_PER_SCANLINE: usize = 16;
+        let mut visible_indices = [0usize; MAX_SPRITES_PER_SCANLINE];
         let mut count = 0;
         let mut overflow = false;
 
@@ -344,7 +345,7 @@ impl Ppu {
                 let sprite_bottom = sprite_top + sprite_height;
 
                 if y >= sprite_top && y < sprite_bottom {
-                    if count < 8 {
+                    if count < MAX_SPRITES_PER_SCANLINE {
                         visible_indices[count] = i;
                         count += 1;
                     } else {
@@ -467,10 +468,9 @@ impl Ppu {
         }
 
         // NOTE:
-        // - _sprite_indices holds up to 8 sprite indices
+        // - _sprite_indices holds up to 16 sprite indices
         // - _sprite_count is how many are active
-        // - _sprite_overflow is true if >8 found
-        // Rendering will be implemented in next phase.
+        // - _sprite_overflow is true if >16 found
 
         // ---------------------------------------------------------------------
         // BG0 Bring-up (v0.1)
@@ -762,8 +762,7 @@ impl Ppu {
 
                     let sprite_x = sprite.x as usize;
                     let sprite_y = sprite.y as usize;
-
-                    let sprite_size = 16;
+                    let sprite_size = if sprite.size_16 { 16 } else { 8 };
 
                     // Skip scanlines outside sprite vertically
                     if y < sprite_y || y >= sprite_y + sprite_size {

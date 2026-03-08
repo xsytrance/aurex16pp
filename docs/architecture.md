@@ -60,12 +60,13 @@ This order is deterministic and stable across runs.
 - Pixel format: RGB555.
 
 ### BG pipeline
-- Tile-based BG layers.
+- Tile-based BG layers (BG0, BG1).
 - Integer-only address + palette lookup paths.
 - Palette-bank handling updated for expanded palette space.
 
 ### Sprite pipeline
-- Deterministic scanline evaluation.
+- Deterministic scanline evaluation; **16 sprites per scanline** (overflow if more).
+- Sprite sizes: 8×8 and 16×16 (OAM `size_16`).
 - Overflow latching/telemetry exposed to runtime/PDU.
 - Priority and blend semantics are explicit in PPU codepaths.
 
@@ -76,13 +77,15 @@ This order is deterministic and stable across runs.
 `AudioEngine` provides deterministic, integer-only synthesis:
 
 - 48 kHz stereo output.
-- 12 voices.
+- 16 voices.
 - Wavetable generation at startup in Audio RAM.
-- Envelope stages: Attack / Decay / Sustain / Release.
+- Envelope stages: Attack / Decay / Sustain / Release; per-voice anti-click smoothing at boundaries.
+- Per-voice FX: delay, drive, low-pass, distortion, bitcrush (bit 0x10).
 - Runtime commands:
   - `PlayTrack(track_id)`
   - `PlaySfx(Launch|Cancel|Confirm)`
   - `StopTrack`
+- `pattern_step()` exposed for boot overlay beat sync.
 
 ### Boot audio mode
 Boot now uses a dedicated sequencer branch (`advance_boot_sequencer`) with curated voice placement and FX, separate from game track sequencing.

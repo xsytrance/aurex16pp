@@ -61,7 +61,7 @@ fn replay_capture_smoke_summary_json() -> String {
         };
 
         cap.capture_input(input);
-        system.run_frame(input);
+        system.run_frame(input, None);
         events.clear();
         system.drain_events(&mut events);
         for (i, _event) in events.iter().enumerate() {
@@ -374,8 +374,12 @@ fn main() {
         }
 
         let input = polled.gameplay;
+        let boot_beat_step = match flow.phase() {
+            FlowPhase::Boot | FlowPhase::AwaitStart => Some(synth.pattern_step() as u8),
+            FlowPhase::Game => None,
+        };
 
-        system.run_frame(input);
+        system.run_frame(input, boot_beat_step);
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
 
