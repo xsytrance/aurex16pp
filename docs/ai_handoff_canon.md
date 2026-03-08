@@ -20,7 +20,7 @@ Memory:
 
 - 512 KB WRAM (locked)
 - 1 MB VRAM (partitioned)
-- 256 KB Audio RAM
+- 512 KB Audio RAM
 
 DMA Limits:
 
@@ -299,7 +299,7 @@ END OF CANON
   - track id
   - color theme
   - icon kind
-- Selection emits `AudioCue::SelectTrack`.
+- Selection emits deterministic runtime track command (`PlayTrack`).
 - Audio engine uses track id mapping for deterministic per-title song playback.
 
 
@@ -307,6 +307,80 @@ END OF CANON
   - Simulation emits typed runtime events
   - Host loop drains and dispatches side effects
 
+
+
+
+## Library Feedback Canon (2026-03-08 01:08:00Z)
+
+- Launch-intent UX now includes deterministic runtime SFX command: `PlaySfx(Launch)`.
+- Library scene visual feedback includes deterministic footer pulse + meter animation.
+- Host interpretation of non-audio runtime events should prefer runtime diagnostics collection over ad-hoc per-loop matching.
+
+
+
+## Launch Intent Lifecycle Canon (2026-03-08 01:37:00Z)
+
+- Launch selection intent is reversible before host-side cartridge boot is attached.
+- Runtime event set for library intent now includes:
+  - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
+  - `RuntimeEvent::TitleLaunchCanceled`
+- Runtime audio command set includes explicit cancel intent (`PlaySfx(Cancel)`).
+
+
+
+## Launch Stage Canon (2026-03-08 02:02:00Z)
+
+- Launch intent now has an explicit runtime stage domain:
+  - `LaunchStage::Idle`
+  - `LaunchStage::Pending(LaunchDescriptor)`
+  - `LaunchStage::Validating(LaunchDescriptor)`
+  - `LaunchStage::Ready(LaunchDescriptor)`
+  - `LaunchStage::Rejected(LaunchValidationError)`
+- Stage transitions emit `RuntimeEvent::LaunchStageChanged(LaunchStage)`.
+- Library HUD presents pending stage visually (`PENDING` marker + boosted meter bars).
+
+
+
+## LLM SDK Canon (2026-03-08 02:28:00Z)
+
+- Cartridge generation is prompt-structured, not free-form.
+- Required authoring references:
+  - `docs/llm_sdk_guide.md`
+  - `docs/llm_prompt_template.md`
+- Launch descriptor identity includes `cartridge_id` to bridge library selection and cartridge asset folders.
+
+
+
+## Launch Validation Canon (2026-03-08 02:56:00Z)
+
+- Launch descriptors are validated before entering pending launch stage.
+- Invalid descriptors emit `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
+- Current validation includes strict cartridge ID format enforcement (`[a-z0-9_]+`).
+
+
+
+## Launch Ready Canon (2026-03-08 03:22:00Z)
+
+- Launch flow now includes deterministic validating and ready stages.
+- `TitleLaunchReady(LaunchDescriptor)` is the runtime signal reserved for future cartridge boot handoff.
+
+
+
+## Launch Resolve Canon (2026-03-08 03:44:00Z)
+
+- `Ready` stage is now followed by deterministic cartridge resolution check by `cartridge_id`.
+- Successful resolution emits `TitleLaunchResolved(LaunchDescriptor)`.
+- Missing cartridge manifests force `Rejected(CartridgeMissing)` before any boot handoff.
+- Invalid manifests force `Rejected(CartridgeManifestInvalid)` before any boot handoff.
+
+
+
+## Human Authoring Canon (2026-03-08 04:22:00Z)
+
+- Human-directed game generation must use the same contract as LLM-directed generation.
+- Human-facing instruction source:
+  - `docs/human_game_creation_guide.md`
+- Identity consistency (`GAME_ID`, folder, manifest `game_id`) is mandatory.
 
 ## Runtime Handoff Contract (Current)
 
@@ -316,9 +390,62 @@ Scene lifecycle contract:
 - Entering library emits a scene transition event.
 
 Event contract:
-- `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
+- `RuntimeEvent::Audio(RuntimeAudioCommand)` for deterministic ASU-32 soundtrack/SFX commands (`PlayTrack`, `PlaySfx`, `StopTrack`).
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
+- `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
+- `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)` for launch-ready handoff telemetry.
+- `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)` for successful cartridge resolution telemetry.
+- `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)` for deterministic launch validation/loading rejects.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.
 - Route side effects in host/runtime dispatch layer, not inside scene simulation logic.
+
+## Documentation / Handoff Integrity Notes (2026-03-08)
+
+- Keep canon terminology aligned with implementation symbols: `RuntimeAudioCommand`/`AudioSfx`, typed launch lifecycle events, and ASU-32 constraints.
+- For integer math used in runtime table generation, overflow behavior must be explicit (`wrapping_*` / `saturating_*`) to avoid debug/release drift.
+- Canon updates should not include unverifiable environment-specific claims (for example, local full runtime execution when platform link dependencies are absent).
+
+## LLM Instruction Reliability Canon (2026-03-08)
+
+- SDK and prompt template must remain synchronized with hardware caps and runtime command names.
+- Prompt sections are mandatory and ordered; missing section means invalid cartridge authoring request.
+- Authoring outputs should include explicit self-checks for duplicate symbol drift and overflow intent in integer arithmetic.
+
+
+---
+
+# 10. Palette Expansion Canon (2026-03-08)
+
+- `MAX_PALETTE_ENTRIES = 4096`.
+- Palette format remains RGB555 little-endian (`u16` per entry).
+- Sprite palette reference is interpreted as base index (u16 semantic range).
+- Sprite final lookup model: `palette[sprite.palette + color_index]`.
+- BG tilemap palette select: bits `10..13` (16 banks).
+- Deterministic scanline composition unchanged.
+- No float math introduced.
+- No DMA model change introduced.
+
+# 11. Audio Positioning Canon
+
+- Current runtime audio: deterministic integer ASU-32 at host 48 kHz stereo, 12 voices.
+- Quality target: curated style consistency + deterministic reproducibility.
+- Not yet equivalent to Neo-Geo-era multi-chip production depth.
+- Planned upgrades must remain deterministic and budget-bounded.
+
+
+# 12. Audio Lane Canon (2026-03-08 Phase 2)
+
+- Runtime synthesis keeps integer-only deterministic sample generation.
+- Voice model includes 12 deterministic voices with static instrument table and wavetable bank in 512 KB audio RAM.
+- Envelope shaping is deterministic per-step (no random drift, no float interpolation).
+- No frame-timing changes were introduced by audio richness pass.
+
+
+# 13. External Target Comparison Reference
+
+- Neo-Geo target comparison doc: `docs/aurex_vs_neo_geo.md`.
+- Canon policy: Aurex roadmap should be >= Neo-Geo in capability categories while preserving deterministic creative constraints.
