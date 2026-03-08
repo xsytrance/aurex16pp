@@ -249,3 +249,27 @@ Current boundaries are now explicit and suitable for team/agent handoff:
    - Owns event buffering and draining semantics.
 4. **Host Dispatch** (`dispatch_runtime_events`)
    - Owns side effects from emitted runtime intents.
+
+
+## Library AV Feedback Pass (2026-03-08 01:08:00Z)
+
+Library runtime now includes explicit launch-feedback channels across visual, audio, and host diagnostics layers:
+
+- Visual: deterministic footer audio meter + launch status pulse tint.
+- Audio: `AudioCue::LaunchRequest` triggers dedicated launch stinger SFX.
+- Architecture: `collect_runtime_diagnostics(&[RuntimeEvent]) -> RuntimeDiagnostics` centralizes non-audio event interpretation for host orchestration.
+
+This keeps scene simulation deterministic while improving UX clarity and reducing host-loop branching noise.
+
+
+## Launch Intent Lifecycle (2026-03-08 01:37:00Z)
+
+Library launch flow now has bidirectional intent states:
+- Request: `RuntimeEvent::TitleLaunchRequested(&'static str)`
+- Clear: `RuntimeEvent::TitleLaunchCanceled`
+
+Audio intent cues now distinguish user actions:
+- `AudioCue::LaunchRequest`
+- `AudioCue::Cancel`
+
+Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centralized.

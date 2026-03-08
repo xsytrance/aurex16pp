@@ -15,4 +15,6 @@ pub enum AudioCue {
     #[default]
     None,
     SelectTrack(u8),
+    LaunchRequest,
+    Cancel,
 }

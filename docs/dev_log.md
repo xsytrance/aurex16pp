@@ -1,3 +1,44 @@
+## 2026-03-08 01:37:00Z — Launch Intent Lifecycle Pass (Cancel Path + Cue Split)
+
+### Summary
+Fast follow-up pass on library UX + runtime architecture to complete launch intent lifecycle signaling (request + clear) with explicit AV feedback.
+
+### Graphics
+- Library footer control hint now includes cancel/clear action (`B/ESC: CLEAR`).
+- Existing launch pulse behavior now resets immediately when launch intent is cleared.
+
+### Sound
+- Added `AudioCue::Cancel` and a dedicated cancel stinger path in `AudioEngine`.
+- Launch and cancel cues are now distinct intents in the audio contract.
+
+### Architecture
+- Added `RuntimeEvent::TitleLaunchCanceled`.
+- `LibraryUpdate` now carries `launch_canceled` in addition to `launch_requested`.
+- `RuntimeDiagnostics` now includes `launch_canceled` and main loop logs clear events.
+
+### Progress
+This closes the launch-intent loop from a runtime signaling perspective and keeps host-side logic data-driven through typed events/diagnostics.
+
+## 2026-03-08 01:08:00Z — Library AV Pass: Launch Stinger + Meter + Runtime Diagnostics
+
+### Summary
+Continued polish on graphics, sound, and runtime architecture around the library scene while preserving deterministic frame behavior.
+
+### Graphics
+- Added a footer audio meter visualization that animates per frame and picks up selected-title color themes.
+- Added launch-status pulse tinting for the footer status text after an accept press.
+
+### Sound
+- Added `AudioCue::LaunchRequest` and wired an explicit launch stinger synthesis path in `AudioEngine::sfx_sample`.
+- Launch stinger now has priority over short confirm beeps so title-open intent has clear audible feedback.
+
+### Architecture
+- Added `collect_runtime_diagnostics(events)` and `RuntimeDiagnostics` to centralize host-side interpretation of non-audio runtime events.
+- Main loop now uses diagnostics extraction instead of ad-hoc direct event matching.
+
+### Validation
+- Updated library tests to assert launch cue emission when launch is requested.
+
 ## 2026-03-08 00:22:00Z — Library Launch Request Event + Accept Input Path
 
 ### Summary

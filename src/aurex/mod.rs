@@ -102,6 +102,9 @@ impl Aurex {
                         self.library.current_title(),
                     ));
                 }
+                if update.launch_canceled {
+                    self.events.push(RuntimeEvent::TitleLaunchCanceled);
+                }
             }
         }
 
