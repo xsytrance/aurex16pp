@@ -10,7 +10,9 @@ pub mod wram;
 
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
-use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue, SceneId};
+use crate::aurex::runtime::{
+    LaunchIntentController, RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+};
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
@@ -38,6 +40,7 @@ pub struct Aurex {
     library: LibraryScreen,
     mode: RunMode,
     events: RuntimeEventQueue,
+    launch: LaunchIntentController,
     ui_frame: u64,
 }
 
@@ -59,6 +62,7 @@ impl Aurex {
             library,
             mode: RunMode::Boot,
             events: RuntimeEventQueue::with_capacity(8),
+            launch: LaunchIntentController::new(),
             ui_frame: 0,
         }
     }
@@ -93,10 +97,44 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                let cue = self.library.update(input);
-                if !matches!(cue, AudioCue::None) {
-                    self.events.push(RuntimeEvent::Audio(cue));
+                let update = self.library.update(input);
+                if !matches!(update.audio_cue, AudioCue::None) {
+                    self.events.push(RuntimeEvent::Audio(update.audio_cue));
                 }
+
+                if update.launch_requested {
+                    let req = self.library.current_launch_descriptor();
+                    match validate_launch_descriptor(req) {
+                        Ok(()) => {
+                            if self.launch.request(req) {
+                                self.events.push(RuntimeEvent::TitleLaunchRequested(req));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                        }
+                        Err(reason) => {
+                            self.launch.reject(reason);
+                            self.events.push(RuntimeEvent::TitleLaunchRejected(reason));
+                            self.events
+                                .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                        }
+                    }
+                }
+
+                if update.launch_canceled && self.launch.cancel() {
+                    self.events.push(RuntimeEvent::TitleLaunchCanceled);
+                    self.events
+                        .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                }
+
+                if let Some(stage) = self.launch.tick() {
+                    self.events.push(RuntimeEvent::LaunchStageChanged(stage));
+                    if let crate::aurex::runtime::LaunchStage::Ready(desc) = stage {
+                        self.events.push(RuntimeEvent::TitleLaunchReady(desc));
+                    }
+                }
+
+                self.library.set_launch_pending(self.launch.is_active());
             }
         }
 

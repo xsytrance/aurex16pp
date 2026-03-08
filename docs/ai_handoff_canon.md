@@ -308,6 +308,63 @@ END OF CANON
   - Host loop drains and dispatches side effects
 
 
+
+
+## Library Feedback Canon (2026-03-08 01:08:00Z)
+
+- Launch-intent UX now includes a deterministic audio stinger cue:
+  - `AudioCue::LaunchRequest`
+- Library scene visual feedback includes deterministic footer pulse + meter animation.
+- Host interpretation of non-audio runtime events should prefer runtime diagnostics collection over ad-hoc per-loop matching.
+
+
+
+## Launch Intent Lifecycle Canon (2026-03-08 01:37:00Z)
+
+- Launch selection intent is reversible before host-side cartridge boot is attached.
+- Runtime event set for library intent now includes:
+  - `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
+  - `RuntimeEvent::TitleLaunchCanceled`
+- Audio cue set now includes explicit cancel intent (`AudioCue::Cancel`).
+
+
+
+## Launch Stage Canon (2026-03-08 02:02:00Z)
+
+- Launch intent now has an explicit runtime stage domain:
+  - `LaunchStage::Idle`
+  - `LaunchStage::Pending(LaunchDescriptor)`
+  - `LaunchStage::Validating(LaunchDescriptor)`
+  - `LaunchStage::Ready(LaunchDescriptor)`
+  - `LaunchStage::Rejected(LaunchValidationError)`
+- Stage transitions emit `RuntimeEvent::LaunchStageChanged(LaunchStage)`.
+- Library HUD presents pending stage visually (`PENDING` marker + boosted meter bars).
+
+
+
+## LLM SDK Canon (2026-03-08 02:28:00Z)
+
+- Cartridge generation is prompt-structured, not free-form.
+- Required authoring references:
+  - `docs/llm_sdk_guide.md`
+  - `docs/llm_prompt_template.md`
+- Launch descriptor identity includes `cartridge_id` to bridge library selection and cartridge asset folders.
+
+
+
+## Launch Validation Canon (2026-03-08 02:56:00Z)
+
+- Launch descriptors are validated before entering pending launch stage.
+- Invalid descriptors emit `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
+- Current validation includes strict cartridge ID format enforcement (`[a-z0-9_]+`).
+
+
+
+## Launch Ready Canon (2026-03-08 03:22:00Z)
+
+- Launch flow now includes deterministic validating and ready stages.
+- `TitleLaunchReady(LaunchDescriptor)` is the runtime signal reserved for future cartridge boot handoff.
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
@@ -318,6 +375,9 @@ Scene lifecycle contract:
 Event contract:
 - `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
+- `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.
