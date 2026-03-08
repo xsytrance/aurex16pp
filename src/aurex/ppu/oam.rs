@@ -32,7 +32,7 @@ pub struct Sprite {
     pub x: u16,
     pub y: u16,
     pub tile_index: u16,
-    pub palette: u8,
+    pub palette: u16,
     pub priority: u8,
     pub visible: bool,
 

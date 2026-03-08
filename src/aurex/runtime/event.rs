@@ -1,4 +1,4 @@
-use crate::aurex::game::AudioCue;
+use super::launch::{LaunchDescriptor, LaunchStage, LaunchValidationError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SceneId {
@@ -6,10 +6,31 @@ pub enum SceneId {
     Library,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AudioSfx {
+    None,
+    Confirm,
+    Launch,
+    Cancel,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RuntimeAudioCommand {
+    PlayTrack(u8),
+    PlaySfx(AudioSfx),
+    StopTrack,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum RuntimeEvent {
-    Audio(AudioCue),
+    Audio(RuntimeAudioCommand),
     SceneChanged(SceneId),
+    TitleLaunchRequested(LaunchDescriptor),
+    TitleLaunchCanceled,
+    LaunchStageChanged(LaunchStage),
+    TitleLaunchReady(LaunchDescriptor),
+    TitleLaunchResolved(LaunchDescriptor),
+    TitleLaunchRejected(LaunchValidationError),
 }
 
 pub struct RuntimeEventQueue {

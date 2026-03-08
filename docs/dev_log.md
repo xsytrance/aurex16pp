@@ -1,3 +1,395 @@
+## 2026-03-08 11:50:00Z — Neo-Geo Comparison + SDK/LLM Instruction Refresh (Post-Upgrade)
+
+### Summary
+Updated comparison and authoring docs to reflect current ASU-32/runtime launch upgrades and to strengthen LLM/human prompt reliability after recent regressions.
+
+### Documentation
+- Rewrote `docs/aurex_vs_neo_geo.md` with updated current-state verdicts and explicit next upgrade stack.
+- Updated `docs/llm_sdk_guide.md`/`docs/llm_prompt_template.md` alignment usage through canon and index cross-links.
+- Updated architecture index audio/library sections to runtime-command-based terminology.
+- Updated tech spec suggested upgrade stack to ASU-32 refinement wording instead of stale mono/4-lane direction.
+- Added canon-level LLM instruction reliability section and cleaned launch resolve bullet formatting.
+
+### Suggested Upgrades (ready for next pass)
+- Deterministic replay/golden capture for launch+audio+input.
+- Audio diagnostics report (clipping, per-track level, preset usage).
+- Cartridge static analyzer v2 with CI-oriented JSON output.
+- Palette bank heatmap + script validator tooling.
+
+## 2026-03-08 11:20:00Z — Documentation Reliability Pass (Architecture/Handoff/SDK/Prompt)
+
+### Summary
+Performed a thorough docs synchronization pass to align architecture, handoff canon, SDK, and prompt templates with the current ASU-32/runtime event model and to capture concrete anti-regression guidance.
+
+### Documentation
+- Updated architecture to use current palette semantics (`10..13` bank bits, sprite palette base index) and runtime audio command terminology.
+- Updated handoff canon library/audio references from legacy cue wording to runtime command wording.
+- Rewrote LLM SDK guide to v0.3 with 512 KB audio RAM, ASU-32 command contract, and explicit validation checklist.
+- Rewrote LLM prompt template to v0.3 with updated budgets/contracts and final self-check items.
+- Updated master prompt hardware memory section (Audio RAM 512 KB) and added documentation reliability guardrails.
+
+### Lessons Learned / Anti-Regression
+- Avoid global helper symbol drift in fast iteration; prefer impl-scoped helpers when utility scope is local.
+- Make integer overflow intent explicit in deterministic arithmetic paths.
+- Keep docs terminology synchronized with actual runtime APIs before shipping claims.
+- Keep test/run claims strictly environment-verified.
+
+## 2026-03-08 10:55:00Z — ASU-32 Sine Helper De-dup Hardening
+
+### Summary
+Eliminated remaining risk of duplicate `sine_approx` symbol collisions by moving sine shaping to an impl-scoped helper used only by ASU-32 wavetable generation.
+
+### Runtime/Tooling
+- Replaced free function usage with `AudioEngine::sine_from_phase(...)`.
+- Removed standalone global sine helper symbol from runtime audio module.
+
+### Progress
+This prevents duplicate global helper definitions during merge drift while preserving deterministic integer-only synthesis behavior.
+
+## 2026-03-08 10:35:00Z — ASU-32 Wavetable Overflow Fix (Deterministic Noise Seed)
+
+### Summary
+Fixed a runtime panic in ASU-32 wavetable generation caused by debug overflow during integer noise seed synthesis.
+
+### Runtime/Tooling
+- Replaced overflowing `i32` multiply in noise seed generation with explicit wrapping `u32` arithmetic.
+- Added an audio unit test to ensure ASU-32 initialization/render path does not panic under debug overflow checks.
+
+### Progress
+`cargo run` panic source in ASU-32 wavetable init is resolved while preserving deterministic integer-only behavior.
+
+## 2026-03-08 10:10:00Z — ASU-32 Audio Engine (48k Stereo / 12 Voices)
+
+### Summary
+Implemented ASU-32 runtime audio path with deterministic 48 kHz stereo synthesis, 12 voices, fixed-point mixing, static instruments, wavetable RAM, and runtime audio command dispatch.
+
+### Runtime/Tooling
+- Replaced legacy cue-driven mono synth internals with ASU-32 voice engine (`voice[12]`) + ADSR/vibrato instrument table.
+- Added wavetable bank generation for sine/square/triangle/saw/noise stored in 512 KB audio RAM.
+- Added deterministic fixed-tick pattern sequencer and integer-only stereo mixer with pan weights.
+- Added integer-only per-voice optional FX path (delay/echo/bitcrush/distortion).
+- Extended runtime audio event model from `AudioCue` intent to `RuntimeAudioCommand` (`PlayTrack`, `PlaySfx`, `StopTrack`) and wired dispatch path.
+- Updated host audio queue path to 48 kHz stereo output blocks.
+- Updated canon/architecture/tech-spec docs for ASU-32 semantics.
+
+### Progress
+Audio runtime now matches ASU-32 implementation target while preserving deterministic execution and integer-only synthesis in the sample loop.
+
+## 2026-03-08 09:05:00Z — CI/Local Preflight Entrypoint Script
+
+### Summary
+Added a single script entrypoint for deterministic preflight checks so local and CI invocation paths stay aligned.
+
+### Runtime/Tooling
+- Added `scripts/preflight.sh` to run:
+  - `cargo fmt -- --check`
+  - `cargo check`
+  - `cargo run -- --audit-cartridges --json`
+- Added `AUREX_SKIP_AUDIT_LINK=1` escape hatch for environments without native SDL2 linking support.
+- Updated architecture index and technical spec docs to reference the preflight script.
+
+### Progress
+This reduces drift between ad-hoc local checks and CI expectations and makes cartridge audit gating easier to operationalize.
+
+## 2026-03-08 08:35:00Z — Manifest Schema Gate + Upload Budget Validation
+
+### Summary
+Extended cartridge preflight validation with an explicit manifest key schema gate and upload budget checks so CI/runtime reject malformed or out-of-bounds content before attach.
+
+### Runtime/Tooling
+- Added manifest key registry semantics (`name` optional single, `game_id` required single, `upload` required repeat).
+- Added duplicate-key checks for singleton fields (`name`, `game_id`).
+- Added upload budget checks for per-upload size cap, region capacity bounds, and palette alignment constraints.
+- Added unit coverage for palette-region budget/alignment rejection.
+
+### Progress
+This strengthens deterministic preflight by moving structural + memory-safety checks into manifest parsing rather than relying on downstream runtime behavior.
+
+## 2026-03-08 08:10:00Z — Cartridge Audit CLI (Deterministic Preflight)
+
+### Summary
+Added a deterministic cartridge audit mode to preflight cartridge manifests and identity coherence before launch/runtime attach attempts.
+
+### Runtime/Tooling
+- Added cartridge audit report model and root-scan API in cartridge runtime module.
+- Added host CLI switch: `--audit-cartridges` to print per-cartridge status and return non-zero on invalid entries.
+- Added `--json` output mode for machine-readable CI/preflight integration.
+- Added unit coverage for mixed valid/invalid/missing-manifest cartridge trees.
+
+### Progress
+This closes a tooling gap between authoring docs and runtime launch validation by providing a fast preflight gate.
+
+## 2026-03-08 07:40:00Z — Boot Screen + Boot Music Refresh for Expanded AV Capability
+
+### Summary
+Since palette/audio capability has increased versus the original boot implementation, the boot presentation was upgraded to use richer deterministic visuals and a stronger boot theme.
+
+### Graphics
+- Added deterministic accent rails and a compact boot meter visual to the boot overlay.
+- Enhanced backdrop with sparse deterministic star-glint highlights.
+
+### Audio
+- Updated boot track motif/BPM and amplitudes for a more assertive startup identity.
+- Preserved integer-only deterministic synthesis and existing runtime constraints.
+
+### Progress
+Boot now better reflects current platform capability without changing frame timing, determinism, or core constraints.
+
+## 2026-03-08 07:10:00Z — Neo-Geo Comparison Canon + Documentation/SDK/Prompt Alignment
+
+### Summary
+Completed a full documentation and instruction alignment pass and introduced an explicit Aurex-vs-Neo-Geo target comparison document to guide future phases.
+
+### Documentation / SDK / LLM Instruction Updates
+- Updated SDK guidance and prompt template to reflect current palette/audio semantics and hard constraints.
+- Updated architecture/handoff/tech-spec/index docs to reference Neo-Geo comparison planning.
+- Added `docs/aurex_vs_neo_geo.md` with category-by-category target verdicts requiring Aurex >= Neo-Geo outcomes while preserving deterministic creative constraints.
+
+### Progress
+This gives a unified planning reference for future upgrades and keeps both human and LLM authoring paths aligned with the project vision.
+
+## 2026-03-08 06:40:00Z — Phase Upgrade: Deterministic Audio Lane Depth + Neo-Geo Gap Closure Plan
+
+### Summary
+Executed next-phase upgrades by implementing deterministic envelope-shaped lane mixing in runtime audio and updating canon documentation with concrete “beat Neo-Geo while constrained” direction.
+
+### Runtime/Audio
+- Added deterministic envelope shaping to core music lane generation.
+- Kept explicit sub lane to thicken low-end response without non-deterministic processing.
+- Preserved integer-only synthesis and zero-allocation inner-loop behavior.
+
+### Documentation
+- Updated SDK, architecture, handoff canon, and tech spec with phase-2 audio capability and roadmap.
+- Added additional suggested upgrade list for deterministic tooling, graphics profiling, and runtime replay/lint systems.
+
+### Progress
+Aurex now has a stronger production-style audio identity while staying inside strict fantasy-console constraints and deterministic architecture rules.
+
+## 2026-03-08 06:05:00Z — Palette 4096 Canon + AV Direction Refresh + Neo-Geo Positioning
+
+### Summary
+Consolidated documentation around the expanded 4096-entry palette system, refreshed architecture/handoff/sdk guidance, and clarified audio positioning versus Neo-Geo while preserving deterministic constraints.
+
+### Runtime/Graphics
+- Palette storage now documented as 4096 RGB555 entries.
+- Sprite palette semantics documented as base-index lookup behavior.
+- BG tilemap palette selection documented as 4-bit bank field (bits 10..13).
+- Boot/library visual tone refreshed toward stronger contrast and richer color accents.
+
+### Audio
+- Canon docs now explicitly state that current audio quality is stylistically strong but not yet equivalent to Neo-Geo production depth.
+- Added constrained upgrade path: deterministic voice lanes, envelope tables, and motif sequencing.
+
+### Documentation
+- Updated:
+  - `docs/llm_sdk_guide.md`
+  - `docs/architecture.md`
+  - `docs/ai_handoff_canon.md`
+  - `docs/tech_spec_report.md`
+  - `docs/dev_log.md`
+
+### Progress
+This aligns implementation + docs around a single “premium but constrained” vision: better tooling and deterministic polish, not unconstrained complexity.
+
+## 2026-03-08 04:48:00Z — Consolidated Technical Specification Report
+
+### Summary
+Added a single consolidated technical specification report documenting current system capabilities and operational limits.
+
+### Documentation
+- Added `docs/tech_spec_report.md` covering:
+  - display/FPS
+  - CPU/ops budget
+  - memory and VRAM budgets
+  - DMA limits
+  - audio/input/runtime launch pipeline
+  - cartridge authoring constraints (LLM + human)
+- Added index linkage in `docs/arch_index.md` for discoverability.
+
+### Progress
+This gives a single operator-friendly source for “what the system can do now” while preserving canonical constraints.
+
+## 2026-03-08 04:22:00Z — Human Game Creation Guide Aligned to LLM SDK Contract
+
+### Summary
+Added a human-facing game creation guide that mirrors LLM prompt contract requirements and deterministic hardware constraints.
+
+### Documentation
+- Added `docs/human_game_creation_guide.md` with:
+  - hard-limit summary
+  - step-by-step human workflow for directing an LLM
+  - identity consistency checks (`GAME_ID` / folder / manifest `game_id`)
+  - deterministic authoring checklist and DoD criteria
+- Linked this guide into architecture/index/master/canon docs to keep human and LLM instructions synchronized.
+
+### Progress
+Human-to-LLM authoring now has a canonical, constraint-safe path that matches runtime validation behavior.
+
+## 2026-03-08 04:02:00Z — Manifest Identity Enforcement for LLM Cartridges
+
+### Summary
+Added strict manifest identity enforcement so runtime cartridge resolution validates `game_id` against requested `cartridge_id`.
+
+### Runtime / Architecture
+- `CartridgeRuntime::from_cartridge_id` now returns typed resolve errors:
+  - `MissingManifest`
+  - `InvalidManifest(String)`
+- Resolver now requires `game_id=` in manifest and checks equality with launch `cartridge_id`.
+- Launch pipeline now maps invalid manifest to `LaunchValidationError::CartridgeManifestInvalid`.
+
+### SDK
+- LLM SDK guide now documents required `game_id` manifest field.
+- Prompt template now includes a manifest snippet with `game_id`.
+
+### Progress
+This closes a key identity loophole and makes generated cartridge folders + manifests verifiable before boot attach.
+
+## 2026-03-08 03:44:00Z — Launch Resolve Gate + Library Stage HUD Messaging
+
+### Summary
+Continued launch pipeline development by adding cartridge resolution at ready stage and upgrading library HUD messaging for staged launch lifecycle.
+
+### Runtime / Architecture
+- Added `CartridgeRuntime::from_cartridge_id(...)` resolver hook.
+- When launch reaches `Ready`, runtime now attempts cartridge resolution and emits:
+  - `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)` on success
+  - `RuntimeEvent::TitleLaunchRejected(CartridgeMissing)` + `LaunchStage::Rejected` on failure
+- Added `RuntimeDiagnostics::launch_resolved` for host orchestration/logging.
+
+### Library Screen
+- Library status messaging now reflects full stage state (`Pending`, `Validating`, `Ready`, `Rejected`) rather than simple pending-only text.
+
+### Progress
+The launch pipeline now has explicit resolver gating before future boot attach, reducing ambiguity between “ready” and “actually loadable”.
+
+## 2026-03-08 03:22:00Z — Multi-Stage Launch Lifecycle (Validating/Ready/Rejected)
+
+### Summary
+Extended launch orchestration from a binary pending state to a deterministic staged lifecycle suitable for cartridge boot attachment.
+
+### Runtime / Architecture
+- `LaunchStage` now models `Idle`, `Pending`, `Validating`, `Ready`, and `Rejected`.
+- `LaunchIntentController::tick()` advances deterministic validation timing.
+- Runtime now emits `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)` when stage reaches `Ready`.
+
+### Validation & Telemetry
+- Invalid descriptors now drive both rejection event and stage transition to `Rejected`.
+- Runtime diagnostics now surfaces `launch_ready` for host-side orchestration.
+
+### Progress
+Launch flow is now close to boot handoff readiness: validation and readiness are explicit states/events rather than implicit timing assumptions.
+
+## 2026-03-08 02:56:00Z — Launch Validation Telemetry + SDK Contract Tightening
+
+### Summary
+Added deterministic launch-request validation with explicit reject telemetry and tightened LLM SDK authoring rules around cartridge identity.
+
+### Runtime / Architecture
+- Added `validate_launch_descriptor(...)` and `LaunchValidationError` to launch domain.
+- Core now rejects invalid launch descriptors and emits `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
+- Runtime diagnostics now surfaces `launch_rejected` for host logging/dispatch policy.
+
+### LLM SDK
+- SDK guide now documents cartridge ID format constraints (`[a-z0-9_]+`).
+- Prompt template now explicitly requires a valid `GAME_ID` that matches runtime `cartridge_id` usage.
+
+### Progress
+Launch pipeline now has explicit deterministic rejection semantics, which is required before adding multi-stage cartridge validation/loading.
+
+## 2026-03-08 02:28:00Z — LLM SDK Groundwork + Launch Descriptor Identity
+
+### Summary
+Started the explicit LLM authoring SDK path and aligned runtime launch identity with cartridge build identity.
+
+### Runtime / Architecture
+- Launch descriptor now carries `{ title, cartridge_id }`.
+- `RuntimeEvent::TitleLaunchRequested` now transports full launch descriptor identity.
+- Host diagnostics logging now prints both display title and cartridge ID.
+
+### LLM SDK
+- Added `docs/llm_sdk_guide.md` with required prompt contract sections and deterministic output rules.
+- Added `docs/llm_prompt_template.md` as the baseline prompt skeleton for cartridge generation.
+
+### Progress
+This pass establishes deterministic prompt-structure governance and begins bridging runtime launch to cartridge folder identity.
+
+## 2026-03-08 02:02:00Z — Launch Controller Integration + Pending Stage HUD
+
+### Summary
+Integrated a dedicated launch-intent controller and stage-change telemetry while extending library HUD to reflect pending launch stage.
+
+### Architecture
+- Added runtime launch domain component: `LaunchIntentController` with `LaunchStage::{Idle, Pending(&'static str)}`.
+- Core now routes request/cancel through controller and emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions.
+- Runtime diagnostics now includes `launch_stage_changed` for centralized host interpretation.
+
+### Graphics
+- Library footer now shows a `PENDING` indicator when launch intent is armed.
+- Audio meter bars gain additional height while pending to make stage state visible without relying on logs.
+
+### Progress
+Launch intent has moved from ad-hoc booleans toward explicit runtime domain state, preparing clean attachment of cartridge validation/boot steps.
+
+## 2026-03-08 01:37:00Z — Launch Intent Lifecycle Pass (Cancel Path + Cue Split)
+
+### Summary
+Fast follow-up pass on library UX + runtime architecture to complete launch intent lifecycle signaling (request + clear) with explicit AV feedback.
+
+### Graphics
+- Library footer control hint now includes cancel/clear action (`B/ESC: CLEAR`).
+- Existing launch pulse behavior now resets immediately when launch intent is cleared.
+
+### Sound
+- Added `AudioCue::Cancel` and a dedicated cancel stinger path in `AudioEngine`.
+- Launch and cancel cues are now distinct intents in the audio contract.
+
+### Architecture
+- Added `RuntimeEvent::TitleLaunchCanceled`.
+- `LibraryUpdate` now carries `launch_canceled` in addition to `launch_requested`.
+- `RuntimeDiagnostics` now includes `launch_canceled` and main loop logs clear events.
+
+### Progress
+This closes the launch-intent loop from a runtime signaling perspective and keeps host-side logic data-driven through typed events/diagnostics.
+
+## 2026-03-08 01:08:00Z — Library AV Pass: Launch Stinger + Meter + Runtime Diagnostics
+
+### Summary
+Continued polish on graphics, sound, and runtime architecture around the library scene while preserving deterministic frame behavior.
+
+### Graphics
+- Added a footer audio meter visualization that animates per frame and picks up selected-title color themes.
+- Added launch-status pulse tinting for the footer status text after an accept press.
+
+### Sound
+- Added `AudioCue::LaunchRequest` and wired an explicit launch stinger synthesis path in `AudioEngine::sfx_sample`.
+- Launch stinger now has priority over short confirm beeps so title-open intent has clear audible feedback.
+
+### Architecture
+- Added `collect_runtime_diagnostics(events)` and `RuntimeDiagnostics` to centralize host-side interpretation of non-audio runtime events.
+- Main loop now uses diagnostics extraction instead of ad-hoc direct event matching.
+
+### Validation
+- Updated library tests to assert launch cue emission when launch is requested.
+
+## 2026-03-08 00:22:00Z — Library Launch Request Event + Accept Input Path
+
+### Summary
+Implemented the next library milestone: explicit launch intent capture for selected titles with typed runtime telemetry, while keeping deterministic flow and existing track-selection behavior.
+
+### Functional Changes
+- Added gameplay-level `accept`/`cancel` input fields to support menu intent expansion beyond directional navigation.
+- Library selection update now returns a typed `LibraryUpdate` payload (`audio_cue`, `launch_requested`) instead of only an audio cue.
+- Pressing accept on a library card now edge-triggers a launch request intent and updates footer status messaging to show launch pipeline progress text.
+- Added runtime event `RuntimeEvent::TitleLaunchRequested(&'static str)` and host logging hook in `main`.
+
+### Validation
+- Added unit tests for:
+  - selection wrap + deterministic track cue emission
+  - edge-triggered launch request behavior (press/hold/release/press)
+
+### Architecture Rationale
+This keeps scene simulation deterministic while making “open title” a first-class event boundary. The host can now route launch requests (future cartridge boot flow) without coupling launch side effects into the library scene.
+
 ## 2026-03-07 20:09:06Z — Snake Retirement + System Sandbox Bring-up
 
 ### Summary
