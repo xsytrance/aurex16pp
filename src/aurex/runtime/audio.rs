@@ -390,6 +390,8 @@ impl AudioEngine {
 
             self.note_on(i, hz, inst as u8, mode);
         }
+
+        v.env_level
     }
 
     fn advance_boot_sequencer(&mut self) {
@@ -650,6 +652,7 @@ impl AudioEngine {
         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
         sign * mag
     }
+}
 
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
