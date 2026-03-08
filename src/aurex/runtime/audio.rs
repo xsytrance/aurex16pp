@@ -6,6 +6,56 @@ pub enum AudioMode {
     Game,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MixProfile {
+    Soft,
+    Default,
+    Arcade,
+}
+
+impl MixProfile {
+    fn render_gain_q8(self) -> i32 {
+        match self {
+            Self::Soft => 80,
+            Self::Default => 88,
+            Self::Arcade => 96,
+        }
+    }
+
+    fn lp_smoothing(self) -> i32 {
+        match self {
+            Self::Soft => 5,
+            Self::Default => 4,
+            Self::Arcade => 3,
+        }
+    }
+
+    fn hp_decay_q6(self) -> i32 {
+        match self {
+            Self::Soft => 61,
+            Self::Default => 63,
+            Self::Arcade => 64,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Soft => "soft",
+            Self::Default => "default",
+            Self::Arcade => "arcade",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "soft" => Some(Self::Soft),
+            "default" => Some(Self::Default),
+            "arcade" => Some(Self::Arcade),
+            _ => None,
+        }
+    }
+}
+
 const SAMPLE_RATE_HZ: u32 = 48_000;
 const AUDIO_RAM_BYTES: usize = 512 * 1024;
 const VOICE_COUNT: usize = 12;
@@ -114,6 +164,8 @@ struct Voice {
     fx: u8,
     delay_line: [i16; 32],
     delay_index: usize,
+    lp_state: i32,
+    prev_env_gain: u16,
 }
 
 impl Voice {
@@ -133,6 +185,8 @@ impl Voice {
             fx: 0,
             delay_line: [0; 32],
             delay_index: 0,
+            lp_state: 0,
+            prev_env_gain: 0,
         }
     }
 }
@@ -177,13 +231,47 @@ pub struct AudioDiagnostics {
     pub peak_r: i16,
     pub avg_abs_l: i16,
     pub avg_abs_r: i16,
+    pub crest_l_q10: u16,
+    pub crest_r_q10: u16,
+    pub clipped_l: u32,
+    pub clipped_r: u32,
+    pub boot_beat_step: u8,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct AudioDiagnosticsBaseline {
+    pub sample_rate: u32,
+    pub frames: usize,
+    pub boot: AudioDiagnostics,
+    pub game: AudioDiagnostics,
+}
+
+impl AudioDiagnosticsBaseline {
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"sample_rate\":{},\"frames\":{},\"boot\":{},\"game\":{}}}",
+            self.sample_rate,
+            self.frames,
+            self.boot.to_json(),
+            self.game.to_json()
+        )
+    }
 }
 
 impl AudioDiagnostics {
     pub fn to_json(&self) -> String {
         format!(
-            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{}}}",
-            self.frames, self.peak_l, self.peak_r, self.avg_abs_l, self.avg_abs_r
+            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{},\"crest_l_q10\":{},\"crest_r_q10\":{},\"clipped_l\":{},\"clipped_r\":{},\"boot_beat_step\":{}}}",
+            self.frames,
+            self.peak_l,
+            self.peak_r,
+            self.avg_abs_l,
+            self.avg_abs_r,
+            self.crest_l_q10,
+            self.crest_r_q10,
+            self.clipped_l,
+            self.clipped_r,
+            self.boot_beat_step
         )
     }
 }
@@ -203,10 +291,19 @@ pub struct AudioEngine {
     noise_state: u32,
     mix_lp_l: i32,
     mix_lp_r: i32,
+    mix_hp_l: i32,
+    mix_hp_r: i32,
+    prev_mix_l: i32,
+    prev_mix_r: i32,
+    mix_profile: MixProfile,
 }
 
 impl AudioEngine {
     pub fn new(sample_rate: u32) -> Self {
+        Self::new_with_profile(sample_rate, MixProfile::Default)
+    }
+
+    pub fn new_with_profile(sample_rate: u32, mix_profile: MixProfile) -> Self {
         let mut audio_ram = Box::new([0u8; AUDIO_RAM_BYTES]);
         let wavetable_base = [
             0,
@@ -232,6 +329,11 @@ impl AudioEngine {
             noise_state: 0xC001_FEED,
             mix_lp_l: 0,
             mix_lp_r: 0,
+            mix_hp_l: 0,
+            mix_hp_r: 0,
+            prev_mix_l: 0,
+            prev_mix_r: 0,
+            mix_profile,
         }
     }
 
@@ -284,13 +386,16 @@ impl AudioEngine {
     }
 
     pub fn diagnostics_for_frames(&self, mode: AudioMode, frames: usize) -> AudioDiagnostics {
-        let mut sim = Self::new(self.sample_rate.max(SAMPLE_RATE_HZ));
+        let mut sim =
+            Self::new_with_profile(self.sample_rate.max(SAMPLE_RATE_HZ), self.mix_profile);
         sim.track_id = self.track_id;
 
         let mut peak_l = 0i32;
         let mut peak_r = 0i32;
         let mut abs_sum_l: i64 = 0;
         let mut abs_sum_r: i64 = 0;
+        let mut clipped_l: u32 = 0;
+        let mut clipped_r: u32 = 0;
         let mut block = [0i16; 512];
 
         let mut remain = frames;
@@ -306,18 +411,35 @@ impl AudioEngine {
                 peak_r = peak_r.max(r.abs());
                 abs_sum_l += l.abs() as i64;
                 abs_sum_r += r.abs() as i64;
+                if l.abs() >= 32_000 {
+                    clipped_l = clipped_l.saturating_add(1);
+                }
+                if r.abs() >= 32_000 {
+                    clipped_r = clipped_r.saturating_add(1);
+                }
             }
 
             remain -= step;
         }
 
         let denom = frames.max(1) as i64;
+        let avg_abs_l = (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
+        let avg_abs_r = (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
+        let crest_l_q10 = ((peak_l.max(1) * 1024) / (avg_abs_l.abs().max(1) as i32))
+            .clamp(0, u16::MAX as i32) as u16;
+        let crest_r_q10 = ((peak_r.max(1) * 1024) / (avg_abs_r.abs().max(1) as i32))
+            .clamp(0, u16::MAX as i32) as u16;
         AudioDiagnostics {
             frames,
             peak_l: peak_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
             peak_r: peak_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
-            avg_abs_l: (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
-            avg_abs_r: (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
+            avg_abs_l,
+            avg_abs_r,
+            crest_l_q10,
+            crest_r_q10,
+            clipped_l,
+            clipped_r,
+            boot_beat_step: sim.boot_beat_step(),
         }
     }
 
@@ -338,12 +460,22 @@ impl AudioEngine {
             mix_l += sfx_l;
             mix_r += sfx_r;
 
-            mix_l = (mix_l * 3) / 8;
-            mix_r = (mix_r * 3) / 8;
-            self.mix_lp_l += (mix_l - self.mix_lp_l) / 4;
-            self.mix_lp_r += (mix_r - self.mix_lp_r) / 4;
-            let out_l = Self::soft_clip(self.mix_lp_l);
-            let out_r = Self::soft_clip(self.mix_lp_r);
+            let gain = self.mix_profile.render_gain_q8();
+            mix_l = (mix_l * gain) / 256;
+            mix_r = (mix_r * gain) / 256;
+            let lp = self.mix_profile.lp_smoothing().max(1);
+            self.mix_lp_l += (mix_l - self.mix_lp_l) / lp;
+            self.mix_lp_r += (mix_r - self.mix_lp_r) / lp;
+            let hp_in_l = self.mix_lp_l - self.prev_mix_l;
+            let hp_in_r = self.mix_lp_r - self.prev_mix_r;
+            let hp_decay = self.mix_profile.hp_decay_q6();
+            self.mix_hp_l = (self.mix_hp_l * hp_decay + hp_in_l * 64) / 64;
+            self.mix_hp_r = (self.mix_hp_r * hp_decay + hp_in_r * 64) / 64;
+            self.prev_mix_l = self.mix_lp_l;
+            self.prev_mix_r = self.mix_lp_r;
+
+            let out_l = Self::soft_clip(self.mix_hp_l);
+            let out_r = Self::soft_clip(self.mix_hp_r);
 
             out[frame * 2] = out_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
             out[frame * 2 + 1] = out_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
@@ -390,22 +522,33 @@ impl AudioEngine {
 
             self.note_on(i, hz, inst as u8, mode);
         }
+    }
 
-        v.env_level
+    pub fn diagnostics_baseline(&self, frames: usize) -> AudioDiagnosticsBaseline {
+        AudioDiagnosticsBaseline {
+            sample_rate: self.sample_rate.max(SAMPLE_RATE_HZ),
+            frames,
+            boot: self.diagnostics_for_frames(AudioMode::Boot, frames),
+            game: self.diagnostics_for_frames(AudioMode::Game, frames),
+        }
+    }
+
+    pub fn boot_beat_step(&self) -> u8 {
+        (self.pattern_step % PATTERN_STEPS) as u8
     }
 
     fn advance_boot_sequencer(&mut self) {
         let s = self.pattern_step;
         let arp_b = (s * 2) % PATTERN_STEPS;
 
-        self.trigger_voice(0, BOOT_LEAD[s], 3, 520, 840, 340, 0b0001);
-        self.trigger_voice(1, BOOT_COUNTER[s], 3, 420, 720, 520, 0b0001);
-        self.trigger_voice(2, BOOT_ARP[s], 0, 300, 620, 760, 0b0011);
-        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 280, 760, 620, 0b0011);
+        self.trigger_voice(0, BOOT_LEAD[s], 3, 500, 860, 360, 0b0101);
+        self.trigger_voice(1, BOOT_COUNTER[s], 3, 390, 740, 540, 0b0101);
+        self.trigger_voice(2, BOOT_ARP[s], 0, 260, 620, 780, 0b0111);
+        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 240, 780, 620, 0b0111);
 
         self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
         self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
-        self.trigger_voice(6, BOOT_BASS[s], 1, 620, 840, 420, 0b0010);
+        self.trigger_voice(6, BOOT_BASS[s], 1, 560, 860, 420, 0b0110);
         self.trigger_voice(
             7,
             BOOT_BASS[(s + 8) % PATTERN_STEPS],
@@ -416,33 +559,33 @@ impl AudioEngine {
             0b0100,
         );
 
-        self.trigger_voice(8, BOOT_GATE[s], 5, 620, 640, 800, 0b0000);
+        self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
         self.trigger_voice(
             9,
             if s % 8 == 4 { 196 } else { 0 },
             4,
-            620,
+            360,
             760,
             640,
-            0b0100,
+            0b0110,
         );
         self.trigger_voice(
             10,
             if s % 16 == 12 { 660 } else { 0 },
             4,
-            300,
+            220,
             620,
             860,
-            0b0100,
+            0b0110,
         );
         self.trigger_voice(
             11,
-            if s % 8 == 7 { BOOT_ARP[s] } else { 0 },
+            if s % 8 == 7 { BOOT_ARP[s] / 2 } else { 0 },
             3,
-            360,
+            280,
             540,
             860,
-            0b0001,
+            0b0101,
         );
     }
 
@@ -549,7 +692,13 @@ impl AudioEngine {
         let wave = self.read_wave(wave_id, phase_idx);
         let mut sample = wave as i32;
         sample = (sample * vol as i32) >> MIX_SHIFT;
-        sample = (sample * env_gain as i32) >> MIX_SHIFT;
+        let smooth_gain = {
+            let v = &mut self.voices[idx];
+            let sg = ((env_gain as u32 + v.prev_env_gain as u32) >> 1) as i32;
+            v.prev_env_gain = env_gain;
+            sg
+        };
+        sample = (sample * smooth_gain) >> MIX_SHIFT;
         sample = self.apply_effects(idx, sample, inst, fx);
 
         let l = (sample * pan_l as i32) >> MIX_SHIFT;
@@ -608,11 +757,12 @@ impl AudioEngine {
         }
 
         if fx & 0b0010 != 0 {
-            out = (out + (out >> 1)) / 2;
+            out = (out * 6 / 5).clamp(-26_000, 26_000);
         }
 
         if fx & 0b0100 != 0 {
-            out = (out >> 8) << 8;
+            v.lp_state += (out - v.lp_state) / 3;
+            out = v.lp_state;
         }
 
         if fx & 0b1000 != 0 {
@@ -652,7 +802,6 @@ impl AudioEngine {
         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
         sign * mag
     }
-}
 
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
@@ -718,5 +867,69 @@ mod tests {
         let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
+        assert!(boot.crest_l_q10 > 1024 && boot.crest_r_q10 > 1024);
+        assert!(game.crest_l_q10 > 1024 && game.crest_r_q10 > 1024);
+        assert_eq!(boot.clipped_l, 0);
+        assert_eq!(boot.clipped_r, 0);
+        assert_eq!(game.clipped_l, 0);
+        assert_eq!(game.clipped_r, 0);
+        assert_eq!(boot.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
+        assert_eq!(game.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
+    }
+
+    #[test]
+    fn same_note_does_not_retrigger_active_voice() {
+        let mut engine = AudioEngine::new(48_000);
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+        engine.voices[0].envelope_state = super::EnvelopeState::Sustain;
+        engine.voices[0].env_counter = 7;
+
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Sustain
+        ));
+        assert_eq!(engine.voices[0].env_counter, 7);
+
+        engine.note_on(0, 294, 0, AudioMode::Boot);
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Attack
+        ));
+        assert_eq!(engine.voices[0].env_counter, 0);
+    }
+
+    #[test]
+    fn boot_voice_density_stays_within_budget() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut max_active = 0usize;
+
+        for step in 0..super::PATTERN_STEPS {
+            engine.pattern_step = step;
+            engine.advance_boot_sequencer();
+            let active = engine
+                .voices
+                .iter()
+                .filter(|voice| voice.pitch > 0 && voice.volume > 0)
+                .count();
+            max_active = max_active.max(active);
+        }
+
+        assert!(max_active <= 9, "max_active={max_active}");
+    }
+
+    #[test]
+    fn boot_beat_step_tracks_sequencer_progression() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut block = [0i16; 2];
+
+        assert_eq!(engine.boot_beat_step(), 0);
+        for expected in 1..=3u8 {
+            for _ in 0..engine.tick_samples {
+                engine.render_block(AudioMode::Boot, &mut block);
+            }
+            assert_eq!(engine.boot_beat_step(), expected % super::PATTERN_STEPS as u8);
+        }
     }
 }
