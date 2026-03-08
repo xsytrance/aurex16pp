@@ -99,6 +99,18 @@ impl PrimeIgnition {
             FB_H as i32,
             rgb555(2, 7, 12),
         );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = meter_x + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(fb, x0, meter_y + 8 - h, x0 + 5, meter_y + 10, c);
+        }
     }
 
     fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
