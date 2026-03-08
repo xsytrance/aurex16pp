@@ -179,6 +179,26 @@ pub struct AudioDiagnostics {
     pub avg_abs_r: i16,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AudioDiagnosticsBaseline {
+    pub sample_rate: u32,
+    pub frames: usize,
+    pub boot: AudioDiagnostics,
+    pub game: AudioDiagnostics,
+}
+
+impl AudioDiagnosticsBaseline {
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"sample_rate\":{},\"frames\":{},\"boot\":{},\"game\":{}}}",
+            self.sample_rate,
+            self.frames,
+            self.boot.to_json(),
+            self.game.to_json()
+        )
+    }
+}
+
 impl AudioDiagnostics {
     pub fn to_json(&self) -> String {
         format!(
@@ -390,8 +410,15 @@ impl AudioEngine {
 
             self.note_on(i, hz, inst as u8, mode);
         }
+    }
 
-        v.env_level
+    pub fn diagnostics_baseline(&self, frames: usize) -> AudioDiagnosticsBaseline {
+        AudioDiagnosticsBaseline {
+            sample_rate: self.sample_rate.max(SAMPLE_RATE_HZ),
+            frames,
+            boot: self.diagnostics_for_frames(AudioMode::Boot, frames),
+            game: self.diagnostics_for_frames(AudioMode::Game, frames),
+        }
     }
 
     fn advance_boot_sequencer(&mut self) {
@@ -652,7 +679,6 @@ impl AudioEngine {
         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
         sign * mag
     }
-}
 
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
@@ -718,5 +744,47 @@ mod tests {
         let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
+    }
+
+    #[test]
+    fn same_note_does_not_retrigger_active_voice() {
+        let mut engine = AudioEngine::new(48_000);
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+        engine.voices[0].envelope_state = super::EnvelopeState::Sustain;
+        engine.voices[0].env_counter = 7;
+
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Sustain
+        ));
+        assert_eq!(engine.voices[0].env_counter, 7);
+
+        engine.note_on(0, 294, 0, AudioMode::Boot);
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Attack
+        ));
+        assert_eq!(engine.voices[0].env_counter, 0);
+    }
+
+    #[test]
+    fn boot_voice_density_stays_within_budget() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut max_active = 0usize;
+
+        for step in 0..super::PATTERN_STEPS {
+            engine.pattern_step = step;
+            engine.advance_boot_sequencer();
+            let active = engine
+                .voices
+                .iter()
+                .filter(|voice| voice.pitch > 0 && voice.volume > 0)
+                .count();
+            max_active = max_active.max(active);
+        }
+
+        assert!(max_active <= 9, "max_active={max_active}");
     }
 }

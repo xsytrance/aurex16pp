@@ -129,6 +129,17 @@ Cartridge resolution failures map to typed rejection reasons (missing/invalid ma
 
 ---
 
+
+### Launch telemetry formatting
+Launch-stage logs are now normalized for host integration rather than Rust debug enums:
+
+- `Launch stage: pending title=<title> cartridge=<id>`
+- `Launch stage: validating title=<title> cartridge=<id>`
+- `Launch stage: ready title=<title> cartridge=<id>`
+- `Launch rejected: reason=<snake_case_reason>`
+
+This keeps telemetry parsing stable for downstream UI/event ingest.
+
 ## 8) Cartridge tooling and validation
 
 `CartridgeRuntime` now includes:
@@ -150,10 +161,12 @@ Key commands:
 - `--audit-cartridges [--json]`
 - `--analyze-cartridges [--json]`
 - `--audio-diagnostics [--boot] [--frames N] [--json]`
+- `--generate-runtime-baseline [--frames N] [--out PATH]`
+- `--docs-sync-check`
 - `--palette-heatmap`
 - `--replay-capture-smoke`
 
-Plus `scripts/preflight.sh` for formatting/check + cartridge audit gate.
+Plus `scripts/preflight.sh` for formatting/check + docs-sync + cartridge audit gate.
 
 ---
 
