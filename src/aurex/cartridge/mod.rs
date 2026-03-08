@@ -44,6 +44,12 @@ pub enum CartridgeResolveError {
     InvalidManifest(String),
 }
 
+#[derive(Debug)]
+pub enum CartridgeResolveError {
+    MissingManifest,
+    InvalidManifest(String),
+}
+
 #[derive(Clone)]
 struct Upload {
     region: VramRegion,
