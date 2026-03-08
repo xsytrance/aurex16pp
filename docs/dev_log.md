@@ -1,3 +1,15 @@
+## 2026-03-08 10:35:00Z — ASU-32 Wavetable Overflow Fix (Deterministic Noise Seed)
+
+### Summary
+Fixed a runtime panic in ASU-32 wavetable generation caused by debug overflow during integer noise seed synthesis.
+
+### Runtime/Tooling
+- Replaced overflowing `i32` multiply in noise seed generation with explicit wrapping `u32` arithmetic.
+- Added an audio unit test to ensure ASU-32 initialization/render path does not panic under debug overflow checks.
+
+### Progress
+`cargo run` panic source in ASU-32 wavetable init is resolved while preserving deterministic integer-only behavior.
+
 ## 2026-03-08 10:10:00Z — ASU-32 Audio Engine (48k Stereo / 12 Voices)
 
 ### Summary

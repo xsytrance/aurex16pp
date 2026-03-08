@@ -203,7 +203,8 @@ impl AudioEngine {
             let saw = -32767 + phase * 256;
             let square = if i < 128 { 28000 } else { -28000 };
             let sine = sine_approx(i as u16) as i32;
-            let noise = (((i as i32 * 1103515245 + 12345) >> 16) as i16) as i32;
+            let noise_seed = (i as u32).wrapping_mul(1103515245).wrapping_add(12345);
+            let noise = ((noise_seed >> 16) as i16) as i32;
             let waves = [sine, square, tri, saw, noise];
 
             for wave_id in 0..5 {
@@ -483,6 +484,32 @@ impl AudioEngine {
         let l = pulse;
         let r = pulse * 3 / 4;
         (l, r)
+    }
+}
+
+fn sine_approx(phase: u16) -> i16 {
+    let x = phase as i32;
+    let tri = if x < 128 {
+        -32767 + x * 512
+    } else {
+        32767 - (x - 128) * 512
+    };
+    // Integer parabolic shaping from triangle to pseudo-sine.
+    let abs_t = tri.abs();
+    let shaped = tri * (65535 - abs_t / 2) / 65535;
+    shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AudioEngine, AudioMode};
+
+    #[test]
+    fn wavetable_generation_does_not_overflow_in_debug() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut block = [0i16; 64];
+        engine.render_block(AudioMode::Boot, &mut block);
+        assert!(block.iter().any(|s| *s != 0));
     }
 }
 
