@@ -95,11 +95,12 @@ impl Aurex {
 
     pub fn run(&mut self) -> ! {
         loop {
-            self.run_frame(InputState::default());
+            self.run_frame(InputState::default(), None);
         }
     }
 
-    pub fn run_frame(&mut self, input: InputState) {
+    /// Run one frame. When in Boot mode, pass `boot_beat_step` (e.g. from AudioEngine::pattern_step) to sync overlay pulse with sequencer.
+    pub fn run_frame(&mut self, input: InputState, boot_beat_step: Option<u8>) {
         self.clock.begin_frame();
         self.pdu.begin_frame();
 
@@ -185,7 +186,7 @@ impl Aurex {
         self.ppu.render_frame(&self.vram, &mut self.fb);
 
         match self.mode {
-            RunMode::Boot => self.boot.draw_overlay(&mut self.fb),
+            RunMode::Boot => self.boot.draw_overlay(&mut self.fb, boot_beat_step),
             RunMode::Game => self.library.draw(&mut self.fb, self.ui_frame),
         }
 

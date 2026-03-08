@@ -58,7 +58,7 @@ impl MixProfile {
 
 const SAMPLE_RATE_HZ: u32 = 48_000;
 const AUDIO_RAM_BYTES: usize = 512 * 1024;
-const VOICE_COUNT: usize = 12;
+const VOICE_COUNT: usize = 16;
 const WAVE_SIZE: usize = 256;
 const MIX_SHIFT: i32 = 10;
 const TICK_HZ: u32 = 120;
@@ -209,18 +209,18 @@ const TRACK5: [u16; PATTERN_STEPS] = [
 ];
 
 const BOOT_LEAD: [u16; PATTERN_STEPS] = [
-    262, 294, 330, 392, 440, 392, 330, 294, 262, 294, 330, 349, 392, 349, 330, 294,
+    262, 330, 392, 440, 392, 330, 294, 262, 330, 392, 440, 494, 440, 392, 330, 294,
 ];
 const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
-    392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440,
+    392, 494, 523, 587, 523, 494, 440, 392, 440, 523, 587, 659, 587, 523, 494, 440,
 ];
-const BOOT_BASS: [u16; PATTERN_STEPS] = [
-    65, 65, 65, 65, 73, 73, 73, 73, 82, 82, 82, 82, 73, 73, 65, 65,
-];
+const BOOT_BASS: [u16; PATTERN_STEPS] =
+    [65, 0, 65, 82, 73, 0, 73, 98, 82, 0, 82, 110, 73, 82, 65, 0];
 const BOOT_ARP: [u16; PATTERN_STEPS] = [
-    523, 659, 784, 659, 587, 740, 880, 740, 659, 784, 988, 784, 587, 740, 880, 740,
+    523, 659, 784, 988, 587, 740, 880, 1175, 659, 784, 988, 1319, 587, 740, 988, 1175,
 ];
-const BOOT_GATE: [u16; PATTERN_STEPS] = [55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0];
+const BOOT_GATE: [u16; PATTERN_STEPS] =
+    [55, 0, 55, 72, 55, 0, 55, 84, 55, 0, 55, 72, 55, 84, 55, 0];
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
@@ -355,6 +355,11 @@ impl AudioEngine {
                 ram[idx + 1] = ((s as u16 >> 8) & 0xFF) as u8;
             }
         }
+    }
+
+    /// Current sequencer step (0..PATTERN_STEPS). Used for boot overlay beat sync.
+    pub fn pattern_step(&self) -> usize {
+        self.pattern_step
     }
 
     pub fn trigger_command(&mut self, cmd: RuntimeAudioCommand) {
@@ -553,7 +558,7 @@ impl AudioEngine {
         self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
         self.trigger_voice(
             9,
-            if s % 8 == 4 { 196 } else { 0 },
+            if s % 4 == 2 { 196 } else { 0 },
             4,
             360,
             760,
@@ -562,7 +567,7 @@ impl AudioEngine {
         );
         self.trigger_voice(
             10,
-            if s % 16 == 12 { 660 } else { 0 },
+            if s % 8 == 6 { 740 } else { 0 },
             4,
             220,
             620,
@@ -683,7 +688,10 @@ impl AudioEngine {
         let wave = self.read_wave(wave_id, phase_idx);
         let mut sample = wave as i32;
         sample = (sample * vol as i32) >> MIX_SHIFT;
-        sample = (sample * env_gain as i32) >> MIX_SHIFT;
+        // Anti-click: smooth envelope at boundaries (blend current and previous env_level)
+        let smooth_gain = (env_gain as u32 + self.voices[idx].prev_env_gain as u32) >> 1;
+        self.voices[idx].prev_env_gain = env_gain;
+        sample = (sample * smooth_gain as i32) >> MIX_SHIFT;
         sample = self.apply_effects(idx, sample, inst, fx);
 
         let l = (sample * pan_l as i32) >> MIX_SHIFT;
@@ -752,6 +760,13 @@ impl AudioEngine {
 
         if fx & 0b1000 != 0 {
             out = (out * 3 / 2).clamp(-30_000, 30_000);
+        }
+
+        // Bitcrush: reduce effective bit depth (integer-only quantize)
+        if fx & 0b10000 != 0 {
+            let bits = 6;
+            let step = 1i32 << (16 - bits);
+            out = (out / step).saturating_mul(step);
         }
 
         out
@@ -840,7 +855,8 @@ mod tests {
     #[test]
     fn wavetable_generation_does_not_overflow_in_debug() {
         let mut engine = AudioEngine::new(48_000);
-        let mut block = [0i16; 64];
+        // Run enough frames to advance sequencer (tick every sample_rate/120 samples) and produce non-zero output
+        let mut block = [0i16; 1600];
         engine.render_block(AudioMode::Boot, &mut block);
         assert!(block.iter().any(|s| *s != 0));
     }
