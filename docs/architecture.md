@@ -200,7 +200,8 @@ Input is ignored for scene transitions during timed boot and only accepted in `A
 
 A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
 
-- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
+- `RuntimeEvent::Audio(RuntimeAudioCommand)` is emitted by core system logic.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` captures library launch intent as typed telemetry.
 - Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
 - This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
 
@@ -248,3 +249,131 @@ Current boundaries are now explicit and suitable for team/agent handoff:
    - Owns event buffering and draining semantics.
 4. **Host Dispatch** (`dispatch_runtime_events`)
    - Owns side effects from emitted runtime intents.
+
+
+## Library AV Feedback Pass (2026-03-08 01:08:00Z)
+
+Library runtime now includes explicit launch-feedback channels across visual, audio, and host diagnostics layers:
+
+- Visual: deterministic footer audio meter + launch status pulse tint.
+- Audio: `AudioCue::LaunchRequest` triggers dedicated launch stinger SFX.
+- Architecture: `collect_runtime_diagnostics(&[RuntimeEvent]) -> RuntimeDiagnostics` centralizes non-audio event interpretation for host orchestration.
+
+This keeps scene simulation deterministic while improving UX clarity and reducing host-loop branching noise.
+
+
+## Launch Intent Lifecycle (2026-03-08 01:37:00Z)
+
+Library launch flow now has bidirectional intent states:
+- Request: `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)`
+- Clear: `RuntimeEvent::TitleLaunchCanceled`
+
+Audio intent cues now distinguish user actions:
+- `AudioCue::LaunchRequest`
+- `AudioCue::Cancel`
+
+Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centralized.
+
+
+## Launch Domain Controller (2026-03-08 02:02:00Z)
+
+Launch orchestration now includes a dedicated runtime domain component:
+- `LaunchIntentController`
+- `LaunchStage::{Idle, Pending, Validating, Ready, Rejected}`
+
+Core scene update emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions, and host loop consumes this through `RuntimeDiagnostics`.
+
+
+## LLM Cartridge SDK Contract (2026-03-08 02:28:00Z)
+
+Aurex is explicitly designed for structured LLM cartridge generation.
+
+Canonical authoring docs:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+
+Runtime launch descriptors now include both display and build identity:
+- `title`
+- `cartridge_id`
+
+This keeps host/runtime launch orchestration aligned with deterministic, prompt-structured cartridge output.
+
+
+## Launch Descriptor Validation (2026-03-08 02:56:00Z)
+
+Launch requests now pass deterministic descriptor validation before stage transition:
+- `validate_launch_descriptor(LaunchDescriptor)`
+- rejection telemetry: `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`
+
+This is a pre-validation guardrail for future cartridge loading stages.
+
+
+## Launch Ready Stage (2026-03-08 03:22:00Z)
+
+Runtime now emits explicit readiness telemetry:
+- `RuntimeEvent::TitleLaunchReady(LaunchDescriptor)`
+
+This event is intended as the future handoff trigger to cartridge boot/runtime attach policy.
+
+
+## Launch Resolver Gate (2026-03-08 03:44:00Z)
+
+After validation reaches `Ready`, runtime performs cartridge resolution by `cartridge_id`:
+- success emits `RuntimeEvent::TitleLaunchResolved(LaunchDescriptor)`
+- failure transitions to rejected state and emits launch rejection telemetry
+
+This prevents host boot handoff from firing on unresolved cartridge IDs.
+
+
+Resolver failures now distinguish missing manifests from invalid manifests; invalid manifests map to `CartridgeManifestInvalid` rejection telemetry.
+
+
+## Human Authoring Guide (2026-03-08 04:22:00Z)
+
+A human-facing cartridge authoring guide now complements the LLM SDK docs:
+- `docs/human_game_creation_guide.md`
+
+Purpose:
+- help designers/producers request LLM-generated games using the same strict contract and hardware limits
+- keep human workflow aligned with deterministic runtime constraints
+
+
+---
+
+## 2026-03-08 Canon Refresh (Palette + AV Direction)
+
+### Graphics updates now in force
+- Palette storage expanded to **4096 RGB555 entries**.
+- Legacy compatibility preserved: the first 256 palette entries initialize exactly as before.
+- Sprite palette reference is now a base index (`u16` domain behavior).
+- BG tilemap palette select now uses bits **10..13** (16 banks).
+- Deterministic scanline renderer model remains unchanged.
+- Tile and sprite payload formats remain unchanged.
+
+### Audio positioning vs Neo-Geo
+Current Aurex audio is deterministic integer ASU-32 synthesis (48 kHz stereo, 12 voices, 512 KB audio RAM).
+
+Near-term upgrade path (still within Aurex vision):
+1. Deterministic 12-voice engine with fixed-point stereo pan/mix.
+2. Pattern-instrument envelope table (attack/decay/sustain/release presets as integer lookups).
+3. Track macro sequencing (per-title motif blocks) with zero runtime allocation.
+4. Integer-only per-voice FX (delay/echo/bitcrush/distortion) under deterministic budgets.
+
+### Vision discipline
+Goal is “better than Neo-Geo in curated presentation consistency and deterministic tooling,” not by removing constraints.
+
+
+## Audio Upgrade Increment (2026-03-08 Phase 2)
+
+Implemented in runtime audio path:
+- deterministic envelope shaping for major lanes
+- explicit low-end support via sub lane
+- zero-allocation per-sample synthesis path retained
+
+This improves perceived production depth without changing core deterministic constraints or introducing floating-point math.
+
+
+## Neo-Geo Comparison Planning
+
+- Reference: `docs/aurex_vs_neo_geo.md`
+- Planning rule: improvements should maintain or exceed Neo-Geo-class outcomes in each category (graphics richness, audio identity, runtime robustness, developer tooling) while preserving Aurex deterministic constraints.
