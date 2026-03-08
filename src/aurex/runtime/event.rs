@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::launch::{LaunchDescriptor, LaunchStage, LaunchValidationError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
