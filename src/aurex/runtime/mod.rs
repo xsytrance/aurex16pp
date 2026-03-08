@@ -9,7 +9,7 @@ mod replay;
 
 pub use flow::{FlowController, FlowPhase};
 
-pub use audio::{AudioEngine, AudioMode};
+pub use audio::{AudioEngine, AudioMode, MixProfile};
 
 pub use input::poll_input;
 
