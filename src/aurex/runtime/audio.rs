@@ -205,26 +205,6 @@ impl AudioDiagnosticsBaseline {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct AudioDiagnosticsBaseline {
-    pub sample_rate: u32,
-    pub frames: usize,
-    pub boot: AudioDiagnostics,
-    pub game: AudioDiagnostics,
-}
-
-impl AudioDiagnosticsBaseline {
-    pub fn to_json(&self) -> String {
-        format!(
-            "{{\"sample_rate\":{},\"frames\":{},\"boot\":{},\"game\":{}}}",
-            self.sample_rate,
-            self.frames,
-            self.boot.to_json(),
-            self.game.to_json()
-        )
-    }
-}
-
 impl AudioDiagnostics {
     pub fn to_json(&self) -> String {
         format!(
