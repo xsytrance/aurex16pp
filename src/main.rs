@@ -1,10 +1,9 @@
 mod aurex;
 
-use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
-    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, dispatch_runtime_events,
-    poll_input, present_frame,
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, collect_runtime_diagnostics,
+    dispatch_runtime_events, poll_input, present_frame,
 };
 use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
@@ -119,10 +118,18 @@ fn main() {
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
 
-        for event in &runtime_events {
-            if let aurex::runtime::RuntimeEvent::SceneChanged(scene) = event {
-                println!("Scene changed: {:?}", scene);
-            }
+        let diagnostics = collect_runtime_diagnostics(&runtime_events);
+        if let Some(scene) = diagnostics.scene_changed {
+            println!("Scene changed: {:?}", scene);
+        }
+        if let Some(title) = diagnostics.launch_requested {
+            println!("Launch requested: {title}");
+        }
+        if diagnostics.launch_canceled {
+            println!("Launch request cleared");
+        }
+        if let Some(stage) = diagnostics.launch_stage_changed {
+            println!("Launch stage: {:?}", stage);
         }
 
         dispatch_runtime_events(&mut synth, &runtime_events);
