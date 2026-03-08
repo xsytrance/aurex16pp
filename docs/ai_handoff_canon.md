@@ -327,6 +327,16 @@ END OF CANON
   - `RuntimeEvent::TitleLaunchCanceled`
 - Audio cue set now includes explicit cancel intent (`AudioCue::Cancel`).
 
+
+
+## Launch Stage Canon (2026-03-08 02:02:00Z)
+
+- Launch intent now has an explicit runtime stage domain:
+  - `LaunchStage::Idle`
+  - `LaunchStage::Pending(&'static str)`
+- Stage transitions emit `RuntimeEvent::LaunchStageChanged(LaunchStage)`.
+- Library HUD presents pending stage visually (`PENDING` marker + boosted meter bars).
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
@@ -339,6 +349,7 @@ Event contract:
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
 - `RuntimeEvent::TitleLaunchRequested(&'static str)` for explicit library launch intent.
 - `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
+- `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.

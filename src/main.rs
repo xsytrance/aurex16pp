@@ -128,6 +128,9 @@ fn main() {
         if diagnostics.launch_canceled {
             println!("Launch request cleared");
         }
+        if let Some(stage) = diagnostics.launch_stage_changed {
+            println!("Launch stage: {:?}", stage);
+        }
 
         dispatch_runtime_events(&mut synth, &runtime_events);
 

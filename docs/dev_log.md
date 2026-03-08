@@ -1,3 +1,20 @@
+## 2026-03-08 02:02:00Z — Launch Controller Integration + Pending Stage HUD
+
+### Summary
+Integrated a dedicated launch-intent controller and stage-change telemetry while extending library HUD to reflect pending launch stage.
+
+### Architecture
+- Added runtime launch domain component: `LaunchIntentController` with `LaunchStage::{Idle, Pending(&'static str)}`.
+- Core now routes request/cancel through controller and emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions.
+- Runtime diagnostics now includes `launch_stage_changed` for centralized host interpretation.
+
+### Graphics
+- Library footer now shows a `PENDING` indicator when launch intent is armed.
+- Audio meter bars gain additional height while pending to make stage state visible without relying on logs.
+
+### Progress
+Launch intent has moved from ad-hoc booleans toward explicit runtime domain state, preparing clean attachment of cartridge validation/boot steps.
+
 ## 2026-03-08 01:37:00Z — Launch Intent Lifecycle Pass (Cancel Path + Cue Split)
 
 ### Summary

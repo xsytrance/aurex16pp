@@ -1,3 +1,4 @@
+use super::launch::LaunchStage;
 use crate::aurex::game::AudioCue;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -12,6 +13,7 @@ pub enum RuntimeEvent {
     SceneChanged(SceneId),
     TitleLaunchRequested(&'static str),
     TitleLaunchCanceled,
+    LaunchStageChanged(LaunchStage),
 }
 
 pub struct RuntimeEventQueue {

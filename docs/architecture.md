@@ -273,3 +273,12 @@ Audio intent cues now distinguish user actions:
 - `AudioCue::Cancel`
 
 Host loop consumes these via `RuntimeDiagnostics` to keep orchestration centralized.
+
+
+## Launch Domain Controller (2026-03-08 02:02:00Z)
+
+Launch orchestration now includes a dedicated runtime domain component:
+- `LaunchIntentController`
+- `LaunchStage::Idle | LaunchStage::Pending(&'static str)`
+
+Core scene update emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions, and host loop consumes this through `RuntimeDiagnostics`.

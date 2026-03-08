@@ -117,6 +117,7 @@ pub struct LibraryScreen {
     prev_accept: bool,
     prev_cancel: bool,
     launch_flash_frames: u8,
+    launch_pending: bool,
     status_message: StatusMessage,
 }
 
@@ -157,6 +158,7 @@ impl LibraryScreen {
             prev_accept: false,
             prev_cancel: false,
             launch_flash_frames: 0,
+            launch_pending: false,
             status_message: StatusMessage::idle(),
         }
     }
@@ -167,6 +169,22 @@ impl LibraryScreen {
 
     pub fn current_title(&self) -> &'static str {
         PROFILES[self.selected].title
+    }
+
+    pub fn set_launch_pending(&mut self, pending: bool) {
+        self.launch_pending = pending;
+        if pending {
+            self.status_message = StatusMessage {
+                text: "LAUNCH INTENT ARMED",
+                tint: PROFILES[self.selected].theme,
+            };
+        } else if self.launch_flash_frames == 0 {
+            if !self.launch_pending {
+                if !self.launch_pending {
+                    self.status_message = StatusMessage::idle();
+                }
+            }
+        }
     }
 
     pub fn update(&mut self, input: InputState) -> LibraryUpdate {
@@ -181,12 +199,16 @@ impl LibraryScreen {
         if input.up && !self.prev_up {
             self.selected = (self.selected + PROFILES.len() - 1) % PROFILES.len();
             cue = self.current_audio_cue();
-            self.status_message = StatusMessage::idle();
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
         }
         if input.down && !self.prev_down {
             self.selected = (self.selected + 1) % PROFILES.len();
             cue = self.current_audio_cue();
-            self.status_message = StatusMessage::idle();
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
         }
 
         if input.accept && !self.prev_accept {
@@ -203,7 +225,9 @@ impl LibraryScreen {
             launch_canceled = true;
             cue = AudioCue::Cancel;
             self.launch_flash_frames = 0;
-            self.status_message = StatusMessage::idle();
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
         }
 
         self.prev_up = input.up;
@@ -364,6 +388,10 @@ impl LibraryScreen {
         );
 
         self.draw_audio_meter(fb, profile, frame);
+
+        if self.launch_pending {
+            self.draw_text(fb, "PENDING", 358, 198, 1, rgb555(28, 28, 10));
+        }
     }
 
     fn draw_audio_meter(&self, fb: &mut Framebuffer, profile: TitleProfile, frame: u64) {
@@ -383,6 +411,9 @@ impl LibraryScreen {
         for bar in 0..bars {
             let wave = (((frame >> 1) as i32 + bar * 3) & 15) - 7;
             let mut h = 3 + wave.abs();
+            if self.launch_pending {
+                h += 2;
+            }
             if bar == (self.selected as i32 + (frame as i32 >> 3)) % bars {
                 h += 2;
             }
