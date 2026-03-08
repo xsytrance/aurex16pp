@@ -233,3 +233,30 @@ Core objects:
 Responsibilities:
 - Emit explicit scene transition telemetry
 - Keep scene lifecycle observable at host/runtime layer
+
+
+## LLM SDK / Cartridge Authoring
+
+Files:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+- `docs/human_game_creation_guide.md`
+- `src/aurex/runtime/launch.rs`
+
+Core objects:
+- `LaunchDescriptor { title, cartridge_id }`
+- `LaunchStage`
+- `LaunchIntentController`
+
+Responsibilities:
+- enforce prompt-structured cartridge authoring expectations
+- bridge library selection to cartridge identity (`cartridge_id`)
+- provide deterministic launch lifecycle domain state
+
+- Launch validation: `validate_launch_descriptor` + `TitleLaunchRejected` telemetry prior to pending stage.
+
+- Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.
+
+- Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.
+
+- Manifest identity enforcement: `game_id` must exist and match requested `cartridge_id` during resolve gate.
