@@ -1,250 +1,174 @@
 # AUREX-16++ Architecture
 
-Aurex-16++ is a deterministic 2D fantasy console designed to be:
+_Last updated: 2026-03-08 (post PrimeAwakens + ASU-32 boot-audio stabilization)._
 
-- Hardware-inspired
-- Strictly constrained
-- LLM-friendly
-- Deterministic
-- 60 FPS fixed
-- Integer-only rendering
-- 2D-only (no 3D pipeline)
+## 1) System intent
 
----
+Aurex-16++ is a deterministic 2D fantasy console with hardware-style constraints:
 
-# Core System Overview
+- Fixed timestep: 60 FPS.
+- Integer-only core simulation/rendering/audio math.
+- Strict memory and DMA budgets.
+- Host-facing typed runtime events for scene/audio/launch diagnostics.
+- Cartridge-facing deterministic contracts for authoring and validation.
 
-## Frame Model
-
-- 60 FPS fixed timestep
-- Deterministic execution
-- No floating point in core rendering
-- Frame-based hardware-style pipeline
+The runtime is intentionally "fantasy hardware," not a general-purpose engine.
 
 ---
 
-# Memory Layout
+## 2) Runtime frame pipeline
 
-## WRAM
+Per frame (`Aurex::run_frame`):
 
-- 512 KB
+1. Begin frame clocks (`Clock`, `Pdu`).
+2. Clear framebuffer.
+3. Begin DMA frame and run VM frame.
+4. Execute scene update:
+   - `Boot` mode: `PrimeAwakens::update`.
+   - `Game` mode: `LibraryScreen::update` + launch intent validation/lifecycle updates.
+5. Render PPU frame into framebuffer.
+6. Draw scene overlay:
+   - `PrimeAwakens` visuals in boot.
+   - Library UI in game.
+7. Ingest PPU and DMA telemetry into PDU.
+8. End frame and advance UI frame counter.
 
-## VRAM
-
-- 1 MB total
-- Partitioned into:
-  - BG tile data
-  - Sprite tile data
-  - Tilemaps
-  - Palettes
-
-## Palette Format
-
-- RGB555
-- Little-endian
-- First 256 entries active
-- Deterministic integer math only
+This order is deterministic and stable across runs.
 
 ---
 
-# Graphics Subsystem (PPU)
+## 3) Memory and addressing
 
-## Background Layer (BG0)
+### WRAM
+- 512 KB.
 
-- 64x64 tilemap
-- 8x8 tiles
-- 4bpp packed format (32 bytes per tile)
-- Tilemap entry (u16):
-  - 0..9 tile_index
-  - 10..11 palette select (4 banks)
-  - 12 hflip
-  - 13 vflip
-  - 14..15 priority (reserved)
+### VRAM
+- 1 MB total.
+- Regioned layout with hard bounds checks in VRAM/DMA paths.
+- Palette capacity expanded to 4096 RGB555 entries while preserving legacy compatibility assumptions for older content.
 
-### BG Rendering Rules
-
-- Rendered first
-- Scroll registers supported (bg0_scroll_x / bg0_scroll_y)
-- Deterministic scanline rendering
-- No floating point
+### Audio RAM
+- 512 KB, isolated from VRAM domains.
+- Used by ASU-32 wavetable data.
 
 ---
 
-## Sprite System
+## 4) Graphics architecture (PPU)
 
-### Sprite Format
+### Resolution and format
+- Native framebuffer: 426x240.
+- Pixel format: RGB555.
 
-Each sprite contains:
+### BG pipeline
+- Tile-based BG layers.
+- Integer-only address + palette lookup paths.
+- Palette-bank handling updated for expanded palette space.
 
-- x (u16)
-- y (u16)
-- tile_index (u16)
-- palette (u8)
-- priority (u8)
-- visible (bool)
-- blend (BlendMode)
-
-### Sprite Tile Format
-
-- 8x8
-- 4bpp packed
-- 32 bytes per tile
-- Color index 0 = transparent
+### Sprite pipeline
+- Deterministic scanline evaluation.
+- Overflow latching/telemetry exposed to runtime/PDU.
+- Priority and blend semantics are explicit in PPU codepaths.
 
 ---
 
-## Sprite Pipeline
+## 5) Audio architecture (ASU-32 runtime path)
 
-### Scanline Evaluation
+`AudioEngine` provides deterministic, integer-only synthesis:
 
-- Per-scanline sprite selection
-- Maximum 8 sprites per scanline
-- Additional sprites trigger overflow
+- 48 kHz stereo output.
+- 12 voices.
+- Wavetable generation at startup in Audio RAM.
+- Envelope stages: Attack / Decay / Sustain / Release.
+- Runtime commands:
+  - `PlayTrack(track_id)`
+  - `PlaySfx(Launch|Cancel|Confirm)`
+  - `StopTrack`
 
-### Overflow Tracking
+### Boot audio mode
+Boot now uses a dedicated sequencer branch (`advance_boot_sequencer`) with curated voice placement and FX, separate from game track sequencing.
 
-- `sprite_overflow_latched` (per frame)
-- `sprite_overflow_scanlines` (counter)
+### Boot fuzz regression root cause + fix
+After the ASU-32 upgrade, fuzziness came from envelope hard-retrigger behavior on stable notes plus over-dense noise/percussion layering. The fix:
 
-### Priority Sorting
+- Skip envelope retrigger when note+instrument remain unchanged on active voices.
+- Preserve release behavior on note-off.
+- Keep phase reset only on true off->on transitions.
+- Reduce harsh boot percussion/fx density.
 
-- Sprites sorted by priority (low first)
-- Composited after BG
-
----
-
-## Blending System
-
-### Supported Blend Modes
-
-- Normal (overwrite)
-- Additive
-
-### Additive Blending
-
-- RGB555 channel-wise add
-- Clamp per channel (0–31)
-- No overflow
-- Deterministic
-- Integer-only math
+This produced smoother sustained timbre without removing boot energy.
 
 ---
 
-# Current Rendering Order
+## 6) Typed runtime events and host diagnostics
 
-1. BG0 rendered
-2. Sprites composited in priority order
-3. Blend mode applied per pixel
+Runtime emits typed events consumed by host loop diagnostics, including:
 
----
+- Scene transitions.
+- Audio command events.
+- Launch lifecycle events:
+  - request
+  - canceled
+  - stage changed
+  - ready
+  - resolved
+  - rejected
 
-# Current Limitations (Intentional)
-
-- Only one background layer (BG0)
-- No sprite flipping yet
-- No sprite scaling
-- No affine transforms
-- No window layers
-- No multi-layer priority system
-- No alpha blending (only additive)
-- No hardware register abstraction yet
+`collect_runtime_diagnostics` converts event streams into host-readable snapshots.
 
 ---
 
-# Development Status
+## 7) Launch lifecycle domain
 
-PPU Phase 1: COMPLETE
+Launch flow is explicit and validated:
 
-The core 2D rendering pipeline is operational, deterministic, and stable.
+- `LaunchDescriptor` identity payload (`title`, `cartridge_id`, `track_id`, etc.).
+- `validate_launch_descriptor` enforces structural checks.
+- `LaunchIntentController` drives deterministic stage transitions.
 
-Next milestones will expand capability without breaking determinism.
-
----
-
-# Design Philosophy
-
-Aurex-16++ aims to:
-
-- Be superior to SNES/Genesis in flexibility
-- Remain below PS1 complexity
-- Encourage creative constraint
-- Support LLM-generated cartridges under hardware-style limits
-- Prioritize readability, determinism, and performance
-
+Cartridge resolution failures map to typed rejection reasons (missing/invalid manifest).
 
 ---
 
-## Library Runtime Domain (2026-03-08 update)
+## 8) Cartridge tooling and validation
 
-A dedicated title-profile domain now drives the library scene:
+`CartridgeRuntime` now includes:
 
-- `TitleProfile` = title text + audio track id + color theme + icon kind.
-- Library selection is now a stateful domain event source.
-- Selection changes emit `AudioCue::SelectTrack(track_id)`.
-- Audio runtime resolves per-title songs by `track_id` (6 title-specific patterns).
+- Manifest parsing/validation.
+- Identity checks (e.g. `game_id` consistency).
+- Upload budget checks.
+- Overlap/bounds analysis.
+- Audit and analyze report generation.
 
-This keeps UI theming and soundtrack policy data-driven instead of hardcoded across unrelated modules.
+CLI flags in `main.rs` expose deterministic tooling entrypoints for local/CI diagnostics.
 
+---
 
-## Boot Gate Architecture (2026-03-08)
+## 9) Tooling entrypoints
 
-Boot flow is now strictly non-interruptible:
-- Phase 1: Timed boot cinematic (`FlowPhase::Boot`).
-- Phase 2: Gate screen on same boot scene (`FlowPhase::AwaitStart`).
-- Phase 3: Library runtime (`FlowPhase::Game`).
+Key commands:
 
-Input is ignored for scene transitions during timed boot and only accepted in `AwaitStart` for an explicit Start press.
+- `--audit-cartridges [--json]`
+- `--analyze-cartridges [--json]`
+- `--audio-diagnostics [--boot] [--frames N] [--json]`
+- `--palette-heatmap`
+- `--replay-capture-smoke`
 
+Plus `scripts/preflight.sh` for formatting/check + cartridge audit gate.
 
-## Runtime Event Bus (2026-03-08)
+---
 
-A typed runtime event bus is now the handoff boundary between simulation and host runtime orchestration.
+## 10) Current known environment caveat
 
-- `RuntimeEvent::Audio(AudioCue)` is emitted by core system logic.
-- Main loop drains events after `run_frame` and dispatches side effects (audio synth triggers).
-- This removes direct audio-cue polling from the core API and prepares for additional event classes (UI, telemetry, cartridge).
+In minimal Linux containers without system SDL2, `cargo check` succeeds but link-dependent `cargo test`/`cargo run` can fail at link stage. This is an environment dependency issue, not a deterministic core logic issue.
 
+---
 
-## Event Queue Component (2026-03-08)
+## 11) Handoff checklist
 
-Runtime events now flow through a dedicated queue object (`RuntimeEventQueue`) instead of raw vectors in core state.
+Before further feature work:
 
-- Queue owns event buffering and drain semantics.
-- `Aurex` emits intents to queue.
-- Host loop drains queue and executes side effects.
-
-This formalizes event transport as a reusable core component for future channels.
-
-
-## Runtime Dispatch Primitive (2026-03-08)
-
-A runtime-level dispatch helper now applies side effects from drained events:
-
-- `dispatch_runtime_events(AudioEngine, &[RuntimeEvent])`
-
-This centralizes host-side dispatch policy and keeps the main loop focused on lifecycle orchestration.
-
-
-## Scene Transition Telemetry (2026-03-08)
-
-Runtime now emits explicit scene transition events via the event bus:
-
-- `RuntimeEvent::SceneChanged(SceneId)`
-- Current scenes:
-  - `SceneId::Boot`
-  - `SceneId::Library`
-
-Core emits transition intent; host loop may log/route diagnostics or future UI overlays without touching scene internals.
-
-## Handoff-Ready Runtime Boundaries
-
-Current boundaries are now explicit and suitable for team/agent handoff:
-
-1. **Flow Policy** (`FlowController`)
-   - Owns transition timing and gates.
-2. **Scene Simulation** (`Aurex` core)
-   - Owns deterministic frame update/render.
-3. **Event Transport** (`RuntimeEventQueue`)
-   - Owns event buffering and draining semantics.
-4. **Host Dispatch** (`dispatch_runtime_events`)
-   - Owns side effects from emitted runtime intents.
+1. Run preflight (`scripts/preflight.sh`).
+2. Run `--audio-diagnostics --boot --frames 48000 --json` and compare against prior baselines.
+3. Run cartridge audit/analyze in JSON mode and diff outputs.
+4. Verify launch event telemetry in logs for request->stage->ready->resolved path.
+5. Keep canonical docs synchronized (`ai_handoff_canon.md`, `arch_index.md`, `dev_log.md`, `test_log.md`).
