@@ -86,7 +86,6 @@ impl PrimeIgnition {
             );
             fill_rect(fb, 0, y, FB_W as i32, y + 1, c);
         }
-    }
 
         for lane in -8..=8i32 {
             let base_x = FB_W as i32 / 2 + lane * 28;
