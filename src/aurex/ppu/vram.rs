@@ -15,7 +15,8 @@ const BG_TILES_BYTES: usize = 384 * 1024;
 const TILEMAP_BYTES: usize = 64 * 64 * 2;
 const SPRITE_TILES_BYTES: usize = 384 * 1024;
 const MODE7_TEX_BYTES: usize = 64 * 1024;
-const PALETTE_BYTES: usize = 16 * 1024;
+pub const MAX_PALETTE_ENTRIES: usize = 4096;
+pub const PALETTE_BYTES: usize = MAX_PALETTE_ENTRIES * 2;
 const RESERVED_BYTES: usize = 64 * 1024;
 
 const VRAM_TOTAL_BYTES: usize = BG_TILES_BYTES
@@ -152,13 +153,23 @@ pub struct Vram {
 
 impl Vram {
     pub fn new() -> Self {
+        let mut palettes = vec![0u8; PALETTE_BYTES].into_boxed_slice();
+
+        // Backward compatibility: preserve the exact startup values for the
+        // legacy 256-entry palette range.
+        for entry in 0..256usize {
+            let offset = entry * 2;
+            palettes[offset] = 0;
+            palettes[offset + 1] = 0;
+        }
+
         let v = Self {
             bg_tiles: vec![0u8; BG_TILES_BYTES].into_boxed_slice(),
             bg0_tilemap: vec![0; 64 * 64 * 2],
             bg1_tilemap: vec![0; 64 * 64 * 2],
             sprite_tiles: vec![0u8; SPRITE_TILES_BYTES].into_boxed_slice(),
             mode7_tex: vec![0u8; MODE7_TEX_BYTES].into_boxed_slice(),
-            palettes: vec![0u8; PALETTE_BYTES].into_boxed_slice(),
+            palettes,
             reserved: vec![0u8; RESERVED_BYTES].into_boxed_slice(),
         };
 
@@ -223,6 +234,39 @@ impl Vram {
             // Audio RAM does not belong to PPU
             VramRegion::AudioRam => panic!("AudioRam accessed through PPU VRAM"),
         }
+    }
+
+    pub fn bg0_palette_bank_heatmap(&self) -> [u32; 16] {
+        let mut heatmap = [0u32; 16];
+        for chunk in self.bg0_tilemap.chunks_exact(2) {
+            let entry = u16::from_le_bytes([chunk[0], chunk[1]]);
+            let bank = ((entry >> 10) & 0x0F) as usize;
+            heatmap[bank] = heatmap[bank].saturating_add(1);
+        }
+        heatmap
+    }
+
+    pub fn bg0_palette_bank_heatmap_json(&self) -> String {
+        let h = self.bg0_palette_bank_heatmap();
+        format!(
+            "{{\"bank0\":{},\"bank1\":{},\"bank2\":{},\"bank3\":{},\"bank4\":{},\"bank5\":{},\"bank6\":{},\"bank7\":{},\"bank8\":{},\"bank9\":{},\"bank10\":{},\"bank11\":{},\"bank12\":{},\"bank13\":{},\"bank14\":{},\"bank15\":{}}}",
+            h[0],
+            h[1],
+            h[2],
+            h[3],
+            h[4],
+            h[5],
+            h[6],
+            h[7],
+            h[8],
+            h[9],
+            h[10],
+            h[11],
+            h[12],
+            h[13],
+            h[14],
+            h[15]
+        )
     }
 
     pub fn region_mut(&mut self, region: &VramRegion) -> &mut [u8] {

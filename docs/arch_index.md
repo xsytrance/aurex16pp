@@ -101,17 +101,18 @@ Hardware limits locked.
 
 ---
 
-## AUDIO SYSTEM (ASU)
+## AUDIO SYSTEM
 
-File:
+Files:
 
-- src/aurex/asu/
+- `src/aurex/runtime/audio.rs`
+- `src/aurex/runtime/event.rs` (RuntimeAudioCommand / AudioSfx contract)
 
 Core:
 
-- Voice
-- Envelope
-- Sequencer
+- `AudioEngine`
+- deterministic ASU-32 voice synthesis (12 voices, fixed-point stereo)
+- runtime-command-driven SFX (`PlaySfx(Launch|Cancel|Confirm)`)
 
 Integer-only audio logic required.
 
@@ -175,6 +176,21 @@ prime_ignition.rs - Boot cinematic sequence - DMA glyph upload - Temporary visua
 END OF INDEX
 
 
+
+## BOOT + LIBRARY AV UPGRADE (2026-03-08)
+
+Files:
+- `src/aurex/boot/prime_ignition.rs`
+- `src/aurex/game/library.rs`
+- `src/aurex/runtime/audio.rs`
+- `docs/boot_library_upgrade.md`
+
+Highlights:
+- Boot intro now uses a hypnotic tunnel/equalizer stack and EDM-styled prompt timing.
+- Library title metadata now includes per-title BPM/style/tag for stronger audio-visual identity.
+- ASU-32 track table expanded to 6 deterministic tracks so each dummy title can map 1:1 to a unique pattern.
+
+---
 ## LIBRARY DOMAIN
 
 Files:
@@ -183,12 +199,12 @@ Files:
 
 Core model:
 - `TitleProfile`
-- `AudioCue::SelectTrack`
+- runtime audio command emission (`PlayTrack`)
 
 Responsibilities:
-- Own title metadata (theme/icon/track)
-- Emit title-selection cues to runtime audio
-- Render placeholder library UI with per-title styling
+- Own title metadata (theme/icon/track/cartridge identity)
+- Emit deterministic selection/launch/cancel intent for runtime dispatch
+- Render library UI with deterministic status/pending feedback
 
 
 ## RUNTIME EVENT BUS
@@ -233,3 +249,66 @@ Core objects:
 Responsibilities:
 - Emit explicit scene transition telemetry
 - Keep scene lifecycle observable at host/runtime layer
+
+
+## LLM SDK / Cartridge Authoring
+
+Files:
+- `docs/llm_sdk_guide.md`
+- `docs/llm_prompt_template.md`
+- `docs/human_game_creation_guide.md`
+- `src/aurex/runtime/launch.rs`
+
+Core objects:
+- `LaunchDescriptor { title, cartridge_id }`
+- `LaunchStage`
+- `LaunchIntentController`
+
+Responsibilities:
+- enforce prompt-structured cartridge authoring expectations
+- bridge library selection to cartridge identity (`cartridge_id`)
+- provide deterministic launch lifecycle domain state
+
+- Launch validation: `validate_launch_descriptor` + `TitleLaunchRejected` telemetry prior to pending stage.
+
+- Launch readiness telemetry: `TitleLaunchReady(LaunchDescriptor)` emitted after deterministic validation stage completion.
+
+- Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.
+
+- Manifest identity enforcement: `game_id` must exist and match requested `cartridge_id` during resolve gate.
+
+
+## Technical Specification Reference
+
+Files:
+- `docs/tech_spec_report.md`
+
+Purpose:
+- single-page consolidated hardware/runtime capability report for operators and handoff consumers
+
+
+## PLATFORM COMPARISON REFERENCE
+
+Files:
+- `docs/aurex_vs_neo_geo.md`
+
+Purpose:
+- target-position comparison ensuring Aurex vision is >= Neo-Geo while preserving creative constraints
+
+
+## CARTRIDGE AUDIT MODE
+
+Files:
+- `src/main.rs`
+- `src/aurex/cartridge/mod.rs`
+
+Command:
+- `cargo run -- --audit-cartridges`
+- `cargo run -- --audit-cartridges --json`
+- `cargo run -- --analyze-cartridges --json`
+- `cargo run -- --audio-diagnostics --json --frames 48000`
+- `cargo run -- --replay-capture-smoke`
+- `scripts/preflight.sh`
+
+Purpose:
+- deterministic manifest/identity scan for cartridge folders before runtime launch attempts
