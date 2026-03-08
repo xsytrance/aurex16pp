@@ -361,3 +361,13 @@ Near-term upgrade path (still within Aurex vision):
 
 ### Vision discipline
 Goal is “better than Neo-Geo in curated presentation consistency and deterministic tooling,” not by removing constraints.
+
+
+## Audio Upgrade Increment (2026-03-08 Phase 2)
+
+Implemented in runtime audio path:
+- deterministic envelope shaping for major lanes
+- explicit low-end support via sub lane
+- zero-allocation per-sample synthesis path retained
+
+This improves perceived production depth without changing core deterministic constraints or introducing floating-point math.

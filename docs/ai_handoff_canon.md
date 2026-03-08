@@ -424,3 +424,11 @@ Host contract:
 - Quality target: curated style consistency + deterministic reproducibility.
 - Not yet equivalent to Neo-Geo-era multi-chip production depth.
 - Planned upgrades must remain deterministic and budget-bounded.
+
+
+# 12. Audio Lane Canon (2026-03-08 Phase 2)
+
+- Runtime synthesis keeps integer-only deterministic sample generation.
+- Lane model includes bass + sub + lead + arp + percussion accents.
+- Envelope shaping is deterministic per-step (no random drift, no float interpolation).
+- No frame-timing changes were introduced by audio richness pass.

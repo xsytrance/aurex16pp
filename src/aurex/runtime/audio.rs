@@ -6,6 +6,37 @@ pub enum AudioMode {
     Game,
 }
 
+#[derive(Clone, Copy)]
+struct Envelope {
+    attack_div: u32,
+    decay_div: u32,
+    sustain_level: u16,
+    release_div: u32,
+}
+
+const GAIN_ONE: i32 = 1024;
+
+const BASS_ENV: Envelope = Envelope {
+    attack_div: 12,
+    decay_div: 6,
+    sustain_level: 760,
+    release_div: 5,
+};
+
+const LEAD_ENV: Envelope = Envelope {
+    attack_div: 20,
+    decay_div: 7,
+    sustain_level: 680,
+    release_div: 6,
+};
+
+const ARP_ENV: Envelope = Envelope {
+    attack_div: 24,
+    decay_div: 6,
+    sustain_level: 620,
+    release_div: 5,
+};
+
 pub struct AudioEngine {
     sample_clock: u64,
     bass_phase: u32,
@@ -39,6 +70,31 @@ impl AudioEngine {
 
     fn step_from_hz(&self, hz: u32) -> u32 {
         (((hz as u64) << 32) / self.sample_rate as u64) as u32
+    }
+
+    fn apply_gain(sample: i32, gain: i32) -> i32 {
+        (sample * gain) / GAIN_ONE
+    }
+
+    fn envelope_gain(sub: u32, spb: u32, env: Envelope) -> i32 {
+        let attack = (spb / env.attack_div.max(1)).max(1);
+        let decay = (spb / env.decay_div.max(1)).max(1);
+        let release_start = spb.saturating_sub((spb / env.release_div.max(1)).max(1));
+        let sustain = env.sustain_level as i32;
+
+        if sub < attack {
+            ((sub as i32) * GAIN_ONE) / attack as i32
+        } else if sub < attack + decay {
+            let dec_pos = (sub - attack) as i32;
+            let drop = GAIN_ONE - sustain;
+            GAIN_ONE - (drop * dec_pos) / decay as i32
+        } else if sub >= release_start {
+            let rel_len = spb.saturating_sub(release_start).max(1);
+            let rel_pos = (sub - release_start) as i32;
+            (sustain * (rel_len as i32 - rel_pos).max(0)) / rel_len as i32
+        } else {
+            sustain
+        }
     }
 
     pub fn trigger_cue(&mut self, cue: AudioCue) {
@@ -172,16 +228,19 @@ impl AudioEngine {
             .sub_phase
             .wrapping_add(self.step_from_hz((bass_hz / 2).max(20)));
 
-        let bass_wave = if self.bass_phase < 0x8000_0000 {
+        let bass_raw = if self.bass_phase < 0x8000_0000 {
             bass_amp
         } else {
             -bass_amp
         };
-        let sub_wave = if self.sub_phase < 0x8000_0000 {
+        let sub_raw = if self.sub_phase < 0x8000_0000 {
             bass_amp / 3
         } else {
             -(bass_amp / 3)
         };
+        let bass_gain = Self::envelope_gain(sub, spb, BASS_ENV);
+        let bass_wave = Self::apply_gain(bass_raw, bass_gain);
+        let sub_wave = Self::apply_gain(sub_raw, bass_gain);
 
         let lead_hz = lead[step];
         let lead_wave = if lead_hz == 0 {
@@ -200,7 +259,8 @@ impl AudioEngine {
             } else {
                 -(lead_amp / 3)
             };
-            if sub < spb / 2 { pulse } else { pulse / 2 }
+            let raw = if sub < spb / 2 { pulse } else { pulse / 2 };
+            Self::apply_gain(raw, Self::envelope_gain(sub, spb, LEAD_ENV))
         };
 
         let arp_wave = if with_arp {
@@ -209,11 +269,12 @@ impl AudioEngine {
             self.arp_phase = self
                 .arp_phase
                 .wrapping_add(self.step_from_hz(ARP[arp_step]));
-            if self.arp_phase < 0x8000_0000 {
+            let raw = if self.arp_phase < 0x8000_0000 {
                 2200
             } else {
                 -800
-            }
+            };
+            Self::apply_gain(raw, Self::envelope_gain(sub, spb, ARP_ENV))
         } else {
             0
         };

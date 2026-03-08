@@ -55,6 +55,7 @@ This report consolidates current canonical hardware/runtime capabilities into on
   - boot music mode
   - per-title library track selection
   - launch/cancel cue stingers
+  - deterministic envelope-shaped 4-lane style mix (bass/sub/lead/arp + percussion accents)
 - Neo-Geo positioning:
   - current Aurex audio is deterministic and stylistically solid
   - does **not yet** match Neo-Geo multi-voice production depth
@@ -123,3 +124,16 @@ Next capability unlock for “generated games fully runnable”:
 - Tooling:
   - cartridge lint tool enforcing budget + identity + manifest schema
   - golden-frame regression snapshots for deterministic render validation
+
+
+## 14. Additional Suggested Upgrades (Agent Proposals)
+- Deterministic audio
+  - add per-track instrument preset tables (wave mix + envelope profile IDs)
+  - add fixed-point tempo swing table (no random timing drift)
+  - add track-loudness safety normalization pass using integer peak clamps
+- Graphics
+  - add palette bank usage profiler (frame telemetry counters)
+  - add boot/library authored palette scripts (keyframe LUT swaps per frame)
+- Runtime
+  - add deterministic capture/replay for launch + audio + input events
+  - add cartridge static analyzer command that fails builds on budget/schema violations

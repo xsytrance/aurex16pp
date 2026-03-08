@@ -1,3 +1,20 @@
+## 2026-03-08 06:40:00Z — Phase Upgrade: Deterministic Audio Lane Depth + Neo-Geo Gap Closure Plan
+
+### Summary
+Executed next-phase upgrades by implementing deterministic envelope-shaped lane mixing in runtime audio and updating canon documentation with concrete “beat Neo-Geo while constrained” direction.
+
+### Runtime/Audio
+- Added deterministic envelope shaping to core music lane generation.
+- Kept explicit sub lane to thicken low-end response without non-deterministic processing.
+- Preserved integer-only synthesis and zero-allocation inner-loop behavior.
+
+### Documentation
+- Updated SDK, architecture, handoff canon, and tech spec with phase-2 audio capability and roadmap.
+- Added additional suggested upgrade list for deterministic tooling, graphics profiling, and runtime replay/lint systems.
+
+### Progress
+Aurex now has a stronger production-style audio identity while staying inside strict fantasy-console constraints and deterministic architecture rules.
+
 ## 2026-03-08 06:05:00Z — Palette 4096 Canon + AV Direction Refresh + Neo-Geo Positioning
 
 ### Summary
