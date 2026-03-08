@@ -159,18 +159,18 @@ const TRACK5: [u16; PATTERN_STEPS] = [
 ];
 
 const BOOT_LEAD: [u16; PATTERN_STEPS] = [
-    262, 294, 330, 392, 440, 392, 330, 294, 262, 294, 330, 349, 392, 349, 330, 294,
+    262, 330, 392, 440, 392, 330, 294, 262, 330, 392, 440, 494, 440, 392, 330, 294,
 ];
 const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
-    392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440,
+    392, 494, 523, 587, 523, 494, 440, 392, 440, 523, 587, 659, 587, 523, 494, 440,
 ];
-const BOOT_BASS: [u16; PATTERN_STEPS] = [
-    65, 65, 65, 65, 73, 73, 73, 73, 82, 82, 82, 82, 73, 73, 65, 65,
-];
+const BOOT_BASS: [u16; PATTERN_STEPS] =
+    [65, 0, 65, 82, 73, 0, 73, 98, 82, 0, 82, 110, 73, 82, 65, 0];
 const BOOT_ARP: [u16; PATTERN_STEPS] = [
-    523, 659, 784, 659, 587, 740, 880, 740, 659, 784, 988, 784, 587, 740, 880, 740,
+    523, 659, 784, 988, 587, 740, 880, 1175, 659, 784, 988, 1319, 587, 740, 988, 1175,
 ];
-const BOOT_GATE: [u16; PATTERN_STEPS] = [55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0];
+const BOOT_GATE: [u16; PATTERN_STEPS] =
+    [55, 0, 55, 72, 55, 0, 55, 84, 55, 0, 55, 72, 55, 84, 55, 0];
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
@@ -493,7 +493,7 @@ impl AudioEngine {
         self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
         self.trigger_voice(
             9,
-            if s % 8 == 4 { 196 } else { 0 },
+            if s % 4 == 2 { 196 } else { 0 },
             4,
             360,
             760,
@@ -502,7 +502,7 @@ impl AudioEngine {
         );
         self.trigger_voice(
             10,
-            if s % 16 == 12 { 660 } else { 0 },
+            if s % 8 == 6 { 740 } else { 0 },
             4,
             220,
             620,
