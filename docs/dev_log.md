@@ -1,3 +1,21 @@
+## 2026-03-08 04:48:00Z — Consolidated Technical Specification Report
+
+### Summary
+Added a single consolidated technical specification report documenting current system capabilities and operational limits.
+
+### Documentation
+- Added `docs/tech_spec_report.md` covering:
+  - display/FPS
+  - CPU/ops budget
+  - memory and VRAM budgets
+  - DMA limits
+  - audio/input/runtime launch pipeline
+  - cartridge authoring constraints (LLM + human)
+- Added index linkage in `docs/arch_index.md` for discoverability.
+
+### Progress
+This gives a single operator-friendly source for “what the system can do now” while preserving canonical constraints.
+
 ## 2026-03-08 04:22:00Z — Human Game Creation Guide Aligned to LLM SDK Contract
 
 ### Summary

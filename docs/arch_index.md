@@ -260,3 +260,12 @@ Responsibilities:
 - Launch resolver telemetry: `TitleLaunchResolved(LaunchDescriptor)` emitted only when cartridge manifest resolution succeeds.
 
 - Manifest identity enforcement: `game_id` must exist and match requested `cartridge_id` during resolve gate.
+
+
+## Technical Specification Reference
+
+Files:
+- `docs/tech_spec_report.md`
+
+Purpose:
+- single-page consolidated hardware/runtime capability report for operators and handoff consumers
