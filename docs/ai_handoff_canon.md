@@ -371,7 +371,7 @@ END OF CANON
 - `Ready` stage is now followed by deterministic cartridge resolution check by `cartridge_id`.
 - Successful resolution emits `TitleLaunchResolved(LaunchDescriptor)`.
 - Missing cartridge manifests force `Rejected(CartridgeMissing)` before any boot handoff.
-Invalid manifests force `Rejected(CartridgeManifestInvalid)` before any boot handoff.
+- Invalid manifests force `Rejected(CartridgeManifestInvalid)` before any boot handoff.
 
 
 
@@ -408,6 +408,12 @@ Host contract:
 - Keep canon terminology aligned with implementation symbols: `RuntimeAudioCommand`/`AudioSfx`, typed launch lifecycle events, and ASU-32 constraints.
 - For integer math used in runtime table generation, overflow behavior must be explicit (`wrapping_*` / `saturating_*`) to avoid debug/release drift.
 - Canon updates should not include unverifiable environment-specific claims (for example, local full runtime execution when platform link dependencies are absent).
+
+## LLM Instruction Reliability Canon (2026-03-08)
+
+- SDK and prompt template must remain synchronized with hardware caps and runtime command names.
+- Prompt sections are mandatory and ordered; missing section means invalid cartridge authoring request.
+- Authoring outputs should include explicit self-checks for duplicate symbol drift and overflow intent in integer arithmetic.
 
 
 ---

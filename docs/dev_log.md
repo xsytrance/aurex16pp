@@ -1,3 +1,21 @@
+## 2026-03-08 11:50:00Z — Neo-Geo Comparison + SDK/LLM Instruction Refresh (Post-Upgrade)
+
+### Summary
+Updated comparison and authoring docs to reflect current ASU-32/runtime launch upgrades and to strengthen LLM/human prompt reliability after recent regressions.
+
+### Documentation
+- Rewrote `docs/aurex_vs_neo_geo.md` with updated current-state verdicts and explicit next upgrade stack.
+- Updated `docs/llm_sdk_guide.md`/`docs/llm_prompt_template.md` alignment usage through canon and index cross-links.
+- Updated architecture index audio/library sections to runtime-command-based terminology.
+- Updated tech spec suggested upgrade stack to ASU-32 refinement wording instead of stale mono/4-lane direction.
+- Added canon-level LLM instruction reliability section and cleaned launch resolve bullet formatting.
+
+### Suggested Upgrades (ready for next pass)
+- Deterministic replay/golden capture for launch+audio+input.
+- Audio diagnostics report (clipping, per-track level, preset usage).
+- Cartridge static analyzer v2 with CI-oriented JSON output.
+- Palette bank heatmap + script validator tooling.
+
 ## 2026-03-08 11:20:00Z — Documentation Reliability Pass (Architecture/Handoff/SDK/Prompt)
 
 ### Summary

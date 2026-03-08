@@ -120,9 +120,9 @@ Next capability unlock for “generated games fully runnable”:
   - per-title palette animation utilities with deterministic frame scripts
   - richer boot/library scene shaders expressed as integer LUT effects
 - Audio:
-  - explicit 4-lane instrument engine with deterministic ADSR tables
-  - motif sequencer + per-title macro patterns
-  - optional host stereo widener while preserving mono simulation core
+  - ASU-32 refinement pass (instrument authoring table tooling + validation)
+  - deterministic motif sequencer improvements and track macro authoring checks
+  - fixed-point stereo scene balancing diagnostics (no float)
 - Tooling:
   - cartridge lint tool enforcing budget + identity + manifest schema
   - cartridge audit CLI mode: `cargo run -- --audit-cartridges` (or `--json`) for manifest/identity sweep

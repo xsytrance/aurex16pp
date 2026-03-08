@@ -106,13 +106,13 @@ Hardware limits locked.
 Files:
 
 - `src/aurex/runtime/audio.rs`
-- `src/aurex/game/mod.rs` (AudioCue contract)
+- `src/aurex/runtime/event.rs` (RuntimeAudioCommand / AudioSfx contract)
 
 Core:
 
 - `AudioEngine`
-- deterministic envelope lane shaping
-- cue-driven stingers (`LaunchRequest`, `Cancel`)
+- deterministic ASU-32 voice synthesis (12 voices, fixed-point stereo)
+- runtime-command-driven SFX (`PlaySfx(Launch|Cancel|Confirm)`)
 
 Integer-only audio logic required.
 
@@ -184,12 +184,12 @@ Files:
 
 Core model:
 - `TitleProfile`
-- `AudioCue::SelectTrack`
+- runtime audio command emission (`PlayTrack`)
 
 Responsibilities:
-- Own title metadata (theme/icon/track)
-- Emit title-selection cues to runtime audio
-- Render placeholder library UI with per-title styling
+- Own title metadata (theme/icon/track/cartridge identity)
+- Emit deterministic selection/launch/cancel intent for runtime dispatch
+- Render library UI with deterministic status/pending feedback
 
 
 ## RUNTIME EVENT BUS
