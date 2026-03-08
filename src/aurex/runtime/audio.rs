@@ -932,6 +932,29 @@ mod tests {
         assert!(max_active <= 9, "max_active={max_active}");
     }
 
+
+    #[test]
+    fn mix_profiles_produce_ordered_level_deltas() {
+        let soft = AudioEngine::new_with_profile(48_000, super::MixProfile::Soft)
+            .diagnostics_for_frames(AudioMode::Game, 48_000);
+        let default = AudioEngine::new_with_profile(48_000, super::MixProfile::Default)
+            .diagnostics_for_frames(AudioMode::Game, 48_000);
+        let arcade = AudioEngine::new_with_profile(48_000, super::MixProfile::Arcade)
+            .diagnostics_for_frames(AudioMode::Game, 48_000);
+
+        assert!(soft.avg_abs_l <= default.avg_abs_l && default.avg_abs_l <= arcade.avg_abs_l);
+        assert!(soft.avg_abs_r <= default.avg_abs_r && default.avg_abs_r <= arcade.avg_abs_r);
+        assert!(soft.peak_l.abs() <= default.peak_l.abs() && default.peak_l.abs() <= arcade.peak_l.abs());
+        assert!(soft.peak_r.abs() <= default.peak_r.abs() && default.peak_r.abs() <= arcade.peak_r.abs());
+
+        assert_eq!(soft.clipped_l, 0);
+        assert_eq!(soft.clipped_r, 0);
+        assert_eq!(default.clipped_l, 0);
+        assert_eq!(default.clipped_r, 0);
+        assert_eq!(arcade.clipped_l, 0);
+        assert_eq!(arcade.clipped_r, 0);
+    }
+
     #[test]
     fn boot_beat_step_tracks_sequencer_progression() {
         let mut engine = AudioEngine::new(48_000);

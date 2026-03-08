@@ -2,17 +2,17 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (baseline JSON shape regression guard)
+## Latest validation pass (profile-aware diagnostics delta assertions)
 
 ### Commands executed
 
 1. `cargo check --all-targets`
    - Result: PASS
-   - Notes: runtime baseline path compiles after helper extraction (`runtime_baseline_json`).
+   - Notes: runtime and CLI compile clean after profile regression test additions.
 
 2. `cargo check --tests`
    - Result: PASS
-   - Notes: new JSON shape unit test compiles in `main.rs`.
+   - Notes: test targets compile including new profile ordering assertions.
 
 3. `cargo test -q`
    - Result: ENV-LIMITED
@@ -21,6 +21,6 @@ _Last updated: 2026-03-08._
 
 ## Interpretation
 
-- Baseline payload assembly is now centralized and testable.
-- Regression coverage now guards top-level `audio_profile` and nested diagnostics `boot_beat_step` field presence.
+- Regression coverage now explicitly validates deterministic mix-profile loudness ordering (`soft <= default <= arcade`) for diagnostics outputs.
+- Deterministic baseline expectations still include zero clipping in this path.
 - Full binary-linked test execution remains blocked without system SDL2.

@@ -1373,3 +1373,22 @@ Added a focused regression guard for runtime baseline JSON shape so profile meta
 1. Add profile-aware crest/clipping delta assertions to baseline validation flow.
 2. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates.
 3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 19:05:00Z — Fast follow: profile-aware diagnostics delta assertions
+
+### Summary
+Continued planned hardening by adding profile-aware regression assertions to verify deterministic output level ordering across `soft/default/arcade` mix profiles.
+
+### Validation/Tests
+- Added `mix_profiles_produce_ordered_level_deltas` in `runtime/audio` tests.
+- Test checks monotonic ordering of `avg_abs_{l,r}` and `peak_{l,r}` for `Game` diagnostics over a fixed frame window.
+- Test also enforces zero clipping across all three profiles in this deterministic baseline path.
+
+### Progress report
+- Mix profile tuning now has explicit regression protection against accidental coefficient inversions or unintended loudness drift.
+
+### Next planned work
+1. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates end-to-end.
+2. Add a narrow JSON parser/shape assertion for diagnostics payloads beyond string-contains checks.
+3. Continue dead-code allowance cleanup in stabilized modules.
