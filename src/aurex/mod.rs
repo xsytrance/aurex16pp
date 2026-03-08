@@ -1,4 +1,5 @@
 pub mod boot;
+pub mod cartridge;
 pub mod clock;
 pub mod dma;
 pub mod game;
@@ -8,13 +9,27 @@ pub mod runtime;
 pub mod vm32;
 pub mod wram;
 
+use crate::aurex::cartridge::CartridgeRuntime;
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
-use crate::aurex::runtime::{RuntimeEvent, RuntimeEventQueue, SceneId};
-use boot::prime_ignition::PrimeIgnition;
+use crate::aurex::runtime::{
+    AudioSfx, LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeAudioCommand,
+    RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+};
+use boot::prime_awakens::PrimeAwakens;
 use clock::Clock;
 use dma::controller::DmaController;
 use game::{AudioCue, InputState, library::LibraryScreen};
+
+fn to_audio_command(cue: AudioCue) -> Option<RuntimeAudioCommand> {
+    match cue {
+        AudioCue::None => None,
+        AudioCue::SelectTrack(track) => Some(RuntimeAudioCommand::PlayTrack(track)),
+        AudioCue::LaunchRequest => Some(RuntimeAudioCommand::PlaySfx(AudioSfx::Launch)),
+        AudioCue::Cancel => Some(RuntimeAudioCommand::PlaySfx(AudioSfx::Cancel)),
+    }
+}
+
 use pdu::Pdu;
 use ppu::vram::Vram;
 use vm32::core::Vm32;
@@ -34,10 +49,11 @@ pub struct Aurex {
     vram: Vram,
     fb: ppu::framebuffer::Framebuffer,
     ppu: Ppu,
-    boot: PrimeIgnition,
+    boot: PrimeAwakens,
     library: LibraryScreen,
     mode: RunMode,
     events: RuntimeEventQueue,
+    launch: LaunchIntentController,
     ui_frame: u64,
 }
 
@@ -55,10 +71,11 @@ impl Aurex {
             vram,
             fb: ppu::framebuffer::Framebuffer::new(),
             ppu: Ppu::new(),
-            boot: PrimeIgnition::new(),
+            boot: PrimeAwakens::new(),
             library,
             mode: RunMode::Boot,
             events: RuntimeEventQueue::with_capacity(8),
+            launch: LaunchIntentController::new(),
             ui_frame: 0,
         }
     }
@@ -68,7 +85,11 @@ impl Aurex {
         self.events
             .push(RuntimeEvent::SceneChanged(SceneId::Library));
         self.events
-            .push(RuntimeEvent::Audio(self.library.current_audio_cue()));
+            .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlayTrack(0)));
+        self.events
+            .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlaySfx(
+                AudioSfx::Confirm,
+            )));
     }
 
     pub fn run(&mut self) -> ! {
@@ -93,10 +114,70 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                let cue = self.library.update(input);
-                if !matches!(cue, AudioCue::None) {
-                    self.events.push(RuntimeEvent::Audio(cue));
+                let update = self.library.update(input);
+                if let Some(cmd) = to_audio_command(update.audio_cue) {
+                    self.events.push(RuntimeEvent::Audio(cmd));
                 }
+
+                if update.launch_requested {
+                    let req = self.library.current_launch_descriptor();
+                    match validate_launch_descriptor(req) {
+                        Ok(()) => {
+                            if self.launch.request(req) {
+                                self.events.push(RuntimeEvent::TitleLaunchRequested(req));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                        }
+                        Err(reason) => {
+                            self.launch.reject(reason);
+                            self.events.push(RuntimeEvent::TitleLaunchRejected(reason));
+                            self.events
+                                .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                        }
+                    }
+                }
+
+                if update.launch_canceled && self.launch.cancel() {
+                    self.events.push(RuntimeEvent::TitleLaunchCanceled);
+                    self.events
+                        .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                }
+
+                if let Some(stage) = self.launch.tick() {
+                    self.events.push(RuntimeEvent::LaunchStageChanged(stage));
+                    if let LaunchStage::Ready(desc) = stage {
+                        self.events.push(RuntimeEvent::TitleLaunchReady(desc));
+                        match CartridgeRuntime::from_cartridge_id(desc.cartridge_id) {
+                            Ok(_) => {
+                                self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
+                            }
+                            Err(
+                                crate::aurex::cartridge::CartridgeResolveError::MissingManifest,
+                            ) => {
+                                self.launch.reject(LaunchValidationError::CartridgeMissing);
+                                self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                    LaunchValidationError::CartridgeMissing,
+                                ));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                            Err(
+                                crate::aurex::cartridge::CartridgeResolveError::InvalidManifest(_),
+                            ) => {
+                                self.launch
+                                    .reject(LaunchValidationError::CartridgeManifestInvalid);
+                                self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                    LaunchValidationError::CartridgeManifestInvalid,
+                                ));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                        }
+                    }
+                }
+
+                self.library.set_launch_stage(self.launch.stage());
             }
         }
 
