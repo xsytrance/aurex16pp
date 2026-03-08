@@ -2,33 +2,49 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (handoff doc sync + boot audio stabilization context)
+## Latest validation pass (runtime AV stage 3 follow-through)
 
 ### Commands executed
 
-1. `cargo fmt && cargo check -q`
+1. `cargo fmt`
    - Result: PASS
-   - Notes: Compiles cleanly in current container; non-fatal dead-code warnings remain.
+   - Output: command completed with exit code 0 and no diff/output.
 
-2. `cargo test -q`
+2. `cargo check`
+   - Result: PASS
+   - Output excerpt:
+     - `Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.65s`
+     - warning-only run (dead-code/unused items), no errors.
+
+3. `cargo check --tests`
+   - Result: PASS
+   - Output excerpt:
+     - `Checking aurex16pp v0.1.0 (/workspace/aurex16pp)`
+     - `Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.70s`
+
+4. `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh`
+   - Result: PASS (link-limited mode)
+   - Output excerpt:
+     - `[preflight] formatting check`
+     - `[preflight] compile check`
+     - `[preflight] skipping cartridge audit run (AUREX_SKIP_AUDIT_LINK=1)`
+
+5. `cargo test -q`
    - Result: ENV-LIMITED
-   - Notes: Fails at link stage in this container because system `SDL2` library is unavailable (`-lSDL2` not found).
+   - Output excerpt:
+     - linker failure: `rust-lld: error: unable to find library -lSDL2`
+   - Rationale: tests build to a binary target that links `sdl2`; container lacks system SDL2.
 
 ## Interpreting results
 
-- `cargo check` success confirms code-level parse/type/borrow correctness for current source.
-- `cargo test`/`cargo run` outcomes in this container are not valid indicators of runtime correctness until SDL2 system dependency is present.
+- Compile/type validation for runtime, new CLI paths, and added regression test code is clean.
+- Full execution of binary-linked tests/CLI runtime commands (`cargo run`, `cargo test`) remains blocked until SDL2 system libs are present.
 
-## Recommended local/full validation (developer machine with SDL2)
+## Recommended full validation on SDL2-enabled host
 
-Run in order:
-
-1. `cargo fmt -- --check`
-2. `cargo check`
-3. `cargo test`
-4. `cargo run -- --audio-diagnostics --boot --frames 48000 --json`
-5. `cargo run -- --audit-cartridges --json`
-6. `cargo run -- --analyze-cartridges --json`
-7. `cargo run -- --replay-capture-smoke`
-
-Capture outputs and attach to next handoff update.
+1. `scripts/preflight.sh`
+2. `cargo test`
+3. `cargo run -- --docs-sync-check`
+4. `cargo run -- --generate-runtime-baseline --frames 48000 --out artifacts/runtime_audio_diag_baseline.json`
+5. `cargo run -- --audio-diagnostics --boot --frames 48000 --json`
+6. `cargo run -- --replay-capture-smoke`

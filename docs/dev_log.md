@@ -1163,3 +1163,22 @@ Extended the runtime event model with explicit scene transition telemetry and do
 
 ### Rationale
 Improves observability and handoff-readiness without increasing coupling. Future options/menus/router features can consume transition telemetry through existing event channels.
+
+
+## 2026-03-08 10:20:00Z — Runtime AV Stage 3 follow-through (baseline artifact + regressions + docs-sync + telemetry polish)
+
+### Summary
+Implemented the next handoff focus items in order: deterministic audio/replay baseline artifact generation path, regression tests for retrigger and boot voice density policies, preflight docs-sync gate, and launch telemetry formatting normalization.
+
+### Runtime/Tooling
+- Added `--generate-runtime-baseline [--frames N] [--out PATH]` to write deterministic JSON containing audio diagnostics baseline + replay-capture smoke summary.
+- Added `--docs-sync-check` and wired preflight to run docs-sync before cartridge audit (unless link-limited skip mode is enabled).
+- Normalized launch telemetry strings for stage/rejection lines into parser-friendly lower-case formats.
+
+### Audio regression tests
+- Added regression coverage asserting unchanged active note+instrument pairs do not retrigger envelope attack.
+- Added boot sequencer density guard asserting active boot voices stay under defined threshold.
+
+### Validation notes
+- `cargo check` and `cargo check --tests` pass in this container.
+- `cargo test` remains blocked by missing system `SDL2` linker dependency (`-lSDL2`).

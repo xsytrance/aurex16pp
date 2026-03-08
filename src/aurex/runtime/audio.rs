@@ -157,18 +157,18 @@ const TRACK5: [u16; PATTERN_STEPS] = [
 ];
 
 const BOOT_LEAD: [u16; PATTERN_STEPS] = [
-    262, 294, 330, 392, 440, 392, 330, 294, 262, 294, 330, 349, 392, 349, 330, 294,
+    262, 330, 392, 440, 392, 330, 294, 262, 330, 392, 440, 494, 440, 392, 330, 294,
 ];
 const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
-    392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440,
+    392, 494, 523, 587, 523, 494, 440, 392, 440, 523, 587, 659, 587, 523, 494, 440,
 ];
-const BOOT_BASS: [u16; PATTERN_STEPS] = [
-    65, 65, 65, 65, 73, 73, 73, 73, 82, 82, 82, 82, 73, 73, 65, 65,
-];
+const BOOT_BASS: [u16; PATTERN_STEPS] =
+    [65, 0, 65, 82, 73, 0, 73, 98, 82, 0, 82, 110, 73, 82, 65, 0];
 const BOOT_ARP: [u16; PATTERN_STEPS] = [
-    523, 659, 784, 659, 587, 740, 880, 740, 659, 784, 988, 784, 587, 740, 880, 740,
+    523, 659, 784, 988, 587, 740, 880, 1175, 659, 784, 988, 1319, 587, 740, 988, 1175,
 ];
-const BOOT_GATE: [u16; PATTERN_STEPS] = [55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0];
+const BOOT_GATE: [u16; PATTERN_STEPS] =
+    [55, 0, 55, 72, 55, 0, 55, 84, 55, 0, 55, 72, 55, 84, 55, 0];
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
@@ -177,6 +177,26 @@ pub struct AudioDiagnostics {
     pub peak_r: i16,
     pub avg_abs_l: i16,
     pub avg_abs_r: i16,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct AudioDiagnosticsBaseline {
+    pub sample_rate: u32,
+    pub frames: usize,
+    pub boot: AudioDiagnostics,
+    pub game: AudioDiagnostics,
+}
+
+impl AudioDiagnosticsBaseline {
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"sample_rate\":{},\"frames\":{},\"boot\":{},\"game\":{}}}",
+            self.sample_rate,
+            self.frames,
+            self.boot.to_json(),
+            self.game.to_json()
+        )
+    }
 }
 
 impl AudioDiagnostics {
@@ -390,22 +410,29 @@ impl AudioEngine {
 
             self.note_on(i, hz, inst as u8, mode);
         }
+    }
 
-        v.env_level
+    pub fn diagnostics_baseline(&self, frames: usize) -> AudioDiagnosticsBaseline {
+        AudioDiagnosticsBaseline {
+            sample_rate: self.sample_rate.max(SAMPLE_RATE_HZ),
+            frames,
+            boot: self.diagnostics_for_frames(AudioMode::Boot, frames),
+            game: self.diagnostics_for_frames(AudioMode::Game, frames),
+        }
     }
 
     fn advance_boot_sequencer(&mut self) {
         let s = self.pattern_step;
         let arp_b = (s * 2) % PATTERN_STEPS;
 
-        self.trigger_voice(0, BOOT_LEAD[s], 3, 520, 840, 340, 0b0001);
-        self.trigger_voice(1, BOOT_COUNTER[s], 3, 420, 720, 520, 0b0001);
-        self.trigger_voice(2, BOOT_ARP[s], 0, 300, 620, 760, 0b0011);
-        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 280, 760, 620, 0b0011);
+        self.trigger_voice(0, BOOT_LEAD[s], 3, 560, 860, 360, 0b0001);
+        self.trigger_voice(1, BOOT_COUNTER[s], 3, 440, 740, 540, 0b0001);
+        self.trigger_voice(2, BOOT_ARP[s], 0, 340, 620, 780, 0b0011);
+        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 320, 780, 620, 0b0011);
 
         self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
         self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
-        self.trigger_voice(6, BOOT_BASS[s], 1, 620, 840, 420, 0b0010);
+        self.trigger_voice(6, BOOT_BASS[s], 1, 650, 860, 420, 0b0010);
         self.trigger_voice(
             7,
             BOOT_BASS[(s + 8) % PATTERN_STEPS],
@@ -419,7 +446,7 @@ impl AudioEngine {
         self.trigger_voice(8, BOOT_GATE[s], 5, 620, 640, 800, 0b0000);
         self.trigger_voice(
             9,
-            if s % 8 == 4 { 196 } else { 0 },
+            if s % 4 == 2 { 196 } else { 0 },
             4,
             620,
             760,
@@ -428,7 +455,7 @@ impl AudioEngine {
         );
         self.trigger_voice(
             10,
-            if s % 16 == 12 { 660 } else { 0 },
+            if s % 8 == 6 { 740 } else { 0 },
             4,
             300,
             620,
@@ -437,7 +464,7 @@ impl AudioEngine {
         );
         self.trigger_voice(
             11,
-            if s % 8 == 7 { BOOT_ARP[s] } else { 0 },
+            if s % 4 == 3 { BOOT_ARP[s] / 2 } else { 0 },
             3,
             360,
             540,
@@ -652,7 +679,6 @@ impl AudioEngine {
         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
         sign * mag
     }
-}
 
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
@@ -718,5 +744,47 @@ mod tests {
         let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
+    }
+
+    #[test]
+    fn same_note_does_not_retrigger_active_voice() {
+        let mut engine = AudioEngine::new(48_000);
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+        engine.voices[0].envelope_state = super::EnvelopeState::Sustain;
+        engine.voices[0].env_counter = 7;
+
+        engine.note_on(0, 262, 0, AudioMode::Boot);
+
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Sustain
+        ));
+        assert_eq!(engine.voices[0].env_counter, 7);
+
+        engine.note_on(0, 294, 0, AudioMode::Boot);
+        assert!(matches!(
+            engine.voices[0].envelope_state,
+            super::EnvelopeState::Attack
+        ));
+        assert_eq!(engine.voices[0].env_counter, 0);
+    }
+
+    #[test]
+    fn boot_voice_density_stays_within_budget() {
+        let mut engine = AudioEngine::new(48_000);
+        let mut max_active = 0usize;
+
+        for step in 0..super::PATTERN_STEPS {
+            engine.pattern_step = step;
+            engine.advance_boot_sequencer();
+            let active = engine
+                .voices
+                .iter()
+                .filter(|voice| voice.pitch > 0 && voice.volume > 0)
+                .count();
+            max_active = max_active.max(active);
+        }
+
+        assert!(max_active <= 9, "max_active={max_active}");
     }
 }
