@@ -114,6 +114,7 @@ struct Voice {
     fx: u8,
     delay_line: [i16; 32],
     delay_index: usize,
+    lp_state: i32,
 }
 
 impl Voice {
@@ -133,6 +134,7 @@ impl Voice {
             fx: 0,
             delay_line: [0; 32],
             delay_index: 0,
+            lp_state: 0,
         }
     }
 }
@@ -223,6 +225,10 @@ pub struct AudioEngine {
     noise_state: u32,
     mix_lp_l: i32,
     mix_lp_r: i32,
+    mix_hp_l: i32,
+    mix_hp_r: i32,
+    prev_mix_l: i32,
+    prev_mix_r: i32,
 }
 
 impl AudioEngine {
@@ -252,6 +258,10 @@ impl AudioEngine {
             noise_state: 0xC001_FEED,
             mix_lp_l: 0,
             mix_lp_r: 0,
+            mix_hp_l: 0,
+            mix_hp_r: 0,
+            prev_mix_l: 0,
+            prev_mix_r: 0,
         }
     }
 
@@ -358,12 +368,19 @@ impl AudioEngine {
             mix_l += sfx_l;
             mix_r += sfx_r;
 
-            mix_l = (mix_l * 3) / 8;
-            mix_r = (mix_r * 3) / 8;
+            mix_l = (mix_l * 11) / 32;
+            mix_r = (mix_r * 11) / 32;
             self.mix_lp_l += (mix_l - self.mix_lp_l) / 4;
             self.mix_lp_r += (mix_r - self.mix_lp_r) / 4;
-            let out_l = Self::soft_clip(self.mix_lp_l);
-            let out_r = Self::soft_clip(self.mix_lp_r);
+            let hp_in_l = self.mix_lp_l - self.prev_mix_l;
+            let hp_in_r = self.mix_lp_r - self.prev_mix_r;
+            self.mix_hp_l = (self.mix_hp_l * 63 + hp_in_l * 64) / 64;
+            self.mix_hp_r = (self.mix_hp_r * 63 + hp_in_r * 64) / 64;
+            self.prev_mix_l = self.mix_lp_l;
+            self.prev_mix_r = self.mix_lp_r;
+
+            let out_l = Self::soft_clip(self.mix_hp_l);
+            let out_r = Self::soft_clip(self.mix_hp_r);
 
             out[frame * 2] = out_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
             out[frame * 2 + 1] = out_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
@@ -425,14 +442,14 @@ impl AudioEngine {
         let s = self.pattern_step;
         let arp_b = (s * 2) % PATTERN_STEPS;
 
-        self.trigger_voice(0, BOOT_LEAD[s], 3, 560, 860, 360, 0b0001);
-        self.trigger_voice(1, BOOT_COUNTER[s], 3, 440, 740, 540, 0b0001);
-        self.trigger_voice(2, BOOT_ARP[s], 0, 340, 620, 780, 0b0011);
-        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 320, 780, 620, 0b0011);
+        self.trigger_voice(0, BOOT_LEAD[s], 3, 500, 860, 360, 0b0101);
+        self.trigger_voice(1, BOOT_COUNTER[s], 3, 390, 740, 540, 0b0101);
+        self.trigger_voice(2, BOOT_ARP[s], 0, 260, 620, 780, 0b0111);
+        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 240, 780, 620, 0b0111);
 
         self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
         self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
-        self.trigger_voice(6, BOOT_BASS[s], 1, 650, 860, 420, 0b0010);
+        self.trigger_voice(6, BOOT_BASS[s], 1, 560, 860, 420, 0b0110);
         self.trigger_voice(
             7,
             BOOT_BASS[(s + 8) % PATTERN_STEPS],
@@ -443,33 +460,33 @@ impl AudioEngine {
             0b0100,
         );
 
-        self.trigger_voice(8, BOOT_GATE[s], 5, 620, 640, 800, 0b0000);
+        self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
         self.trigger_voice(
             9,
             if s % 4 == 2 { 196 } else { 0 },
             4,
-            620,
+            360,
             760,
             640,
-            0b0100,
+            0b0110,
         );
         self.trigger_voice(
             10,
             if s % 8 == 6 { 740 } else { 0 },
             4,
-            300,
+            220,
             620,
             860,
-            0b0100,
+            0b0110,
         );
         self.trigger_voice(
             11,
-            if s % 4 == 3 { BOOT_ARP[s] / 2 } else { 0 },
+            if s % 8 == 7 { BOOT_ARP[s] / 2 } else { 0 },
             3,
-            360,
+            280,
             540,
             860,
-            0b0001,
+            0b0101,
         );
     }
 
@@ -635,11 +652,12 @@ impl AudioEngine {
         }
 
         if fx & 0b0010 != 0 {
-            out = (out + (out >> 1)) / 2;
+            out = (out * 6 / 5).clamp(-26_000, 26_000);
         }
 
         if fx & 0b0100 != 0 {
-            out = (out >> 8) << 8;
+            v.lp_state += (out - v.lp_state) / 3;
+            out = v.lp_state;
         }
 
         if fx & 0b1000 != 0 {

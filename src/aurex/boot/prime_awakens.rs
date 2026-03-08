@@ -50,14 +50,14 @@ impl PrimeAwakens {
             for x in 0..FB_W {
                 let x_u = x as u32;
                 let y_u = y as u32;
-                let sky = ((x_u.wrapping_mul(3) + y_u.wrapping_mul(5) + t) >> 3) & 15;
-                let neb = ((x_u ^ (y_u.wrapping_mul(3) + t.wrapping_mul(2))) >> 2) & 7;
-                let horizon = ((FB_H - y) as u32 * 12 / FB_H as u32) as u8;
-                let scan = if ((y_u + t / 3) & 7) == 0 { 1 } else { 0 };
+                let sky = ((x_u.wrapping_mul(2) + y_u.wrapping_mul(3) + t) >> 4) & 15;
+                let neb = ((x_u.wrapping_mul(5) ^ (y_u + t.wrapping_mul(2))) >> 3) & 7;
+                let horizon = ((FB_H - y) as u32 * 10 / FB_H as u32) as u8;
+                let scan = if ((y_u + t / 4) & 7) == 0 { 1 } else { 0 };
 
-                let r = (2 + sky as u8 / 3 + scan).min(31);
-                let g = (5 + neb as u8 + horizon / 4 + scan).min(31);
-                let b = (10 + sky as u8 + horizon + scan).min(31);
+                let r = (1 + sky as u8 / 3 + neb as u8 / 2 + horizon / 3 + scan).min(31);
+                let g = (2 + sky as u8 / 4 + horizon / 4 + scan).min(31);
+                let b = (5 + sky as u8 / 2 + horizon / 2 + scan).min(31);
                 pixels[y * FB_W + x] = rgb555(r, g, b);
             }
         }
@@ -72,7 +72,7 @@ impl PrimeAwakens {
                 sy,
                 sx + 1 + (twinkle > 3) as i32,
                 sy + 1,
-                rgb555(10 + twinkle, 18 + twinkle, 28 + twinkle / 2),
+                rgb555(18 + twinkle / 2, 22 + twinkle / 2, 30),
             );
         }
     }
@@ -88,7 +88,7 @@ impl PrimeAwakens {
                 y,
                 FB_W as i32,
                 y + 1,
-                rgb555(2 + tone, 8 + tone, 18 + tone),
+                rgb555(3 + tone / 2, 8 + tone, 14 + tone),
             );
         }
 
@@ -100,9 +100,9 @@ impl PrimeAwakens {
                 let y1 = y0 + 6;
                 let x = base_x + drift * (depth + 1) / 5;
                 let c = rgb555(
-                    2,
-                    (11 + depth as u8 / 2).min(31),
-                    (20 + depth as u8).min(31),
+                    (4 + depth as u8 / 3).min(31),
+                    (10 + depth as u8 / 2).min(31),
+                    (17 + depth as u8 / 2).min(31),
                 );
                 fill_rect(fb, x, y0, x + 1, y1, c);
             }
@@ -130,7 +130,7 @@ impl PrimeAwakens {
                     fb,
                     x,
                     y,
-                    rgb555(8 + shimmer, 18 + shimmer * 2, (27 + shimmer).min(31)),
+                    rgb555(12 + shimmer, 20 + shimmer, (28 + shimmer / 2).min(31)),
                 );
             }
         }
@@ -163,7 +163,7 @@ impl PrimeAwakens {
                 char_x,
                 base_y + slide,
                 scale,
-                rgb555(6 + glow / 2, 14 + glow, 22 + glow),
+                rgb555(12 + glow / 2, 16 + glow / 2, 24 + glow / 2),
             );
             draw_glyph(
                 fb,
@@ -171,7 +171,7 @@ impl PrimeAwakens {
                 char_x,
                 base_y + slide - 2,
                 scale,
-                rgb555(18 + glow / 2, 26 + glow / 2, 31),
+                rgb555(24 + glow / 3, 27 + glow / 3, 31),
             );
         }
 
@@ -181,12 +181,12 @@ impl PrimeAwakens {
             (FB_W as i32 - text_width(subtitle, 2)) / 2,
             100,
             2,
-            rgb555(13, 24, 31),
+            rgb555(16, 22, 30),
         );
     }
 
     fn draw_status_panels(&self, fb: &mut Framebuffer, t: u32) {
-        fill_rect(fb, 24, 166, 402, 171, rgb555(4, 11, 18));
+        fill_rect(fb, 24, 166, 402, 171, rgb555(6, 9, 14));
         let progress = ((t / 3) as i32).min(360);
         fill_rect(
             fb,
@@ -194,12 +194,12 @@ impl PrimeAwakens {
             167,
             30 + progress,
             170,
-            rgb555(9, 22 + ((t / 8) % 5) as u8, 28),
+            rgb555(16 + ((t / 16) % 5) as u8, 20 + ((t / 8) % 5) as u8, 8),
         );
 
-        draw_text(fb, "AUDIO BUS: ASU-32", 30, 178, 2, rgb555(12, 24, 31));
-        draw_text(fb, "VIDEO BUS: RASTER LOCK", 30, 192, 2, rgb555(12, 24, 31));
-        draw_text(fb, "RUNTIME: DETERMINISTIC", 30, 206, 2, rgb555(12, 24, 31));
+        draw_text(fb, "AUDIO BUS: ASU-32", 30, 178, 2, rgb555(18, 23, 30));
+        draw_text(fb, "VIDEO BUS: RASTER LOCK", 30, 192, 2, rgb555(18, 23, 30));
+        draw_text(fb, "RUNTIME: DETERMINISTIC", 30, 206, 2, rgb555(18, 23, 30));
     }
 
     fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
@@ -211,7 +211,7 @@ impl PrimeAwakens {
                     78,
                     224,
                     2,
-                    rgb555(20, 30, 31),
+                    rgb555(28, 29, 31),
                 );
             }
         } else if (t / 10).is_multiple_of(2) {
@@ -221,7 +221,7 @@ impl PrimeAwakens {
                 70,
                 224,
                 2,
-                rgb555(14, 22, 31),
+                rgb555(18, 22, 30),
             );
         }
     }
