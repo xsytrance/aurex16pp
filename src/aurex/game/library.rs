@@ -26,6 +26,9 @@ struct TitleProfile {
     title: &'static str,
     cartridge_id: &'static str,
     track_id: u8,
+    bpm: u16,
+    style: &'static str,
+    tag: &'static str,
     theme: ColorTheme,
     icon: IconKind,
 }
@@ -35,6 +38,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "NEON CIRCUIT",
         cartridge_id: "neon_circuit",
         track_id: 0,
+        bpm: 124,
+        style: "BASSLINE GRID",
+        tag: "PLASMA STREETS",
         theme: ColorTheme {
             bg_r: 1,
             bg_g: 6,
@@ -49,6 +55,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "SKYLINE DRIFT",
         cartridge_id: "skyline_drift",
         track_id: 1,
+        bpm: 128,
+        style: "NIGHT-RIDE SYNTH",
+        tag: "MIDNIGHT FREEWAY",
         theme: ColorTheme {
             bg_r: 1,
             bg_g: 4,
@@ -63,6 +72,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "PIXEL SENTINEL",
         cartridge_id: "pixel_sentinel",
         track_id: 2,
+        bpm: 118,
+        style: "INDUSTRIAL PULSE",
+        tag: "TOWER LOCKDOWN",
         theme: ColorTheme {
             bg_r: 1,
             bg_g: 7,
@@ -77,6 +89,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "VOID CARTOGRAPHER",
         cartridge_id: "void_cartographer",
         track_id: 3,
+        bpm: 132,
+        style: "COSMIC TRANCE",
+        tag: "STAR MAP DIVE",
         theme: ColorTheme {
             bg_r: 2,
             bg_g: 2,
@@ -91,6 +106,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "MECHA RIFT",
         cartridge_id: "mecha_rift",
         track_id: 4,
+        bpm: 136,
+        style: "BROKEN BEAT",
+        tag: "CHROME COLLISION",
         theme: ColorTheme {
             bg_r: 4,
             bg_g: 3,
@@ -105,6 +123,9 @@ const PROFILES: [TitleProfile; 6] = [
         title: "ORBITAL RUSH",
         cartridge_id: "orbital_rush",
         track_id: 5,
+        bpm: 140,
+        style: "ZERO-G EDM",
+        tag: "GRAVITY BREAK",
         theme: ColorTheme {
             bg_r: 1,
             bg_g: 6,
@@ -137,7 +158,7 @@ struct StatusMessage {
 impl StatusMessage {
     fn idle() -> Self {
         Self {
-            text: "SONG PROFILE ACTIVE",
+            text: "PROFILE READY // EDM BANK ARMED",
             tint: ColorTheme {
                 bg_r: 2,
                 bg_g: 8,
@@ -275,7 +296,7 @@ impl LibraryScreen {
     pub fn draw(&self, fb: &mut Framebuffer, frame: u64) {
         let profile = PROFILES[self.selected];
         self.draw_backdrop(fb, frame, profile.theme);
-        self.draw_header(fb);
+        self.draw_header(fb, profile);
         self.draw_cards(fb, frame);
         self.draw_footer(fb, profile, frame);
     }
@@ -284,29 +305,31 @@ impl LibraryScreen {
         let pixels = fb.pixels_mut();
         for y in 0..FB_H {
             for x in 0..FB_W {
-                let wave = (((x as u64 + frame) >> 4) as i32
-                    - ((y as u64 + frame * 2) >> 5) as i32)
-                    & 0x07;
-                let b =
-                    (theme.bg_b as i32 + (y as i32 * 6 / FB_H as i32) + wave).clamp(0, 31) as u8;
-                let g = (theme.bg_g as i32 + wave / 2).clamp(0, 31) as u8;
-                let color = rgb555(theme.bg_r, g, b);
-                pixels[y * FB_W + x] = color;
+                let phase = ((x as u64 * 3 + frame * 4) ^ (y as u64 * 5 + frame * 2)) & 31;
+                let cross = (((x as i32 - 200).abs() + (y as i32 - 120).abs()) as u64 + frame) & 15;
+                let b = (theme.bg_b as i32 + (phase as i32 / 2) + (cross as i32 / 2)).clamp(0, 31)
+                    as u8;
+                let g = (theme.bg_g as i32 + (phase as i32 / 3)).clamp(0, 31) as u8;
+                let r =
+                    (theme.bg_r as i32 + (((x as u64 + frame) >> 7) as i32 & 1)).clamp(0, 31) as u8;
+                pixels[y * FB_W + x] = rgb555(r, g, b);
             }
         }
     }
 
-    fn draw_header(&self, fb: &mut Framebuffer) {
-        self.fill_rect(fb, 16, 12, (FB_W - 16) as i32, 42, rgb555(2, 8, 14));
-        self.draw_text(fb, "AUREX-16++ LIBRARY", 26, 20, 2, rgb555(23, 30, 31));
+    fn draw_header(&self, fb: &mut Framebuffer, profile: TitleProfile) {
+        self.fill_rect(fb, 12, 10, (FB_W - 12) as i32, 46, rgb555(2, 8, 14));
+        self.draw_text(fb, "AUREX-16++ DEEP LIBRARY", 22, 16, 2, rgb555(23, 30, 31));
+        self.draw_text(fb, profile.style, 24, 32, 1, rgb555(18, 24, 30));
+        self.draw_text(fb, profile.tag, 234, 32, 1, rgb555(20, 28, 31));
     }
 
     fn draw_cards(&self, fb: &mut Framebuffer, frame: u64) {
-        let start_y = 58;
-        let card_h = 24;
+        let start_y = 54;
+        let card_h = 25;
 
         for (i, p) in PROFILES.iter().enumerate() {
-            let y0 = start_y + (i as i32 * (card_h + 6));
+            let y0 = start_y + (i as i32 * (card_h + 5));
             let y1 = y0 + card_h;
             let selected = i == self.selected;
             let bg = if selected {
@@ -324,24 +347,29 @@ impl LibraryScreen {
                 rgb555(8, 12, 18)
             };
 
-            self.fill_rect(fb, 20, y0, (FB_W - 20) as i32, y1, border);
-            self.fill_rect(fb, 22, y0 + 2, (FB_W - 22) as i32, y1 - 2, bg);
+            self.fill_rect(fb, 16, y0, (FB_W - 16) as i32, y1, border);
+            self.fill_rect(fb, 18, y0 + 2, (FB_W - 18) as i32, y1 - 2, bg);
 
-            let cover_x0 = 28;
-            let cover_x1 = 56;
+            let cover_x0 = 24;
+            let cover_x1 = 58;
             let shimmer = (((frame / 6) as i32 + i as i32 * 3) & 7) as u8;
             let cover = rgb555(
                 (p.theme.cover_r + shimmer).min(31),
                 (p.theme.cover_g + shimmer / 2).min(31),
                 (p.theme.cover_b + shimmer).min(31),
             );
-            self.fill_rect(fb, cover_x0, y0 + 4, cover_x1, y1 - 4, cover);
-            self.draw_icon(fb, p.icon, cover_x0 + 6, y0 + 7, rgb555(0, 0, 0));
+            self.fill_rect(fb, cover_x0, y0 + 3, cover_x1, y1 - 3, cover);
+            self.draw_icon(fb, p.icon, cover_x0 + 10, y0 + 7, rgb555(0, 0, 0));
 
-            self.draw_text(fb, p.title, 64, y0 + 8, 2, rgb555(26, 30, 31));
+            self.draw_text(fb, p.title, 66, y0 + 6, 2, rgb555(26, 30, 31));
+            self.draw_text(fb, p.style, 234, y0 + 7, 1, rgb555(16, 24, 28));
+
+            let pulse_h = ((frame as i32 / 3 + i as i32 * 5) & 7) + 2;
+            self.fill_rect(fb, 348, y1 - pulse_h, 372, y1 - 2, rgb555(10, 22, 29));
+            self.fill_rect(fb, 376, y1 - pulse_h + 1, 398, y1 - 2, rgb555(18, 26, 31));
 
             if selected {
-                self.draw_text(fb, ">", 10, y0 + 8, 2, rgb555(28, 24, 12));
+                self.draw_text(fb, ">", 6, y0 + 8, 2, rgb555(28, 24, 12));
             }
         }
     }
@@ -388,12 +416,12 @@ impl LibraryScreen {
     }
 
     fn draw_footer(&self, fb: &mut Framebuffer, profile: TitleProfile, frame: u64) {
-        self.fill_rect(fb, 16, 216, (FB_W - 16) as i32, 236, rgb555(1, 7, 12));
+        self.fill_rect(fb, 12, 215, (FB_W - 12) as i32, 238, rgb555(1, 7, 12));
         self.draw_text(
             fb,
             "UP/DOWN: SELECT   A/START: REQUEST   B/ESC: CLEAR",
-            24,
-            222,
+            18,
+            218,
             1,
             rgb555(19, 26, 30),
         );
@@ -407,8 +435,8 @@ impl LibraryScreen {
         self.draw_text(
             fb,
             self.status_message.text,
-            226,
-            222,
+            210,
+            218,
             1,
             rgb555(
                 (self.status_message.tint.cover_r + pulse).min(31),
@@ -417,47 +445,33 @@ impl LibraryScreen {
             ),
         );
 
-        self.draw_audio_meter(fb, profile, frame);
-
-        if self.launch_pending {
-            self.draw_text(fb, "PENDING", 358, 198, 1, rgb555(28, 28, 10));
-        }
-    }
-
-    fn draw_audio_meter(&self, fb: &mut Framebuffer, profile: TitleProfile, frame: u64) {
-        let meter_x = 318;
-        let meter_y = 196;
-        let bars = 9;
-
+        let meter_x = 300;
+        let meter_y = 188;
         self.fill_rect(
             fb,
-            meter_x - 6,
-            meter_y - 4,
-            meter_x + 72,
-            meter_y + 16,
-            rgb555(1, 5, 9),
+            meter_x,
+            meter_y - 2,
+            meter_x + 98,
+            meter_y + 19,
+            rgb555(1, 4, 8),
         );
 
-        for bar in 0..bars {
-            let wave = (((frame >> 1) as i32 + bar * 3) & 15) - 7;
-            let mut h = 3 + wave.abs();
-            if self.launch_pending {
-                h += 2;
-            }
-            if bar == (self.selected as i32 + (frame as i32 >> 3)) % bars {
-                h += 2;
-            }
-
-            let x0 = meter_x + bar * 7;
-            let y0 = meter_y + 10 - h;
+        for bar in 0..12i32 {
+            let bpm_wave = ((frame as i32 / 2) + bar * 3 + profile.bpm as i32 / 8) & 7;
+            let h = 2 + bpm_wave;
+            let x0 = meter_x + 4 + bar * 7;
+            let y0 = meter_y + 15 - h;
             let tint = (bar as u8) & 0x03;
             let c = rgb555(
                 (profile.theme.cover_r + tint).min(31),
                 (profile.theme.cover_g + tint).min(31),
                 profile.theme.cover_b.min(31),
             );
-            self.fill_rect(fb, x0, y0, x0 + 5, meter_y + 10, c);
+            self.fill_rect(fb, x0, y0, x0 + 5, meter_y + 15, c);
         }
+
+        let bpm_label = format!("{} BPM", profile.bpm);
+        self.draw_text(fb, &bpm_label, 302, 177, 1, rgb555(20, 28, 31));
     }
 
     fn fill_rect(&self, fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
@@ -548,7 +562,12 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '1' => [0x04, 0x0C, 0x14, 0x04, 0x04, 0x04, 0x0E],
         '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F],
         '3' => [0x1E, 0x01, 0x01, 0x06, 0x01, 0x01, 0x1E],
+        '4' => [0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02],
+        '5' => [0x1F, 0x10, 0x10, 0x1E, 0x01, 0x01, 0x1E],
         '6' => [0x0E, 0x10, 0x10, 0x1E, 0x11, 0x11, 0x0E],
+        '7' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08],
+        '8' => [0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E],
+        '9' => [0x0E, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x0E],
         '+' => [0x00, 0x04, 0x04, 0x1F, 0x04, 0x04, 0x00],
         '-' => [0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00],
         ':' => [0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00],

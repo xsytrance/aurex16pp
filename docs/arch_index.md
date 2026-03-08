@@ -176,6 +176,21 @@ prime_ignition.rs - Boot cinematic sequence - DMA glyph upload - Temporary visua
 END OF INDEX
 
 
+
+## BOOT + LIBRARY AV UPGRADE (2026-03-08)
+
+Files:
+- `src/aurex/boot/prime_ignition.rs`
+- `src/aurex/game/library.rs`
+- `src/aurex/runtime/audio.rs`
+- `docs/boot_library_upgrade.md`
+
+Highlights:
+- Boot intro now uses a hypnotic tunnel/equalizer stack and EDM-styled prompt timing.
+- Library title metadata now includes per-title BPM/style/tag for stronger audio-visual identity.
+- ASU-32 track table expanded to 6 deterministic tracks so each dummy title can map 1:1 to a unique pattern.
+
+---
 ## LIBRARY DOMAIN
 
 Files:

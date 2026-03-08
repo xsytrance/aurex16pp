@@ -1,3 +1,17 @@
+## 2026-03-08 13:40:00Z — Boot+Library EDM/Hypnotic Upgrade
+
+### Summary
+Upgraded boot intro and library presentation to use denser hypnotic visuals and per-title EDM identity using the upgraded runtime/audio contracts.
+
+### Runtime/Tooling
+- Reworked `PrimeIgnition` overlay into a tunnel/equalizer-style intro sequence with updated prompt cadence (`PRESS START // GO STRAIGHT`).
+- Expanded library title profiles with BPM/style/tag metadata and upgraded card/header/footer rendering for stronger per-title art direction.
+- Expanded ASU-32 track routing from 4 to 6 patterns so each dummy title can drive a unique music track id.
+- Added `docs/boot_library_upgrade.md` documenting the visuals, track mapping, and deterministic constraints.
+
+### Progress
+Boot and library now better reflect the upgraded hardware/audio stack and provide clearer content authoring hooks for style + music identity.
+
 ## 2026-03-08 12:45:00Z — Suggestion Stack Deepening (Replay+Analyzer)
 
 ### Summary

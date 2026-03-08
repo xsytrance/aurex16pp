@@ -148,6 +148,12 @@ const TRACK2: [u16; PATTERN_STEPS] = [
 const TRACK3: [u16; PATTERN_STEPS] = [
     330, 392, 494, 523, 440, 392, 587, 523, 392, 440, 494, 523, 330, 392, 440, 494,
 ];
+const TRACK4: [u16; PATTERN_STEPS] = [
+    110, 165, 220, 0, 147, 220, 247, 0, 165, 247, 294, 0, 131, 196, 247, 0,
+];
+const TRACK5: [u16; PATTERN_STEPS] = [
+    220, 247, 262, 294, 330, 294, 262, 247, 196, 220, 247, 262, 294, 262, 247, 220,
+];
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
@@ -237,7 +243,7 @@ impl AudioEngine {
     pub fn trigger_command(&mut self, cmd: RuntimeAudioCommand) {
         match cmd {
             RuntimeAudioCommand::PlayTrack(track_id) => {
-                self.track_id = track_id % 4;
+                self.track_id = track_id % 6;
                 self.pattern_step = 0;
                 self.tick_counter = 0;
             }
@@ -331,7 +337,9 @@ impl AudioEngine {
             0 => &TRACK0,
             1 => &TRACK1,
             2 => &TRACK2,
-            _ => &TRACK3,
+            3 => &TRACK3,
+            4 => &TRACK4,
+            _ => &TRACK5,
         };
 
         for i in 0..VOICE_COUNT {
