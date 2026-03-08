@@ -12,6 +12,7 @@ pub struct PrimeIgnition {
 impl PrimeIgnition {
     const EQ_METER_X: i32 = 108;
     const EQ_METER_Y: i32 = 176;
+
     pub fn new() -> Self {
         Self {
             frame: 0,
@@ -320,6 +321,60 @@ impl PrimeIgnition {
             );
         }
     }
+
+    fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_tunnel(fb, t);
+    }
+
+    fn draw_boot_meter(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_equalizer(fb, t);
+    }
+
+    fn draw_tunnel(&self, fb: &mut Framebuffer, t: u32) {
+        for i in 0..8 {
+            let s = 20 + i * 16 + ((t as i32 + i * 5) & 7);
+            let x0 = FB_W as i32 / 2 - s;
+            let y0 = FB_H as i32 / 2 - (s / 2);
+            let x1 = FB_W as i32 / 2 + s;
+            let y1 = FB_H as i32 / 2 + (s / 2);
+            let c = rgb555(
+                (2 + i as u8 / 2).min(31),
+                (10 + i as u8).min(31),
+                (18 + i as u8).min(31),
+            );
+            stroke_rect(fb, x0, y0, x1, y1, c);
+        }
+    }
+
+    fn draw_equalizer(&self, fb: &mut Framebuffer, t: u32) {
+        fill_rect(
+            fb,
+            Self::EQ_METER_X - 10,
+            Self::EQ_METER_Y - 10,
+            Self::EQ_METER_X + 212,
+            Self::EQ_METER_Y + 24,
+            rgb555(1, 6, 10),
+        );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = Self::EQ_METER_X + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(
+                fb,
+                x0,
+                Self::EQ_METER_Y + 8 - h,
+                x0 + 5,
+                Self::EQ_METER_Y + 10,
+                c,
+            );
+        }
+    }
 }
 
 fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
@@ -444,7 +499,7 @@ mod tests {
     #[test]
     fn prime_ignition_equalizer_uses_impl_scoped_meter_constants() {
         let src = include_str!("prime_ignition.rs");
-        assert_eq!(src.matches("Self::EQ_METER_X").count() >= 3, true);
-        assert_eq!(src.matches("Self::EQ_METER_Y").count() >= 3, true);
+        assert!(src.matches("Self::EQ_METER_X").count() >= 3);
+        assert!(src.matches("Self::EQ_METER_Y").count() >= 3);
     }
 }
