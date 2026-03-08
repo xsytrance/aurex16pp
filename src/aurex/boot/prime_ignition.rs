@@ -151,6 +151,79 @@ impl PrimeIgnition {
             2,
             rgb555(12 + flash, 20 + flash, 27),
         );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = Self::EQ_METER_X + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(
+                fb,
+                x0,
+                Self::EQ_METER_Y + 8 - h,
+                x0 + 5,
+                Self::EQ_METER_Y + 10,
+                c,
+            );
+        }
+    }
+
+    fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_tunnel(fb, t);
+    }
+
+    fn draw_boot_meter(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_equalizer(fb, t);
+    }
+
+    fn draw_tunnel(&self, fb: &mut Framebuffer, t: u32) {
+        for i in 0..8 {
+            let s = 20 + i * 16 + ((t as i32 + i * 5) & 7);
+            let x0 = FB_W as i32 / 2 - s;
+            let y0 = FB_H as i32 / 2 - (s / 2);
+            let x1 = FB_W as i32 / 2 + s;
+            let y1 = FB_H as i32 / 2 + (s / 2);
+            let c = rgb555(
+                (2 + i as u8 / 2).min(31),
+                (10 + i as u8).min(31),
+                (18 + i as u8).min(31),
+            );
+            stroke_rect(fb, x0, y0, x1, y1, c);
+        }
+    }
+
+    fn draw_equalizer(&self, fb: &mut Framebuffer, t: u32) {
+        fill_rect(
+            fb,
+            Self::EQ_METER_X - 10,
+            Self::EQ_METER_Y - 10,
+            Self::EQ_METER_X + 212,
+            Self::EQ_METER_Y + 24,
+            rgb555(1, 6, 10),
+        );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = Self::EQ_METER_X + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(
+                fb,
+                x0,
+                Self::EQ_METER_Y + 8 - h,
+                x0 + 5,
+                Self::EQ_METER_Y + 10,
+                c,
+            );
+        }
     }
 
     fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
@@ -183,6 +256,13 @@ fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u1
             pixels[y as usize * FB_W + x as usize] = color;
         }
     }
+}
+
+fn stroke_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
+    fill_rect(fb, x0, y0, x1, y0 + 1, color);
+    fill_rect(fb, x0, y1 - 1, x1, y1, color);
+    fill_rect(fb, x0, y0, x0 + 1, y1, color);
+    fill_rect(fb, x1 - 1, y0, x1, y1, color);
 }
 
 fn draw_text(fb: &mut Framebuffer, text: &str, x: i32, y: i32, scale: usize, color: u16) {
@@ -254,7 +334,6 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         'V' => [0x11, 0x11, 0x11, 0x11, 0x0A, 0x0A, 0x04],
         'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
         'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
-        'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F],
         '0' => [0x0E, 0x13, 0x15, 0x19, 0x11, 0x11, 0x0E],
         '1' => [0x04, 0x0C, 0x14, 0x04, 0x04, 0x04, 0x0E],
         '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F],
@@ -272,5 +351,26 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         '>' => [0x10, 0x08, 0x04, 0x02, 0x04, 0x08, 0x10],
         ' ' => [0x00; 7],
         _ => [0x1F, 0x11, 0x15, 0x15, 0x15, 0x11, 0x1F],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn prime_ignition_merge_guards_no_duplicate_draw_helpers() {
+        let src = include_str!("prime_ignition.rs");
+        assert_eq!(src.matches("fn draw_accent_rails(&self").count(), 1);
+        assert_eq!(src.matches("fn draw_boot_meter(&self").count(), 1);
+        assert_eq!(src.matches("fn draw_tunnel(&self").count(), 1);
+        assert_eq!(src.matches("fn draw_equalizer(&self").count(), 1);
+    }
+
+    #[test]
+    fn prime_ignition_equalizer_uses_impl_scoped_meter_constants() {
+        let src = include_str!("prime_ignition.rs");
+        assert!(src.matches("Self::EQ_METER_X").count() >= 3);
+        assert!(src.matches("Self::EQ_METER_Y").count() >= 3);
+        assert_eq!(src.matches("let meter_x =").count(), 0);
+        assert_eq!(src.matches("let meter_y =").count(), 0);
     }
 }
