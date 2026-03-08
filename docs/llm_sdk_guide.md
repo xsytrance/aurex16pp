@@ -46,3 +46,8 @@ Future SDK revisions will add validated metadata fields, but this baseline is re
 
 ## Example Prompt Skeleton
 See `docs/llm_prompt_template.md`.
+
+
+## Cartridge ID Format Rule
+- `cartridge_id` / `GAME_ID` must match: `[a-z0-9_]+`
+- Uppercase, hyphen, or spaces are invalid and should be rejected before launch orchestration.

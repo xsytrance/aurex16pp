@@ -391,3 +391,6 @@ Required references:
 - docs/llm_prompt_template.md
 
 LLM outputs that do not include all required sections are considered invalid cartridge authoring requests.
+
+
+Launch descriptor IDs must be lowercase snake_case (`[a-z0-9_]+`) to align with cartridge folder identity and runtime validation.

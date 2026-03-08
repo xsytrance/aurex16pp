@@ -297,3 +297,12 @@ Runtime launch descriptors now include both display and build identity:
 - `cartridge_id`
 
 This keeps host/runtime launch orchestration aligned with deterministic, prompt-structured cartridge output.
+
+
+## Launch Descriptor Validation (2026-03-08 02:56:00Z)
+
+Launch requests now pass deterministic descriptor validation before stage transition:
+- `validate_launch_descriptor(LaunchDescriptor)`
+- rejection telemetry: `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`
+
+This is a pre-validation guardrail for future cartridge loading stages.

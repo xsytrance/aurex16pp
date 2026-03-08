@@ -1,4 +1,4 @@
-use super::launch::{LaunchDescriptor, LaunchStage};
+use super::launch::{LaunchDescriptor, LaunchStage, LaunchValidationError};
 use crate::aurex::game::AudioCue;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -14,6 +14,7 @@ pub enum RuntimeEvent {
     TitleLaunchRequested(LaunchDescriptor),
     TitleLaunchCanceled,
     LaunchStageChanged(LaunchStage),
+    TitleLaunchRejected(LaunchValidationError),
 }
 
 pub struct RuntimeEventQueue {

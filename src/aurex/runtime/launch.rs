@@ -5,6 +5,29 @@ pub struct LaunchDescriptor {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LaunchValidationError {
+    EmptyCartridgeId,
+    InvalidCartridgeId,
+}
+
+pub fn validate_launch_descriptor(desc: LaunchDescriptor) -> Result<(), LaunchValidationError> {
+    if desc.cartridge_id.is_empty() {
+        return Err(LaunchValidationError::EmptyCartridgeId);
+    }
+
+    let valid = desc
+        .cartridge_id
+        .bytes()
+        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+
+    if !valid {
+        return Err(LaunchValidationError::InvalidCartridgeId);
+    }
+
+    Ok(())
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LaunchStage {
     Idle,
     Pending(LaunchDescriptor),
@@ -69,5 +92,34 @@ mod tests {
         assert!(launch.cancel());
         assert_eq!(launch.stage(), LaunchStage::Idle);
         assert!(!launch.is_pending());
+    }
+}
+
+#[cfg(test)]
+mod validation_tests {
+    use super::{LaunchDescriptor, LaunchValidationError, validate_launch_descriptor};
+
+    #[test]
+    fn invalid_cartridge_id_is_rejected() {
+        let bad = LaunchDescriptor {
+            title: "Bad",
+            cartridge_id: "Bad-ID",
+        };
+        assert_eq!(
+            validate_launch_descriptor(bad),
+            Err(LaunchValidationError::InvalidCartridgeId)
+        );
+    }
+
+    #[test]
+    fn empty_cartridge_id_is_rejected() {
+        let bad = LaunchDescriptor {
+            title: "Bad",
+            cartridge_id: "",
+        };
+        assert_eq!(
+            validate_launch_descriptor(bad),
+            Err(LaunchValidationError::EmptyCartridgeId)
+        );
     }
 }

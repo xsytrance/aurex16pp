@@ -347,6 +347,14 @@ END OF CANON
   - `docs/llm_prompt_template.md`
 - Launch descriptor identity includes `cartridge_id` to bridge library selection and cartridge asset folders.
 
+
+
+## Launch Validation Canon (2026-03-08 02:56:00Z)
+
+- Launch descriptors are validated before entering pending launch stage.
+- Invalid descriptors emit `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
+- Current validation includes strict cartridge ID format enforcement (`[a-z0-9_]+`).
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:

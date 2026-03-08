@@ -131,6 +131,9 @@ fn main() {
         if let Some(stage) = diagnostics.launch_stage_changed {
             println!("Launch stage: {:?}", stage);
         }
+        if let Some(reject) = diagnostics.launch_rejected {
+            println!("Launch rejected: {:?}", reject);
+        }
 
         dispatch_runtime_events(&mut synth, &runtime_events);
 

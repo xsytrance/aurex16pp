@@ -1,3 +1,20 @@
+## 2026-03-08 02:56:00Z — Launch Validation Telemetry + SDK Contract Tightening
+
+### Summary
+Added deterministic launch-request validation with explicit reject telemetry and tightened LLM SDK authoring rules around cartridge identity.
+
+### Runtime / Architecture
+- Added `validate_launch_descriptor(...)` and `LaunchValidationError` to launch domain.
+- Core now rejects invalid launch descriptors and emits `RuntimeEvent::TitleLaunchRejected(LaunchValidationError)`.
+- Runtime diagnostics now surfaces `launch_rejected` for host logging/dispatch policy.
+
+### LLM SDK
+- SDK guide now documents cartridge ID format constraints (`[a-z0-9_]+`).
+- Prompt template now explicitly requires a valid `GAME_ID` that matches runtime `cartridge_id` usage.
+
+### Progress
+Launch pipeline now has explicit deterministic rejection semantics, which is required before adding multi-stage cartridge validation/loading.
+
 ## 2026-03-08 02:28:00Z — LLM SDK Groundwork + Launch Descriptor Identity
 
 ### Summary

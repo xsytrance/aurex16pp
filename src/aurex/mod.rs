@@ -10,7 +10,9 @@ pub mod wram;
 
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
-use crate::aurex::runtime::{LaunchIntentController, RuntimeEvent, RuntimeEventQueue, SceneId};
+use crate::aurex::runtime::{
+    LaunchIntentController, RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+};
 use boot::prime_ignition::PrimeIgnition;
 use clock::Clock;
 use dma::controller::DmaController;
@@ -102,10 +104,17 @@ impl Aurex {
 
                 if update.launch_requested {
                     let req = self.library.current_launch_descriptor();
-                    if self.launch.request(req) {
-                        self.events.push(RuntimeEvent::TitleLaunchRequested(req));
-                        self.events
-                            .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                    match validate_launch_descriptor(req) {
+                        Ok(()) => {
+                            if self.launch.request(req) {
+                                self.events.push(RuntimeEvent::TitleLaunchRequested(req));
+                                self.events
+                                    .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                            }
+                        }
+                        Err(reason) => {
+                            self.events.push(RuntimeEvent::TitleLaunchRejected(reason));
+                        }
                     }
                 }
 

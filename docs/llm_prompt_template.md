@@ -1,6 +1,6 @@
 # AUREX Cartridge Prompt Template
 
-GAME_ID: neon_circuit
+GAME_ID: neon_circuit  # must match [a-z0-9_]+
 TITLE: NEON CIRCUIT
 GENRE_TAG: racer
 
