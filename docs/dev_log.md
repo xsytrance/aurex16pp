@@ -1,3 +1,16 @@
+## 2026-03-08 08:10:00Z — Cartridge Audit CLI (Deterministic Preflight)
+
+### Summary
+Added a deterministic cartridge audit mode to preflight cartridge manifests and identity coherence before launch/runtime attach attempts.
+
+### Runtime/Tooling
+- Added cartridge audit report model and root-scan API in cartridge runtime module.
+- Added host CLI switch: `--audit-cartridges` to print per-cartridge status and return non-zero on invalid entries.
+- Added unit coverage for mixed valid/invalid/missing-manifest cartridge trees.
+
+### Progress
+This closes a tooling gap between authoring docs and runtime launch validation by providing a fast preflight gate.
+
 ## 2026-03-08 07:40:00Z — Boot Screen + Boot Music Refresh for Expanded AV Capability
 
 ### Summary

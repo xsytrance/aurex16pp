@@ -28,6 +28,32 @@ pub struct CartridgeRuntime {
     uploads: Vec<Upload>,
 }
 
+#[derive(Debug)]
+pub struct CartridgeAuditEntry {
+    pub cartridge_id: String,
+    pub ok: bool,
+    pub issue: Option<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct CartridgeAuditReport {
+    pub entries: Vec<CartridgeAuditEntry>,
+}
+
+impl CartridgeAuditReport {
+    pub fn valid_count(&self) -> usize {
+        self.entries.iter().filter(|e| e.ok).count()
+    }
+
+    pub fn invalid_count(&self) -> usize {
+        self.entries.len().saturating_sub(self.valid_count())
+    }
+
+    pub fn all_valid(&self) -> bool {
+        self.invalid_count() == 0
+    }
+}
+
 impl CartridgeRuntime {
     pub fn from_cartridge_id(cartridge_id: &str) -> Result<Self, CartridgeResolveError> {
         let manifest_path = Path::new("cartridges")
@@ -54,6 +80,57 @@ impl CartridgeRuntime {
                 None
             }
         }
+    }
+
+    pub fn audit_cartridges_root(root: &Path) -> CartridgeAuditReport {
+        let mut report = CartridgeAuditReport::default();
+
+        let mut dirs = Vec::new();
+        if let Ok(read_dir) = fs::read_dir(root) {
+            for entry in read_dir.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs.push(path);
+                }
+            }
+        }
+
+        dirs.sort();
+
+        for dir in dirs {
+            let Some(name) = dir.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+
+            let manifest = dir.join("manifest.txt");
+            if !manifest.exists() {
+                report.entries.push(CartridgeAuditEntry {
+                    cartridge_id: name.to_string(),
+                    ok: false,
+                    issue: Some("missing manifest.txt".to_string()),
+                });
+                continue;
+            }
+
+            match Self::from_manifest_with_expected_id(&manifest, Some(name)) {
+                Ok(_) => report.entries.push(CartridgeAuditEntry {
+                    cartridge_id: name.to_string(),
+                    ok: true,
+                    issue: None,
+                }),
+                Err(err) => report.entries.push(CartridgeAuditEntry {
+                    cartridge_id: name.to_string(),
+                    ok: false,
+                    issue: Some(err),
+                }),
+            }
+        }
+
+        report
+    }
+
+    pub fn audit_default_cartridges() -> CartridgeAuditReport {
+        Self::audit_cartridges_root(Path::new("cartridges"))
     }
 
     fn from_manifest_with_expected_id(
@@ -261,6 +338,63 @@ mod tests {
         let _ = fs::remove_dir_all(root);
     }
 
+    #[test]
+    fn audit_cartridges_reports_valid_and_invalid_entries() {
+        let root = unique_temp_dir();
+        let carts = root.join("cartridges");
+        fs::create_dir_all(carts.join("good_game")).expect("mkdir good");
+        fs::create_dir_all(carts.join("bad_game")).expect("mkdir bad");
+        fs::create_dir_all(carts.join("missing_manifest")).expect("mkdir missing");
+
+        fs::write(
+            carts.join("good_game/manifest.txt"),
+            "name=GOOD
+game_id=good_game
+upload=BgTiles,0,tile.bin
+",
+        )
+        .expect("write good manifest");
+        fs::write(carts.join("good_game/tile.bin"), [0u8; 32]).expect("write good tile");
+
+        fs::write(
+            carts.join("bad_game/manifest.txt"),
+            "name=BAD
+game_id=wrong_id
+upload=BgTiles,0,tile.bin
+",
+        )
+        .expect("write bad manifest");
+        fs::write(carts.join("bad_game/tile.bin"), [0u8; 32]).expect("write bad tile");
+
+        let report = CartridgeRuntime::audit_cartridges_root(&carts);
+        assert_eq!(report.entries.len(), 3);
+        assert_eq!(report.valid_count(), 1);
+        assert_eq!(report.invalid_count(), 2);
+        assert!(!report.all_valid());
+
+        let good = report
+            .entries
+            .iter()
+            .find(|e| e.cartridge_id == "good_game")
+            .expect("good entry");
+        assert!(good.ok);
+
+        let missing = report
+            .entries
+            .iter()
+            .find(|e| e.cartridge_id == "missing_manifest")
+            .expect("missing entry");
+        assert!(!missing.ok);
+        assert!(
+            missing
+                .issue
+                .as_deref()
+                .unwrap_or("")
+                .contains("missing manifest")
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
     #[test]
     fn from_cartridge_id_rejects_mismatched_game_id() {
         let old = std::env::current_dir().expect("cwd");

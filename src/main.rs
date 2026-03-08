@@ -25,6 +25,33 @@ fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<Ga
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--audit-cartridges") {
+        let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
+        println!(
+            "Cartridge audit: {} valid / {} invalid",
+            report.valid_count(),
+            report.invalid_count()
+        );
+        for entry in &report.entries {
+            if entry.ok {
+                println!("[OK] {}", entry.cartridge_id);
+            } else {
+                println!(
+                    "[FAIL] {}: {}",
+                    entry.cartridge_id,
+                    entry.issue.as_deref().unwrap_or("unknown error")
+                );
+            }
+        }
+
+        if report.all_valid() {
+            return;
+        }
+
+        std::process::exit(2);
+    }
+
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
     let audio = sdl.audio().expect("SDL audio init failed");

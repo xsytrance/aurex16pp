@@ -123,6 +123,7 @@ Next capability unlock for “generated games fully runnable”:
   - optional host stereo widener while preserving mono simulation core
 - Tooling:
   - cartridge lint tool enforcing budget + identity + manifest schema
+  - cartridge audit CLI mode: `cargo run -- --audit-cartridges` for manifest/identity sweep
   - golden-frame regression snapshots for deterministic render validation
 
 

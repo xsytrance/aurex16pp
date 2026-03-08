@@ -279,3 +279,16 @@ Files:
 
 Purpose:
 - target-position comparison ensuring Aurex vision is >= Neo-Geo while preserving creative constraints
+
+
+## CARTRIDGE AUDIT MODE
+
+Files:
+- `src/main.rs`
+- `src/aurex/cartridge/mod.rs`
+
+Command:
+- `cargo run -- --audit-cartridges`
+
+Purpose:
+- deterministic manifest/identity scan for cartridge folders before runtime launch attempts
