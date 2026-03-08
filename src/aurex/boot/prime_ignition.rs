@@ -37,7 +37,7 @@ impl PrimeIgnition {
     pub fn draw_overlay(&self, fb: &mut Framebuffer) {
         let t = self.frame.min(360);
         self.draw_backdrop(fb, t);
-        self.draw_tunnel(fb, t);
+        self.draw_accent_rails(fb, t);
 
         let title = "AUREX-16++";
         let logo_scale = if t < 90 { 5 } else { 6 };
@@ -50,9 +50,6 @@ impl PrimeIgnition {
         draw_text(fb, "NEON IGNITION", 132, 132, 2, rgb555(18, 26, 31));
         draw_text(fb, "EDM CORE ONLINE", 132, 148, 2, rgb555(15, 23, 29));
 
-        self.draw_equalizer(fb, t);
-
-        self.draw_accent_rails(fb, t);
         self.draw_boot_meter(fb, t);
 
         if self.waiting_for_start {
@@ -102,6 +99,26 @@ impl PrimeIgnition {
             FB_H as i32,
             rgb555(2, 7, 12),
         );
+
+        for bar in 0..24i32 {
+            let wave = (((t as i32 >> 1) + bar * 3) & 15) - 7;
+            let h = 3 + wave.abs();
+            let x0 = meter_x + bar * 8;
+            let c = rgb555(
+                (6 + ((bar >> 3) as u8)).min(31),
+                (14 + (bar as u8 & 0x03)).min(31),
+                (24 + ((t >> 4) as u8 & 0x03)).min(31),
+            );
+            fill_rect(fb, x0, meter_y + 8 - h, x0 + 5, meter_y + 10, c);
+        }
+    }
+
+    fn draw_accent_rails(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_tunnel(fb, t);
+    }
+
+    fn draw_boot_meter(&self, fb: &mut Framebuffer, t: u32) {
+        self.draw_equalizer(fb, t);
     }
 
     fn draw_tunnel(&self, fb: &mut Framebuffer, t: u32) {
