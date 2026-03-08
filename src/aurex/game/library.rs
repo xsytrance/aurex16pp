@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::aurex::game::{AudioCue, InputState};
 use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
 

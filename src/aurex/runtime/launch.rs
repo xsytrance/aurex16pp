@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LaunchDescriptor {
     pub title: &'static str,

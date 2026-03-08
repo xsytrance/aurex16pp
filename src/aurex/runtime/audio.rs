@@ -858,6 +858,9 @@ mod tests {
             max_active = max_active.max(active);
         }
 
+<<<<<<< HEAD
         assert!(max_active <= 12, "max_active={max_active}");
+=======
+
     }
 }

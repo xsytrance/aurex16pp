@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::aurex::dma::command::{DmaCommand, VramRegion};
 use crate::aurex::dma::controller::DmaController;
 use crate::aurex::ppu::vram::Vram;
