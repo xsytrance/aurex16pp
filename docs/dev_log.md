@@ -1,3 +1,97 @@
+## 2026-03-08 02:28:00Z — LLM SDK Groundwork + Launch Descriptor Identity
+
+### Summary
+Started the explicit LLM authoring SDK path and aligned runtime launch identity with cartridge build identity.
+
+### Runtime / Architecture
+- Launch descriptor now carries `{ title, cartridge_id }`.
+- `RuntimeEvent::TitleLaunchRequested` now transports full launch descriptor identity.
+- Host diagnostics logging now prints both display title and cartridge ID.
+
+### LLM SDK
+- Added `docs/llm_sdk_guide.md` with required prompt contract sections and deterministic output rules.
+- Added `docs/llm_prompt_template.md` as the baseline prompt skeleton for cartridge generation.
+
+### Progress
+This pass establishes deterministic prompt-structure governance and begins bridging runtime launch to cartridge folder identity.
+
+## 2026-03-08 02:02:00Z — Launch Controller Integration + Pending Stage HUD
+
+### Summary
+Integrated a dedicated launch-intent controller and stage-change telemetry while extending library HUD to reflect pending launch stage.
+
+### Architecture
+- Added runtime launch domain component: `LaunchIntentController` with `LaunchStage::{Idle, Pending(&'static str)}`.
+- Core now routes request/cancel through controller and emits `RuntimeEvent::LaunchStageChanged(LaunchStage)` on transitions.
+- Runtime diagnostics now includes `launch_stage_changed` for centralized host interpretation.
+
+### Graphics
+- Library footer now shows a `PENDING` indicator when launch intent is armed.
+- Audio meter bars gain additional height while pending to make stage state visible without relying on logs.
+
+### Progress
+Launch intent has moved from ad-hoc booleans toward explicit runtime domain state, preparing clean attachment of cartridge validation/boot steps.
+
+## 2026-03-08 01:37:00Z — Launch Intent Lifecycle Pass (Cancel Path + Cue Split)
+
+### Summary
+Fast follow-up pass on library UX + runtime architecture to complete launch intent lifecycle signaling (request + clear) with explicit AV feedback.
+
+### Graphics
+- Library footer control hint now includes cancel/clear action (`B/ESC: CLEAR`).
+- Existing launch pulse behavior now resets immediately when launch intent is cleared.
+
+### Sound
+- Added `AudioCue::Cancel` and a dedicated cancel stinger path in `AudioEngine`.
+- Launch and cancel cues are now distinct intents in the audio contract.
+
+### Architecture
+- Added `RuntimeEvent::TitleLaunchCanceled`.
+- `LibraryUpdate` now carries `launch_canceled` in addition to `launch_requested`.
+- `RuntimeDiagnostics` now includes `launch_canceled` and main loop logs clear events.
+
+### Progress
+This closes the launch-intent loop from a runtime signaling perspective and keeps host-side logic data-driven through typed events/diagnostics.
+
+## 2026-03-08 01:08:00Z — Library AV Pass: Launch Stinger + Meter + Runtime Diagnostics
+
+### Summary
+Continued polish on graphics, sound, and runtime architecture around the library scene while preserving deterministic frame behavior.
+
+### Graphics
+- Added a footer audio meter visualization that animates per frame and picks up selected-title color themes.
+- Added launch-status pulse tinting for the footer status text after an accept press.
+
+### Sound
+- Added `AudioCue::LaunchRequest` and wired an explicit launch stinger synthesis path in `AudioEngine::sfx_sample`.
+- Launch stinger now has priority over short confirm beeps so title-open intent has clear audible feedback.
+
+### Architecture
+- Added `collect_runtime_diagnostics(events)` and `RuntimeDiagnostics` to centralize host-side interpretation of non-audio runtime events.
+- Main loop now uses diagnostics extraction instead of ad-hoc direct event matching.
+
+### Validation
+- Updated library tests to assert launch cue emission when launch is requested.
+
+## 2026-03-08 00:22:00Z — Library Launch Request Event + Accept Input Path
+
+### Summary
+Implemented the next library milestone: explicit launch intent capture for selected titles with typed runtime telemetry, while keeping deterministic flow and existing track-selection behavior.
+
+### Functional Changes
+- Added gameplay-level `accept`/`cancel` input fields to support menu intent expansion beyond directional navigation.
+- Library selection update now returns a typed `LibraryUpdate` payload (`audio_cue`, `launch_requested`) instead of only an audio cue.
+- Pressing accept on a library card now edge-triggers a launch request intent and updates footer status messaging to show launch pipeline progress text.
+- Added runtime event `RuntimeEvent::TitleLaunchRequested(&'static str)` and host logging hook in `main`.
+
+### Validation
+- Added unit tests for:
+  - selection wrap + deterministic track cue emission
+  - edge-triggered launch request behavior (press/hold/release/press)
+
+### Architecture Rationale
+This keeps scene simulation deterministic while making “open title” a first-class event boundary. The host can now route launch requests (future cartridge boot flow) without coupling launch side effects into the library scene.
+
 ## 2026-03-07 20:09:06Z — Snake Retirement + System Sandbox Bring-up
 
 ### Summary

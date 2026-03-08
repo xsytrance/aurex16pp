@@ -13,6 +13,8 @@ pub struct AudioEngine {
     arp_phase: u32,
     sample_rate: u32,
     confirm_samples_left: u32,
+    launch_samples_left: u32,
+    cancel_samples_left: u32,
     noise_state: u32,
     track_index: usize,
 }
@@ -26,6 +28,8 @@ impl AudioEngine {
             arp_phase: 0,
             sample_rate,
             confirm_samples_left: 0,
+            launch_samples_left: 0,
+            cancel_samples_left: 0,
             noise_state: 0xA5A5_1357,
             track_index: 0,
         }
@@ -40,6 +44,12 @@ impl AudioEngine {
             AudioCue::SelectTrack(track) => {
                 self.track_index = (track as usize) % 6;
                 self.confirm_samples_left = self.sample_rate / 10;
+            }
+            AudioCue::LaunchRequest => {
+                self.launch_samples_left = self.sample_rate / 3;
+            }
+            AudioCue::Cancel => {
+                self.cancel_samples_left = self.sample_rate / 8;
             }
             AudioCue::None => {}
         }
@@ -214,6 +224,40 @@ impl AudioEngine {
     }
 
     fn sfx_sample(&mut self) -> i32 {
+        if self.launch_samples_left > 0 {
+            let total = (self.sample_rate / 3).max(1);
+            let elapsed = total.saturating_sub(self.launch_samples_left.min(total));
+            let phase = elapsed * 100 / total;
+
+            let hz = if phase < 40 {
+                480 + (elapsed * 900 / total)
+            } else {
+                1380 + (elapsed * 420 / total)
+            };
+
+            self.launch_samples_left -= 1;
+            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz));
+            let amp = if phase < 55 { 10_000 } else { 7_000 };
+            return if self.lead_phase < 0x8000_0000 {
+                amp
+            } else {
+                -amp
+            };
+        }
+
+        if self.cancel_samples_left > 0 {
+            let total = (self.sample_rate / 8).max(1);
+            let elapsed = total.saturating_sub(self.cancel_samples_left.min(total));
+            let hz = 780u32.saturating_sub(elapsed * 320 / total);
+            self.cancel_samples_left -= 1;
+            self.lead_phase = self.lead_phase.wrapping_add(self.step_from_hz(hz.max(120)));
+            return if self.lead_phase < 0x8000_0000 {
+                6200
+            } else {
+                -6200
+            };
+        }
+
         if self.confirm_samples_left > 0 {
             let t = self.sample_rate / 10 - self.confirm_samples_left.min(self.sample_rate / 10);
             let hz = 900 + (t * 800 / (self.sample_rate / 10).max(1));
