@@ -15,7 +15,8 @@ const BG_TILES_BYTES: usize = 384 * 1024;
 const TILEMAP_BYTES: usize = 64 * 64 * 2;
 const SPRITE_TILES_BYTES: usize = 384 * 1024;
 const MODE7_TEX_BYTES: usize = 64 * 1024;
-const PALETTE_BYTES: usize = 16 * 1024;
+pub const MAX_PALETTE_ENTRIES: usize = 4096;
+pub const PALETTE_BYTES: usize = MAX_PALETTE_ENTRIES * 2;
 const RESERVED_BYTES: usize = 64 * 1024;
 
 const VRAM_TOTAL_BYTES: usize = BG_TILES_BYTES
@@ -152,13 +153,23 @@ pub struct Vram {
 
 impl Vram {
     pub fn new() -> Self {
+        let mut palettes = vec![0u8; PALETTE_BYTES].into_boxed_slice();
+
+        // Backward compatibility: preserve the exact startup values for the
+        // legacy 256-entry palette range.
+        for entry in 0..256usize {
+            let offset = entry * 2;
+            palettes[offset] = 0;
+            palettes[offset + 1] = 0;
+        }
+
         let v = Self {
             bg_tiles: vec![0u8; BG_TILES_BYTES].into_boxed_slice(),
             bg0_tilemap: vec![0; 64 * 64 * 2],
             bg1_tilemap: vec![0; 64 * 64 * 2],
             sprite_tiles: vec![0u8; SPRITE_TILES_BYTES].into_boxed_slice(),
             mode7_tex: vec![0u8; MODE7_TEX_BYTES].into_boxed_slice(),
-            palettes: vec![0u8; PALETTE_BYTES].into_boxed_slice(),
+            palettes,
             reserved: vec![0u8; RESERVED_BYTES].into_boxed_slice(),
         };
 
