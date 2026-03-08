@@ -841,46 +841,4 @@ mod tests {
 
         assert!(max_active <= 9, "max_active={max_active}");
     }
-
-    #[test]
-    fn same_note_does_not_retrigger_active_voice() {
-        let mut engine = AudioEngine::new(48_000);
-        engine.note_on(0, 262, 0, AudioMode::Boot);
-        engine.voices[0].envelope_state = super::EnvelopeState::Sustain;
-        engine.voices[0].env_counter = 7;
-
-        engine.note_on(0, 262, 0, AudioMode::Boot);
-
-        assert!(matches!(
-            engine.voices[0].envelope_state,
-            super::EnvelopeState::Sustain
-        ));
-        assert_eq!(engine.voices[0].env_counter, 7);
-
-        engine.note_on(0, 294, 0, AudioMode::Boot);
-        assert!(matches!(
-            engine.voices[0].envelope_state,
-            super::EnvelopeState::Attack
-        ));
-        assert_eq!(engine.voices[0].env_counter, 0);
-    }
-
-    #[test]
-    fn boot_voice_density_stays_within_budget() {
-        let mut engine = AudioEngine::new(48_000);
-        let mut max_active = 0usize;
-
-        for step in 0..super::PATTERN_STEPS {
-            engine.pattern_step = step;
-            engine.advance_boot_sequencer();
-            let active = engine
-                .voices
-                .iter()
-                .filter(|voice| voice.pitch > 0 && voice.volume > 0)
-                .count();
-            max_active = max_active.max(active);
-        }
-
-        assert!(max_active <= 9, "max_active={max_active}");
-    }
 }
