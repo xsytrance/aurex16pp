@@ -290,6 +290,7 @@ Files:
 Command:
 - `cargo run -- --audit-cartridges`
 - `cargo run -- --audit-cartridges --json`
+- `scripts/preflight.sh`
 
 Purpose:
 - deterministic manifest/identity scan for cartridge folders before runtime launch attempts

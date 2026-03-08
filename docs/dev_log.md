@@ -1,3 +1,19 @@
+## 2026-03-08 09:05:00Z — CI/Local Preflight Entrypoint Script
+
+### Summary
+Added a single script entrypoint for deterministic preflight checks so local and CI invocation paths stay aligned.
+
+### Runtime/Tooling
+- Added `scripts/preflight.sh` to run:
+  - `cargo fmt -- --check`
+  - `cargo check`
+  - `cargo run -- --audit-cartridges --json`
+- Added `AUREX_SKIP_AUDIT_LINK=1` escape hatch for environments without native SDL2 linking support.
+- Updated architecture index and technical spec docs to reference the preflight script.
+
+### Progress
+This reduces drift between ad-hoc local checks and CI expectations and makes cartridge audit gating easier to operationalize.
+
 ## 2026-03-08 08:35:00Z — Manifest Schema Gate + Upload Budget Validation
 
 ### Summary

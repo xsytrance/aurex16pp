@@ -125,6 +125,7 @@ Next capability unlock for “generated games fully runnable”:
   - cartridge lint tool enforcing budget + identity + manifest schema
   - cartridge audit CLI mode: `cargo run -- --audit-cartridges` (or `--json`) for manifest/identity sweep
   - golden-frame regression snapshots for deterministic render validation
+  - preflight entrypoint: `scripts/preflight.sh` (supports `AUREX_SKIP_AUDIT_LINK=1` for SDL-missing environments)
 
 
 ## 14. Additional Suggested Upgrades (Agent Proposals)
@@ -143,3 +144,4 @@ Next capability unlock for “generated games fully runnable”:
 ## 15. Neo-Geo Comparison Reference
 - See: `docs/aurex_vs_neo_geo.md`
 - This comparison is used as target guidance for phase planning and authoring policy.
+
