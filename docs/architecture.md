@@ -87,6 +87,9 @@ This order is deterministic and stable across runs.
 ### Boot audio mode
 Boot now uses a dedicated sequencer branch (`advance_boot_sequencer`) with curated voice placement and FX, separate from game track sequencing.
 
+### Mix profiles
+Runtime audio now supports deterministic mix profiles (`soft`, `default`, `arcade`) that adjust gain and LP/HP smoothing coefficients without leaving integer math. This allows host-side tuning for hardware feel while preserving deterministic output.
+
 ### Boot fuzz regression root cause + fix
 After the ASU-32 upgrade, fuzziness came from envelope hard-retrigger behavior on stable notes plus over-dense noise/percussion layering. The fix:
 
@@ -129,6 +132,17 @@ Cartridge resolution failures map to typed rejection reasons (missing/invalid ma
 
 ---
 
+
+### Launch telemetry formatting
+Launch-stage logs are now normalized for host integration rather than Rust debug enums:
+
+- `Launch stage: pending title=<title> cartridge=<id>`
+- `Launch stage: validating title=<title> cartridge=<id>`
+- `Launch stage: ready title=<title> cartridge=<id>`
+- `Launch rejected: reason=<snake_case_reason>`
+
+This keeps telemetry parsing stable for downstream UI/event ingest.
+
 ## 8) Cartridge tooling and validation
 
 `CartridgeRuntime` now includes:
@@ -149,11 +163,15 @@ Key commands:
 
 - `--audit-cartridges [--json]`
 - `--analyze-cartridges [--json]`
-- `--audio-diagnostics [--boot] [--frames N] [--json]`
+- `--audio-diagnostics [--boot] [--frames N] [--audio-profile soft|default|arcade] [--json]` (includes crest + clipping counters)
+- `--generate-runtime-baseline [--frames N] [--audio-profile soft|default|arcade] [--out PATH]`
+- `--docs-sync-check`
 - `--palette-heatmap`
 - `--replay-capture-smoke`
 
-Plus `scripts/preflight.sh` for formatting/check + cartridge audit gate.
+Plus `scripts/preflight.sh` for formatting/check + docs-sync + cartridge audit gate.
+
+In SDL2-link-limited environments (`AUREX_SKIP_AUDIT_LINK=1`), preflight now uses a shell docs-sync fallback marker check so docs contract drift is still caught without `cargo run` linking.
 
 ---
 
