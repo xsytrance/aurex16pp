@@ -3,6 +3,8 @@
 ## Purpose
 This guide defines the deterministic prompt structure LLMs must follow to generate Aurex cartridges.
 
+Human-facing companion guide: `docs/human_game_creation_guide.md`.
+
 Aurex is not free-form: cartridge outputs must conform to hardware caps and a strict manifest schema.
 
 ## Prompt Contract (Required Sections)

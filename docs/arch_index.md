@@ -240,6 +240,7 @@ Responsibilities:
 Files:
 - `docs/llm_sdk_guide.md`
 - `docs/llm_prompt_template.md`
+- `docs/human_game_creation_guide.md`
 - `src/aurex/runtime/launch.rs`
 
 Core objects:

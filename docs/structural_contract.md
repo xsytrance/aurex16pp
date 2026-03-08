@@ -356,3 +356,5 @@ Reference files:
 - docs/llm_prompt_template.md
 
 Changes to prompt contract sections must be documented before runtime behavior depending on those sections is introduced.
+
+- docs/human_game_creation_guide.md

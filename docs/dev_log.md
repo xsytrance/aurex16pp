@@ -1,3 +1,19 @@
+## 2026-03-08 04:22:00Z — Human Game Creation Guide Aligned to LLM SDK Contract
+
+### Summary
+Added a human-facing game creation guide that mirrors LLM prompt contract requirements and deterministic hardware constraints.
+
+### Documentation
+- Added `docs/human_game_creation_guide.md` with:
+  - hard-limit summary
+  - step-by-step human workflow for directing an LLM
+  - identity consistency checks (`GAME_ID` / folder / manifest `game_id`)
+  - deterministic authoring checklist and DoD criteria
+- Linked this guide into architecture/index/master/canon docs to keep human and LLM instructions synchronized.
+
+### Progress
+Human-to-LLM authoring now has a canonical, constraint-safe path that matches runtime validation behavior.
+
 ## 2026-03-08 04:02:00Z — Manifest Identity Enforcement for LLM Cartridges
 
 ### Summary

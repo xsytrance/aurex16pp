@@ -394,3 +394,6 @@ LLM outputs that do not include all required sections are considered invalid car
 
 
 Launch descriptor IDs must be lowercase snake_case (`[a-z0-9_]+`) to align with cartridge folder identity and runtime validation.
+
+
+Human operators directing LLM cartridge creation should use docs/human_game_creation_guide.md to stay aligned with deterministic contract rules.

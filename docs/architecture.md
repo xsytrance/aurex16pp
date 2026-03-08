@@ -326,3 +326,13 @@ This prevents host boot handoff from firing on unresolved cartridge IDs.
 
 
 Resolver failures now distinguish missing manifests from invalid manifests; invalid manifests map to `CartridgeManifestInvalid` rejection telemetry.
+
+
+## Human Authoring Guide (2026-03-08 04:22:00Z)
+
+A human-facing cartridge authoring guide now complements the LLM SDK docs:
+- `docs/human_game_creation_guide.md`
+
+Purpose:
+- help designers/producers request LLM-generated games using the same strict contract and hardware limits
+- keep human workflow aligned with deterministic runtime constraints

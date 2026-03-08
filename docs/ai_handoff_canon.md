@@ -374,6 +374,15 @@ END OF CANON
 - Missing cartridge manifests force `Rejected(CartridgeMissing)` before any boot handoff.
 Invalid manifests force `Rejected(CartridgeManifestInvalid)` before any boot handoff.
 
+
+
+## Human Authoring Canon (2026-03-08 04:22:00Z)
+
+- Human-directed game generation must use the same contract as LLM-directed generation.
+- Human-facing instruction source:
+  - `docs/human_game_creation_guide.md`
+- Identity consistency (`GAME_ID`, folder, manifest `game_id`) is mandatory.
+
 ## Runtime Handoff Contract (Current)
 
 Scene lifecycle contract:
