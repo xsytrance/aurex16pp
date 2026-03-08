@@ -610,4 +610,26 @@ mod tests {
         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
     }
+
+    #[test]
+    fn diagnostics_peak_stays_below_hard_clip() {
+        let engine = AudioEngine::new(48_000);
+        let boot = engine.diagnostics_for_frames(AudioMode::Boot, 48_000);
+        let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
+        assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
+        assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
+    }
+}
+
+fn sine_approx(phase: u16) -> i16 {
+    let x = phase as i32;
+    let tri = if x < 128 {
+        -32767 + x * 512
+    } else {
+        32767 - (x - 128) * 512
+    };
+    // Integer parabolic shaping from triangle to pseudo-sine.
+    let abs_t = tri.abs();
+    let shaped = tri * (65535 - abs_t / 2) / 65535;
+    shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
 }

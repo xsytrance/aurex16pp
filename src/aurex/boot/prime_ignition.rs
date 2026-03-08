@@ -86,6 +86,7 @@ impl PrimeIgnition {
             );
             fill_rect(fb, 0, y, FB_W as i32, y + 1, c);
         }
+    }
 
         for lane in -8..=8i32 {
             let base_x = FB_W as i32 / 2 + lane * 28;
@@ -186,6 +187,13 @@ fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u1
     }
 }
 
+fn stroke_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
+    fill_rect(fb, x0, y0, x1, y0 + 1, color);
+    fill_rect(fb, x0, y1 - 1, x1, y1, color);
+    fill_rect(fb, x0, y0, x0 + 1, y1, color);
+    fill_rect(fb, x1 - 1, y0, x1, y1, color);
+}
+
 fn draw_text(fb: &mut Framebuffer, text: &str, x: i32, y: i32, scale: usize, color: u16) {
     let mut cursor_x = x;
     for ch in text.chars() {
@@ -255,7 +263,6 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
         'V' => [0x11, 0x11, 0x11, 0x11, 0x0A, 0x0A, 0x04],
         'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
         'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
-        'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F],
         '0' => [0x0E, 0x13, 0x15, 0x19, 0x11, 0x11, 0x0E],
         '1' => [0x04, 0x0C, 0x14, 0x04, 0x04, 0x04, 0x0E],
         '2' => [0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F],
