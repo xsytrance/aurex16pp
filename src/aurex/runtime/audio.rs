@@ -235,6 +235,7 @@ pub struct AudioDiagnostics {
     pub crest_r_q10: u16,
     pub clipped_l: u32,
     pub clipped_r: u32,
+    pub boot_beat_step: u8,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -260,7 +261,7 @@ impl AudioDiagnosticsBaseline {
 impl AudioDiagnostics {
     pub fn to_json(&self) -> String {
         format!(
-            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{},\"crest_l_q10\":{},\"crest_r_q10\":{},\"clipped_l\":{},\"clipped_r\":{}}}",
+            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{},\"crest_l_q10\":{},\"crest_r_q10\":{},\"clipped_l\":{},\"clipped_r\":{},\"boot_beat_step\":{}}}",
             self.frames,
             self.peak_l,
             self.peak_r,
@@ -269,7 +270,8 @@ impl AudioDiagnostics {
             self.crest_l_q10,
             self.crest_r_q10,
             self.clipped_l,
-            self.clipped_r
+            self.clipped_r,
+            self.boot_beat_step
         )
     }
 }
@@ -442,6 +444,7 @@ impl AudioEngine {
             crest_r_q10,
             clipped_l,
             clipped_r,
+            boot_beat_step: sim.boot_beat_step(),
         }
     }
 
@@ -883,6 +886,8 @@ mod tests {
         assert_eq!(boot.clipped_r, 0);
         assert_eq!(game.clipped_l, 0);
         assert_eq!(game.clipped_r, 0);
+        assert_eq!(boot.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
+        assert_eq!(game.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
     }
 
     #[test]

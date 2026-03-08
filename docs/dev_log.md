@@ -1317,3 +1317,22 @@ Added a focused deterministic audio unit test to lock in boot beat-step progress
 1. Add a compact runtime diagnostics field exposing current boot beat-step for host telemetry.
 2. Add profile-aware assertion coverage for crest/clipping deltas in diagnostics baseline generation.
 3. Continue reducing broad `dead_code` allowances as modules stabilize.
+
+
+## 2026-03-08 18:05:00Z — Fast follow: expose boot beat-step in audio diagnostics
+
+### Summary
+Implemented the next telemetry step by exposing deterministic sequencer beat-step in `AudioDiagnostics` outputs (JSON + human-readable CLI), improving host-side AV sync visibility.
+
+### Runtime/Tooling
+- Extended `AudioDiagnostics` with `boot_beat_step` and included it in `to_json()` serialization.
+- Updated `--audio-diagnostics` text output to print `boot_beat_step`.
+- Added assertions in diagnostics regression test to validate deterministic beat-step value after a fixed frame window.
+
+### Progress report
+- Beat-step telemetry is now visible in diagnostics artifacts and command-line triage output, reducing debugging turnaround for sync issues.
+
+### Next planned work
+1. Include profile metadata at top-level runtime baseline JSON payload for faster host-side grouping.
+2. Add a tiny parser test for diagnostics JSON field presence/shape to avoid accidental telemetry regressions.
+3. Continue tightening warning hygiene by replacing broad `dead_code` allows with targeted item-level allowances.

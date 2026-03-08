@@ -200,7 +200,7 @@ fn main() {
             println!("{}", diag.to_json());
         } else {
             println!(
-                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={}",
+                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={} boot_beat_step={}",
                 profile.as_str(),
                 diag.frames,
                 diag.peak_l,
@@ -210,7 +210,8 @@ fn main() {
                 diag.crest_l_q10,
                 diag.crest_r_q10,
                 diag.clipped_l,
-                diag.clipped_r
+                diag.clipped_r,
+                diag.boot_beat_step
             );
         }
         return;
