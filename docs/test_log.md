@@ -2,17 +2,17 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (boot beat-step diagnostics telemetry)
+## Latest validation pass (baseline profile metadata fast follow)
 
 ### Commands executed
 
 1. `cargo check --all-targets`
    - Result: PASS
-   - Notes: runtime/CLI compile after adding `boot_beat_step` to diagnostics payloads.
+   - Notes: runtime baseline JSON generation compiles after adding top-level `audio_profile` metadata.
 
 2. `cargo check --tests`
    - Result: PASS
-   - Notes: regression tests compile with new deterministic beat-step assertions.
+   - Notes: test targets continue to compile with diagnostics telemetry fields.
 
 3. `cargo test -q`
    - Result: ENV-LIMITED
@@ -21,6 +21,6 @@ _Last updated: 2026-03-08._
 
 ## Interpretation
 
-- Diagnostics now include deterministic `boot_beat_step` for both JSON and human-readable output.
-- Regression checks now assert expected step progression after fixed diagnostics frame windows.
+- Runtime baseline payload now includes top-level `audio_profile` metadata for easier host-side grouping.
+- Existing deterministic baseline and replay smoke content remain available in the same payload.
 - Full binary-linked test execution remains blocked without system SDL2.

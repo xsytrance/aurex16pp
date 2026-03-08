@@ -1336,3 +1336,21 @@ Implemented the next telemetry step by exposing deterministic sequencer beat-ste
 1. Include profile metadata at top-level runtime baseline JSON payload for faster host-side grouping.
 2. Add a tiny parser test for diagnostics JSON field presence/shape to avoid accidental telemetry regressions.
 3. Continue tightening warning hygiene by replacing broad `dead_code` allows with targeted item-level allowances.
+
+
+## 2026-03-08 18:20:00Z — Fast follow: baseline payload profile metadata
+
+### Summary
+Added top-level `audio_profile` metadata to runtime baseline JSON generation for faster host-side grouping and cross-profile diff workflows.
+
+### Runtime/Tooling
+- Updated `--generate-runtime-baseline` payload shape to include `"audio_profile":"soft|default|arcade"` at the top level.
+- Keeps existing baseline and replay-smoke payloads unchanged for backward-compatible content use.
+
+### Progress report
+- Baseline artifacts now self-describe profile context, reducing triage and indexing overhead in CI/host pipelines.
+
+### Next planned work
+1. Add a tiny JSON shape regression test to assert baseline payload includes `audio_profile` and diagnostics beat-step fields.
+2. Add profile-aware crest/clipping delta assertions to baseline validation flow.
+3. Continue dead-code allowance cleanup in stabilized modules.

@@ -226,7 +226,8 @@ fn main() {
         let baseline = engine.diagnostics_baseline(frames);
         let replay = replay_capture_smoke_summary_json();
         let json = format!(
-            "{{\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
+            "{{\"audio_profile\":\"{}\",\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
+            profile.as_str(),
             baseline.to_json(),
             replay
         );
