@@ -512,3 +512,16 @@ mod tests {
         assert!(block.iter().any(|s| *s != 0));
     }
 }
+
+fn sine_approx(phase: u16) -> i16 {
+    let x = phase as i32;
+    let tri = if x < 128 {
+        -32767 + x * 512
+    } else {
+        32767 - (x - 128) * 512
+    };
+    // Integer parabolic shaping from triangle to pseudo-sine.
+    let abs_t = tri.abs();
+    let shaped = tri * (65535 - abs_t / 2) / 65535;
+    shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
+}
