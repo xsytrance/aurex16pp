@@ -1280,3 +1280,22 @@ Continued core architecture/sound/graphics integration by aligning runtime signa
 1. Implement actual boot beat-step source from sequencer diagnostics and feed it into `run_frame(...)` instead of `None`.
 2. Add profile-aware audio regression assertions and expose profile in baseline artifact metadata.
 3. Add deterministic boot palette profiles to continue graphics hardware tone calibration.
+
+
+## 2026-03-08 17:35:00Z — Fast follow: boot beat-step wiring from audio sequencer
+
+### Summary
+Completed the next integration step by wiring live audio sequencer beat-step data into boot frame rendering so boot overlay timing can track runtime musical step state instead of using a placeholder `None` path.
+
+### Runtime/Integration
+- Added `AudioEngine::boot_beat_step()` accessor to expose the deterministic sequencer step as a compact `u8`.
+- Updated main loop to pass `Some(synth.boot_beat_step())` to `run_frame(...)` during boot-phase audio mode.
+- Kept game-phase behavior unchanged (`None`) to avoid coupling game visuals to boot-only timing semantics.
+
+### Progress report
+- Boot overlay beat bias is now driven by real runtime sequencer state, closing the immediate API plumbing loop and reducing AV drift risk.
+
+### Next planned work
+1. Add a tiny deterministic integration test that verifies boot beat-step propagation influences overlay timing path without changing game path.
+2. Surface beat-step in runtime diagnostics output to aid host-side debugging and sync validation.
+3. Continue profile-aware regression checks (crest/clipping deltas) and metadata enrichment in baseline artifacts.

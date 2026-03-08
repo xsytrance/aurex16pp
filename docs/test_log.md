@@ -2,13 +2,13 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (beat-step API compatibility + envelope smoothing field)
+## Latest validation pass (boot beat-step wiring fast follow)
 
 ### Commands executed
 
-1. `cargo fmt && cargo check --all-targets && AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh && cargo check --tests`
+1. `cargo check --all-targets`
    - Result: PASS
-   - Notes: compile/preflight checks pass with docs-sync shell fallback active in link-limited mode.
+   - Notes: build stays green after wiring live audio sequencer beat-step data to boot frame calls.
 
 2. `cargo test -q`
    - Result: ENV-LIMITED
@@ -17,6 +17,6 @@ _Last updated: 2026-03-08._
 
 ## Interpretation
 
-- Integration signature drift is resolved in this branch for `run_frame(..., boot_beat_step)` and boot overlay API alignment.
-- Voice envelope smoothing state compiles cleanly and no missing-field errors remain.
+- Boot path now passes `Some(boot_beat_step)` from live audio sequencer state during runtime loop.
+- Game path remains explicitly `None`, preserving prior behavior while avoiding boot coupling leakage.
 - Full binary-linked test execution remains blocked without system SDL2.

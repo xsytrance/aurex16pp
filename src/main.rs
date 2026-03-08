@@ -385,12 +385,13 @@ fn main() {
         }
 
         let input = polled.gameplay;
-        let boot_beat_step = match flow.phase() {
-            FlowPhase::Boot | FlowPhase::AwaitStart => Some(synth.pattern_step() as u8),
-            FlowPhase::Game => None,
+        let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
+            Some(synth.boot_beat_step())
+        } else {
+            None
         };
 
-        system.run_frame(input, None);
+        system.run_frame(input, boot_beat_step);
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
 

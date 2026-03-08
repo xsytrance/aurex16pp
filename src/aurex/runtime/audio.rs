@@ -535,6 +535,10 @@ impl AudioEngine {
         }
     }
 
+    pub fn boot_beat_step(&self) -> u8 {
+        (self.pattern_step % PATTERN_STEPS) as u8
+    }
+
     fn advance_boot_sequencer(&mut self) {
         let s = self.pattern_step;
         let arp_b = (s * 2) % PATTERN_STEPS;
