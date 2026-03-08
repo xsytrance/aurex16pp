@@ -327,7 +327,9 @@ Scene lifecycle contract:
 Event contract:
 - `RuntimeEvent::Audio(AudioCue)` for soundtrack/SFX intent.
 - `RuntimeEvent::SceneChanged(SceneId)` for lifecycle telemetry.
-- `RuntimeEvent::TitleLaunchRequested(&'static str)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchRequested(LaunchDescriptor)` for explicit library launch intent.
+- `RuntimeEvent::TitleLaunchCanceled` for launch clear intent.
+- `RuntimeEvent::LaunchStageChanged(LaunchStage)` for lifecycle stage telemetry.
 
 Host contract:
 - Drain runtime events every frame after `run_frame`.

@@ -24,6 +24,7 @@ enum IconKind {
 #[derive(Clone, Copy)]
 struct TitleProfile {
     title: &'static str,
+    cartridge_id: &'static str,
     track_id: u8,
     theme: ColorTheme,
     icon: IconKind,
@@ -32,6 +33,7 @@ struct TitleProfile {
 const PROFILES: [TitleProfile; 6] = [
     TitleProfile {
         title: "NEON CIRCUIT",
+        cartridge_id: "neon_circuit",
         track_id: 0,
         theme: ColorTheme {
             bg_r: 1,
@@ -45,6 +47,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "SKYLINE DRIFT",
+        cartridge_id: "skyline_drift",
         track_id: 1,
         theme: ColorTheme {
             bg_r: 2,
@@ -58,6 +61,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "PIXEL SENTINEL",
+        cartridge_id: "pixel_sentinel",
         track_id: 2,
         theme: ColorTheme {
             bg_r: 2,
@@ -71,6 +75,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "VOID CARTOGRAPHER",
+        cartridge_id: "void_cartographer",
         track_id: 3,
         theme: ColorTheme {
             bg_r: 3,
@@ -84,6 +89,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "MECHA RIFT",
+        cartridge_id: "mecha_rift",
         track_id: 4,
         theme: ColorTheme {
             bg_r: 5,
@@ -97,6 +103,7 @@ const PROFILES: [TitleProfile; 6] = [
     },
     TitleProfile {
         title: "ORBITAL RUSH",
+        cartridge_id: "orbital_rush",
         track_id: 5,
         theme: ColorTheme {
             bg_r: 2,
@@ -144,6 +151,7 @@ impl StatusMessage {
 pub struct LibraryUpdate {
     pub audio_cue: AudioCue,
     pub launch_requested: bool,
+    pub launch_canceled: bool,
 }
 
 impl LibraryScreen {
@@ -166,6 +174,26 @@ impl LibraryScreen {
         PROFILES[self.selected].title
     }
 
+    pub fn current_launch_descriptor(&self) -> crate::aurex::runtime::LaunchDescriptor {
+        let p = PROFILES[self.selected];
+        crate::aurex::runtime::LaunchDescriptor {
+            title: p.title,
+            cartridge_id: p.cartridge_id,
+        }
+    }
+
+    pub fn set_launch_pending(&mut self, pending: bool) {
+        self.launch_pending = pending;
+        if pending {
+            self.status_message = StatusMessage {
+                text: "LAUNCH INTENT ARMED",
+                tint: PROFILES[self.selected].theme,
+            };
+        } else if self.launch_flash_frames == 0 {
+            self.status_message = StatusMessage::idle();
+        }
+    }
+
     pub fn update(&mut self, input: InputState) -> LibraryUpdate {
         if self.launch_flash_frames > 0 {
             self.launch_flash_frames -= 1;
@@ -173,16 +201,21 @@ impl LibraryScreen {
 
         let mut cue = AudioCue::None;
         let mut launch_requested = false;
+        let mut launch_canceled = false;
 
         if input.up && !self.prev_up {
             self.selected = (self.selected + PROFILES.len() - 1) % PROFILES.len();
             cue = self.current_audio_cue();
-            self.status_message = StatusMessage::idle();
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
         }
         if input.down && !self.prev_down {
             self.selected = (self.selected + 1) % PROFILES.len();
             cue = self.current_audio_cue();
-            self.status_message = StatusMessage::idle();
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
         }
 
         if input.accept && !self.prev_accept {
@@ -195,13 +228,24 @@ impl LibraryScreen {
             };
         }
 
+        if input.cancel && !self.prev_cancel {
+            launch_canceled = true;
+            cue = AudioCue::Cancel;
+            self.launch_flash_frames = 0;
+            if !self.launch_pending {
+                self.status_message = StatusMessage::idle();
+            }
+        }
+
         self.prev_up = input.up;
         self.prev_down = input.down;
         self.prev_accept = input.accept;
+        self.prev_cancel = input.cancel;
 
         LibraryUpdate {
             audio_cue: cue,
             launch_requested,
+            launch_canceled,
         }
     }
 
@@ -324,7 +368,7 @@ impl LibraryScreen {
         self.fill_rect(fb, 16, 216, (FB_W - 16) as i32, 236, rgb555(2, 8, 14));
         self.draw_text(
             fb,
-            "UP/DOWN: SELECT   A/START: REQUEST LAUNCH",
+            "UP/DOWN: SELECT   A/START: REQUEST   B/ESC: CLEAR",
             24,
             222,
             1,
@@ -535,6 +579,7 @@ mod tests {
             ..InputState::default()
         });
         assert!(!held.launch_requested);
+        assert!(!held.launch_canceled);
 
         let released = lib.update(InputState::default());
         assert!(!released.launch_requested);
@@ -544,5 +589,28 @@ mod tests {
             ..InputState::default()
         });
         assert!(second.launch_requested);
+    }
+
+    #[test]
+    fn cancel_is_edge_triggered_and_resets_state() {
+        let mut lib = LibraryScreen::new();
+
+        let _ = lib.update(InputState {
+            accept: true,
+            ..InputState::default()
+        });
+
+        let canceled = lib.update(InputState {
+            cancel: true,
+            ..InputState::default()
+        });
+        assert!(canceled.launch_canceled);
+        assert!(matches!(canceled.audio_cue, AudioCue::Cancel));
+
+        let held = lib.update(InputState {
+            cancel: true,
+            ..InputState::default()
+        });
+        assert!(!held.launch_canceled);
     }
 }

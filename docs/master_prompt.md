@@ -380,3 +380,14 @@ Future work must extend capability without breaking architectural constraints.
   - host dispatch side effects.
 - Prefer additive event variants over direct cross-module calls.
 - Keep scene transition telemetry available for diagnostics and future menu/router work.
+
+
+LLM Cartridge Prompt Contract (Current)
+
+Aurex cartridge generation must use fixed-section prompt structures.
+
+Required references:
+- docs/llm_sdk_guide.md
+- docs/llm_prompt_template.md
+
+LLM outputs that do not include all required sections are considered invalid cartridge authoring requests.
