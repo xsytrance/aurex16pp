@@ -289,6 +289,7 @@ Files:
 
 Command:
 - `cargo run -- --audit-cartridges`
+- `cargo run -- --audit-cartridges --json`
 
 Purpose:
 - deterministic manifest/identity scan for cartridge folders before runtime launch attempts

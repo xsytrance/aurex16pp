@@ -1,3 +1,17 @@
+## 2026-03-08 08:35:00Z — Manifest Schema Gate + Upload Budget Validation
+
+### Summary
+Extended cartridge preflight validation with an explicit manifest key schema gate and upload budget checks so CI/runtime reject malformed or out-of-bounds content before attach.
+
+### Runtime/Tooling
+- Added manifest key registry semantics (`name` optional single, `game_id` required single, `upload` required repeat).
+- Added duplicate-key checks for singleton fields (`name`, `game_id`).
+- Added upload budget checks for per-upload size cap, region capacity bounds, and palette alignment constraints.
+- Added unit coverage for palette-region budget/alignment rejection.
+
+### Progress
+This strengthens deterministic preflight by moving structural + memory-safety checks into manifest parsing rather than relying on downstream runtime behavior.
+
 ## 2026-03-08 08:10:00Z — Cartridge Audit CLI (Deterministic Preflight)
 
 ### Summary
@@ -6,6 +20,7 @@ Added a deterministic cartridge audit mode to preflight cartridge manifests and 
 ### Runtime/Tooling
 - Added cartridge audit report model and root-scan API in cartridge runtime module.
 - Added host CLI switch: `--audit-cartridges` to print per-cartridge status and return non-zero on invalid entries.
+- Added `--json` output mode for machine-readable CI/preflight integration.
 - Added unit coverage for mixed valid/invalid/missing-manifest cartridge trees.
 
 ### Progress

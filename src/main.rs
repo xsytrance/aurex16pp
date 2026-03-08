@@ -28,20 +28,24 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--audit-cartridges") {
         let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
-        println!(
-            "Cartridge audit: {} valid / {} invalid",
-            report.valid_count(),
-            report.invalid_count()
-        );
-        for entry in &report.entries {
-            if entry.ok {
-                println!("[OK] {}", entry.cartridge_id);
-            } else {
-                println!(
-                    "[FAIL] {}: {}",
-                    entry.cartridge_id,
-                    entry.issue.as_deref().unwrap_or("unknown error")
-                );
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", report.to_json());
+        } else {
+            println!(
+                "Cartridge audit: {} valid / {} invalid",
+                report.valid_count(),
+                report.invalid_count()
+            );
+            for entry in &report.entries {
+                if entry.ok {
+                    println!("[OK] {}", entry.cartridge_id);
+                } else {
+                    println!(
+                        "[FAIL] {}: {}",
+                        entry.cartridge_id,
+                        entry.issue.as_deref().unwrap_or("unknown error")
+                    );
+                }
             }
         }
 

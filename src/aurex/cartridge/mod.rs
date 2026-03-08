@@ -8,6 +8,41 @@ use std::path::{Path, PathBuf};
 const MAX_DMA_PER_FRAME: usize = 4;
 const STAGING_START: usize = 0x20000;
 const STAGING_CHUNK_BYTES: usize = 4096;
+const MAX_UPLOAD_BYTES: usize = 384 * 1024;
+
+const MANIFEST_KEYS: &[ManifestKeySpec] = &[
+    ManifestKeySpec {
+        key: "name",
+        kind: ManifestKeyKind::OptionalSingle,
+    },
+    ManifestKeySpec {
+        key: "game_id",
+        kind: ManifestKeyKind::RequiredSingle,
+    },
+    ManifestKeySpec {
+        key: "upload",
+        kind: ManifestKeyKind::RequiredRepeat,
+    },
+];
+
+#[derive(Copy, Clone)]
+struct ManifestKeySpec {
+    key: &'static str,
+    kind: ManifestKeyKind,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum ManifestKeyKind {
+    OptionalSingle,
+    RequiredSingle,
+    RequiredRepeat,
+}
+
+#[derive(Debug)]
+pub enum CartridgeResolveError {
+    MissingManifest,
+    InvalidManifest(String),
+}
 
 #[derive(Debug)]
 pub enum CartridgeResolveError {
@@ -51,6 +86,44 @@ impl CartridgeAuditReport {
 
     pub fn all_valid(&self) -> bool {
         self.invalid_count() == 0
+    }
+
+    pub fn to_json(&self) -> String {
+        fn esc(s: &str) -> String {
+            s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+        }
+
+        let mut out = String::new();
+        out.push_str("{\"valid\":");
+        out.push_str(&self.valid_count().to_string());
+        out.push_str(",\"invalid\":");
+        out.push_str(&self.invalid_count().to_string());
+        out.push_str(",\"entries\":[");
+
+        for (i, e) in self.entries.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str("{\"cartridge_id\":\"");
+            out.push_str(&esc(&e.cartridge_id));
+            out.push_str("\",\"ok\":");
+            out.push_str(if e.ok { "true" } else { "false" });
+            out.push_str(",\"issue\":");
+            match &e.issue {
+                Some(issue) => {
+                    out.push('"');
+                    out.push_str(&esc(issue));
+                    out.push('"');
+                }
+                None => out.push_str("null"),
+            }
+            out.push('}');
+        }
+
+        out.push_str("]}");
+        out
     }
 }
 
@@ -146,6 +219,8 @@ impl CartridgeRuntime {
         let mut name = String::from("unnamed");
         let mut game_id: Option<String> = None;
         let mut uploads = Vec::new();
+        let mut seen_name = false;
+        let mut seen_game_id = false;
 
         for (line_no, raw) in text.lines().enumerate() {
             let line = raw.trim();
@@ -154,11 +229,25 @@ impl CartridgeRuntime {
             }
 
             if let Some(rest) = line.strip_prefix("name=") {
+                if seen_name {
+                    return Err(format!(
+                        "manifest line {}: duplicate name field",
+                        line_no + 1
+                    ));
+                }
+                seen_name = true;
                 name = rest.trim().to_string();
                 continue;
             }
 
             if let Some(rest) = line.strip_prefix("game_id=") {
+                if seen_game_id {
+                    return Err(format!(
+                        "manifest line {}: duplicate game_id field",
+                        line_no + 1
+                    ));
+                }
+                seen_game_id = true;
                 let id = rest.trim();
                 if id.is_empty() {
                     return Err(format!("manifest line {}: empty game_id", line_no + 1));
@@ -223,11 +312,27 @@ impl CartridgeRuntime {
                 continue;
             }
 
+            if let Some((candidate_key, _)) = line.split_once('=') {
+                if !manifest_key_known(candidate_key.trim()) {
+                    return Err(format!(
+                        "manifest line {}: unknown key '{}'",
+                        line_no + 1,
+                        candidate_key.trim()
+                    ));
+                }
+            }
+
             return Err(format!(
-                "manifest line {}: unknown entry '{}",
+                "manifest line {}: unknown entry '{}'",
                 line_no + 1,
                 line
             ));
+        }
+
+        validate_manifest_key_requirements(seen_game_id, uploads.is_empty())?;
+
+        for upload in &uploads {
+            validate_upload_budget(upload)?;
         }
 
         if let Some(expected) = expected_game_id {
@@ -286,6 +391,77 @@ impl CartridgeRuntime {
 
     pub fn uploads_complete(&self) -> bool {
         self.uploads.iter().all(|u| u.cursor >= u.data.len())
+    }
+}
+
+fn manifest_key_known(key: &str) -> bool {
+    MANIFEST_KEYS.iter().any(|spec| spec.key == key)
+}
+
+fn validate_manifest_key_requirements(
+    seen_game_id: bool,
+    upload_missing: bool,
+) -> Result<(), String> {
+    for key in MANIFEST_KEYS {
+        match key.kind {
+            ManifestKeyKind::RequiredSingle if key.key == "game_id" && !seen_game_id => {
+                return Err("manifest missing required game_id field".to_string());
+            }
+            ManifestKeyKind::RequiredRepeat if key.key == "upload" && upload_missing => {
+                return Err("manifest contains no upload entries".to_string());
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn validate_upload_budget(upload: &Upload) -> Result<(), String> {
+    if upload.data.len() > MAX_UPLOAD_BYTES {
+        return Err(format!(
+            "upload to {:?} exceeds max per-upload byte budget ({})",
+            upload.region, MAX_UPLOAD_BYTES
+        ));
+    }
+
+    let region_cap = region_capacity_bytes(upload.region);
+    let end = upload
+        .dst_offset
+        .checked_add(upload.data.len())
+        .ok_or_else(|| {
+            format!(
+                "upload to {:?} has overflowing destination range",
+                upload.region
+            )
+        })?;
+    if end > region_cap {
+        return Err(format!(
+            "upload to {:?} writes beyond region capacity (dst {} + bytes {} > cap {})",
+            upload.region,
+            upload.dst_offset,
+            upload.data.len(),
+            region_cap
+        ));
+    }
+
+    if matches!(upload.region, VramRegion::Palettes)
+        && (!upload.dst_offset.is_multiple_of(2) || !upload.data.len().is_multiple_of(2))
+    {
+        return Err("palette upload requires even dst offset and even byte count".to_string());
+    }
+
+    Ok(())
+}
+
+fn region_capacity_bytes(region: VramRegion) -> usize {
+    match region {
+        VramRegion::BgTiles => 384 * 1024,
+        VramRegion::Bg0Tilemap => 64 * 64 * 2,
+        VramRegion::Bg1Tilemap => 64 * 64 * 2,
+        VramRegion::SpriteTiles => 384 * 1024,
+        VramRegion::Mode7Tex => 64 * 1024,
+        VramRegion::Palettes => 4096 * 2,
+        VramRegion::AudioRam | VramRegion::Reserved => 0,
     }
 }
 
@@ -372,6 +548,11 @@ upload=BgTiles,0,tile.bin
         assert_eq!(report.invalid_count(), 2);
         assert!(!report.all_valid());
 
+        let json = report.to_json();
+        assert!(json.contains("\"valid\":1"));
+        assert!(json.contains("\"invalid\":2"));
+        assert!(json.contains("\"cartridge_id\":\"good_game\""));
+
         let good = report
             .entries
             .iter()
@@ -415,6 +596,30 @@ upload=BgTiles,0,tile.bin
             result,
             Err(CartridgeResolveError::InvalidManifest(_))
         ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn from_manifest_rejects_upload_out_of_region_budget() {
+        let old = std::env::current_dir().expect("cwd");
+        let root = unique_temp_dir();
+        fs::create_dir_all(root.join("cartridges/test_game")).expect("mkdir");
+        fs::write(
+            root.join("cartridges/test_game/manifest.txt"),
+            "name=TEST\ngame_id=test_game\nupload=Palettes,8191,palette.bin\n",
+        )
+        .expect("write manifest");
+        fs::write(root.join("cartridges/test_game/palette.bin"), [0u8; 2]).expect("write data");
+
+        std::env::set_current_dir(&root).expect("chdir root");
+        let result = CartridgeRuntime::from_cartridge_id("test_game");
+        std::env::set_current_dir(old).expect("restore cwd");
+
+        let err = match result {
+            Err(CartridgeResolveError::InvalidManifest(err)) => err,
+            _ => panic!("expected invalid manifest error"),
+        };
+        assert!(err.contains("palette upload requires even dst offset"));
         let _ = fs::remove_dir_all(root);
     }
 }
