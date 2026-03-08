@@ -52,6 +52,9 @@ impl PrimeIgnition {
 
         self.draw_equalizer(fb, t);
 
+        self.draw_accent_rails(fb, t);
+        self.draw_boot_meter(fb, t);
+
         if self.waiting_for_start {
             if (self.frame / 12).is_multiple_of(2) {
                 draw_text(
