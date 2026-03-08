@@ -43,6 +43,28 @@ pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostic
     out
 }
 
+#[derive(Default)]
+pub struct RuntimeDiagnostics {
+    pub scene_changed: Option<SceneId>,
+    pub launch_requested: Option<&'static str>,
+    pub launch_canceled: bool,
+}
+
+pub fn collect_runtime_diagnostics(events: &[RuntimeEvent]) -> RuntimeDiagnostics {
+    let mut out = RuntimeDiagnostics::default();
+
+    for event in events {
+        match event {
+            RuntimeEvent::SceneChanged(scene) => out.scene_changed = Some(*scene),
+            RuntimeEvent::TitleLaunchRequested(title) => out.launch_requested = Some(*title),
+            RuntimeEvent::TitleLaunchCanceled => out.launch_canceled = true,
+            RuntimeEvent::Audio(_) => {}
+        }
+    }
+
+    out
+}
+
 pub fn dispatch_runtime_events(engine: &mut AudioEngine, events: &[RuntimeEvent]) {
     for event in events {
         match event {
