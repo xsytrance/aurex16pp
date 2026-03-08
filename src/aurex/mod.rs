@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod boot;
 pub mod cartridge;
 pub mod clock;
