@@ -1,10 +1,9 @@
 mod aurex;
 
-use aurex::game::InputState;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
-    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, dispatch_runtime_events,
-    poll_input, present_frame,
+    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, collect_runtime_diagnostics,
+    dispatch_runtime_events, poll_input, present_frame,
 };
 use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
@@ -26,6 +25,33 @@ fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<Ga
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--audit-cartridges") {
+        let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
+        println!(
+            "Cartridge audit: {} valid / {} invalid",
+            report.valid_count(),
+            report.invalid_count()
+        );
+        for entry in &report.entries {
+            if entry.ok {
+                println!("[OK] {}", entry.cartridge_id);
+            } else {
+                println!(
+                    "[FAIL] {}: {}",
+                    entry.cartridge_id,
+                    entry.issue.as_deref().unwrap_or("unknown error")
+                );
+            }
+        }
+
+        if report.all_valid() {
+            return;
+        }
+
+        std::process::exit(2);
+    }
+
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
     let audio = sdl.audio().expect("SDL audio init failed");
@@ -119,10 +145,30 @@ fn main() {
         runtime_events.clear();
         system.drain_events(&mut runtime_events);
 
-        for event in &runtime_events {
-            if let aurex::runtime::RuntimeEvent::SceneChanged(scene) = event {
-                println!("Scene changed: {:?}", scene);
-            }
+        let diagnostics = collect_runtime_diagnostics(&runtime_events);
+        if let Some(scene) = diagnostics.scene_changed {
+            println!("Scene changed: {:?}", scene);
+        }
+        if let Some(req) = diagnostics.launch_requested {
+            println!("Launch requested: {} ({})", req.title, req.cartridge_id);
+        }
+        if diagnostics.launch_canceled {
+            println!("Launch request cleared");
+        }
+        if let Some(stage) = diagnostics.launch_stage_changed {
+            println!("Launch stage: {:?}", stage);
+        }
+        if let Some(ready) = diagnostics.launch_ready {
+            println!("Launch ready: {} ({})", ready.title, ready.cartridge_id);
+        }
+        if let Some(resolved) = diagnostics.launch_resolved {
+            println!(
+                "Cartridge resolved: {} ({})",
+                resolved.title, resolved.cartridge_id
+            );
+        }
+        if let Some(reject) = diagnostics.launch_rejected {
+            println!("Launch rejected: {:?}", reject);
         }
 
         dispatch_runtime_events(&mut synth, &runtime_events);
