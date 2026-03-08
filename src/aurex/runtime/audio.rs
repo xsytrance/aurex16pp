@@ -202,7 +202,7 @@ impl AudioEngine {
             };
             let saw = -32767 + phase * 256;
             let square = if i < 128 { 28000 } else { -28000 };
-            let sine = sine_approx(i as u16) as i32;
+            let sine = Self::sine_from_phase(i as u16) as i32;
             let noise_seed = (i as u32).wrapping_mul(1103515245).wrapping_add(12345);
             let noise = ((noise_seed >> 16) as i16) as i32;
             let waves = [sine, square, tri, saw, noise];
@@ -442,6 +442,19 @@ impl AudioEngine {
         (((hz as u64) << 24) / self.sample_rate.max(1) as u64) as u32
     }
 
+    fn sine_from_phase(phase: u16) -> i16 {
+        let x = phase as i32;
+        let tri = if x < 128 {
+            -32767 + x * 512
+        } else {
+            32767 - (x - 128) * 512
+        };
+        // Integer parabolic shaping from triangle to pseudo-sine.
+        let abs_t = tri.abs();
+        let shaped = tri * (65535 - abs_t / 2) / 65535;
+        shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
+    }
+
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
             return (0, 0);
@@ -485,19 +498,6 @@ impl AudioEngine {
         let r = pulse * 3 / 4;
         (l, r)
     }
-}
-
-fn sine_approx(phase: u16) -> i16 {
-    let x = phase as i32;
-    let tri = if x < 128 {
-        -32767 + x * 512
-    } else {
-        32767 - (x - 128) * 512
-    };
-    // Integer parabolic shaping from triangle to pseudo-sine.
-    let abs_t = tri.abs();
-    let shaped = tri * (65535 - abs_t / 2) / 65535;
-    shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
 }
 
 #[cfg(test)]

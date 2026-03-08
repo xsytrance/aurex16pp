@@ -1,3 +1,15 @@
+## 2026-03-08 10:55:00Z — ASU-32 Sine Helper De-dup Hardening
+
+### Summary
+Eliminated remaining risk of duplicate `sine_approx` symbol collisions by moving sine shaping to an impl-scoped helper used only by ASU-32 wavetable generation.
+
+### Runtime/Tooling
+- Replaced free function usage with `AudioEngine::sine_from_phase(...)`.
+- Removed standalone global sine helper symbol from runtime audio module.
+
+### Progress
+This prevents duplicate global helper definitions during merge drift while preserving deterministic integer-only synthesis behavior.
+
 ## 2026-03-08 10:35:00Z — ASU-32 Wavetable Overflow Fix (Deterministic Noise Seed)
 
 ### Summary
