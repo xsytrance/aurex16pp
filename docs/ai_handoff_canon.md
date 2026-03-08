@@ -438,3 +438,26 @@ Host contract:
 
 - Neo-Geo target comparison doc: `docs/aurex_vs_neo_geo.md`.
 - Canon policy: Aurex roadmap should be >= Neo-Geo in capability categories while preserving deterministic creative constraints.
+
+# 14. ### ASU-32 Audio System Unit
+
+Aurex includes a deterministic audio processor named ASU-32.
+
+Specifications:
+
+sample rate: 48 kHz
+output: stereo
+voices: 12
+audio RAM: 512 KB
+
+Voice architecture:
+
+wavetable synthesis
+instrument preset tables
+deterministic envelope generation
+
+Mixer:
+
+fixed-point stereo mixer
+
+All ASU math must remain integer-only.

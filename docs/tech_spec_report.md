@@ -48,18 +48,59 @@ This report consolidates current canonical hardware/runtime capabilities into on
 - Sprite system supports priority/blend flags with overflow telemetry
 - Launch/library UX overlays rendered in framebuffer stage
 
-## 7. Audio Runtime Capabilities (Current Host Path + Positioning)
-- Host audio queue sample rate: **44.1 kHz**
-- Host channel config (current main loop): **mono (1 channel)**
-- Runtime synthesis supports:
-  - boot music mode
-  - per-title library track selection
-  - launch/cancel cue stingers
-  - deterministic envelope-shaped 4-lane style mix (bass/sub/lead/arp + percussion accents)
-- Neo-Geo positioning:
-  - current Aurex audio is deterministic and stylistically solid
-  - does **not yet** match Neo-Geo multi-voice production depth
-  - targeted improvement path is richer channel architecture under fixed deterministic budgets
+## 7. Audio Runtime Capabilities (ASU-32)
+
+The Aurex audio subsystem is implemented as the **ASU-32 Audio System Unit**.
+
+Core properties:
+
+Sample rate: 48 kHz
+Output: true stereo
+Voices: 12 deterministic synthesis voices
+Audio RAM: 512 KB
+
+Voice model:
+- wavetable synthesis
+- envelope shaping
+- fixed-point phase accumulation
+- deterministic instrument table lookup
+
+Each voice contains:
+
+waveform_id
+instrument_id
+pitch
+phase
+volume
+pan_l
+pan_r
+envelope_state
+
+Audio synthesis uses integer-only math.
+
+No floating point operations exist in the ASU core.
+
+Mixer:
+
+A deterministic fixed-point stereo mixer sums voice output into left/right channels.
+
+L = Σ(sample * pan_l)
+R = Σ(sample * pan_r)
+
+DSP Effects:
+
+Optional integer DSP effects may be applied per voice:
+
+delay
+echo
+bitcrush
+distortion
+
+Sequencer:
+
+Cartridge music uses a deterministic pattern sequencer referencing instrument presets.
+
+This design allows compact music definitions suitable for LLM-generated cartridges.
 
 ## 8. Input / Control Model (Current)
 - Keyboard + game controller polling
