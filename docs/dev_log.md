@@ -1232,3 +1232,27 @@ Continued planned runtime AV/tooling development by strengthening audio quality 
 - `cargo fmt` / `cargo check --all-targets` / `cargo check --tests` pass (warnings only).
 - `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh` passes and now explicitly reports shell docs-sync fallback pass.
 - `cargo test -q` remains SDL2-link-limited in this container.
+
+
+## 2026-03-08 11:40:00Z — Core AV architecture continuation: deterministic mix profiles
+
+### Summary
+Continued core architecture + sound/graphics development with a deterministic audio-mix profile system and host tooling exposure for profile-aware diagnostics/baselines.
+
+### Runtime/Audio
+- Added `MixProfile` (`soft`, `default`, `arcade`) with fixed integer coefficients for gain, LP smoothing, and HP decay.
+- Added `AudioEngine::new_with_profile(...)` and carried profile through diagnostics simulation path for deterministic parity.
+- Wired profile coefficients into master mix shaping path in `render_block(...)`.
+
+### Tooling/CLI
+- Added `--audio-profile soft|default|arcade` handling for `--audio-diagnostics`, `--generate-runtime-baseline`, and runtime playback initialization.
+- Non-JSON diagnostics output now reports selected profile alongside crest/clipping metrics.
+
+### Progress report
+- Core architecture now has a profile dimension for deterministic AV tuning rather than hard-coded one-size output shaping.
+- This makes upcoming quality calibration (Neo-Geo-target voicing and cabinet/consumer presets) much easier without contract drift.
+
+### Next planned work
+1. Add profile-aware regression assertions (crest/clipping deltas across profiles).
+2. Add deterministic boot palette profile path for graphics hardware tone calibration.
+3. Reduce module-wide dead-code allow usage by moving to targeted item-level allowances as implementation catches up.

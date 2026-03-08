@@ -90,6 +90,9 @@ This order is deterministic and stable across runs.
 ### Boot audio mode
 Boot now uses a dedicated sequencer branch (`advance_boot_sequencer`) with curated voice placement and FX, separate from game track sequencing.
 
+### Mix profiles
+Runtime audio now supports deterministic mix profiles (`soft`, `default`, `arcade`) that adjust gain and LP/HP smoothing coefficients without leaving integer math. This allows host-side tuning for hardware feel while preserving deterministic output.
+
 ### Boot fuzz regression root cause + fix
 After the ASU-32 upgrade, fuzziness came from envelope hard-retrigger behavior on stable notes plus over-dense noise/percussion layering. The fix:
 
@@ -163,8 +166,8 @@ Key commands:
 
 - `--audit-cartridges [--json]`
 - `--analyze-cartridges [--json]`
-- `--audio-diagnostics [--boot] [--frames N] [--json]` (includes crest + clipping counters)
-- `--generate-runtime-baseline [--frames N] [--out PATH]`
+- `--audio-diagnostics [--boot] [--frames N] [--audio-profile soft|default|arcade] [--json]` (includes crest + clipping counters)
+- `--generate-runtime-baseline [--frames N] [--audio-profile soft|default|arcade] [--out PATH]`
 - `--docs-sync-check`
 - `--palette-heatmap`
 - `--replay-capture-smoke`

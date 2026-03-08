@@ -41,7 +41,7 @@ impl PrimeAwakens {
         self.draw_energy_grid(fb, t);
         self.draw_boot_ring(fb, t);
         self.draw_aurex_wordmark(fb, t);
-        self.draw_status_panels(fb, t, boot_beat_step);
+        self.draw_status_panels(fb, t);
         self.draw_prompt(fb, t);
     }
 
@@ -186,25 +186,19 @@ impl PrimeAwakens {
         );
     }
 
-    fn draw_status_panels(&self, fb: &mut Framebuffer, t: u32, boot_beat_step: Option<u8>) {
+    fn draw_status_panels(&self, fb: &mut Framebuffer, t: u32) {
         fill_rect(fb, 24, 166, 402, 171, rgb555(6, 9, 14));
         let progress = ((t / 3) as i32).min(360);
-        let beat_pulse = boot_beat_step.map(|s| if s % 4 == 0 { 4 } else { 0 }).unwrap_or(0);
         fill_rect(
             fb,
             30,
             167,
             30 + progress,
             170,
-            rgb555(
-                (16 + ((t / 16) % 5) as u8 + beat_pulse).min(31),
-                (20 + ((t / 8) % 5) as u8 + beat_pulse).min(31),
-                8,
-            ),
+            rgb555(16 + ((t / 16) % 5) as u8, 20 + ((t / 8) % 5) as u8, 8),
         );
 
-        let text_br = 18u8 + if beat_pulse > 0 { 3 } else { 0 };
-        draw_text(fb, "AUDIO BUS: ASU-32", 30, 178, 2, rgb555(text_br, 23, 30));
+        draw_text(fb, "AUDIO BUS: ASU-32", 30, 178, 2, rgb555(18, 23, 30));
         draw_text(fb, "VIDEO BUS: RASTER LOCK", 30, 192, 2, rgb555(18, 23, 30));
         draw_text(fb, "RUNTIME: DETERMINISTIC", 30, 206, 2, rgb555(18, 23, 30));
     }

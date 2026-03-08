@@ -3,8 +3,8 @@ mod aurex;
 use aurex::ppu::framebuffer::{FB_H, FB_W};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
-    LaunchValidationError, collect_runtime_diagnostics, dispatch_runtime_events, poll_input,
-    present_frame,
+    LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
+    poll_input, present_frame,
 };
 use sdl2::GameControllerSubsystem;
 use sdl2::audio::AudioSpecDesired;
@@ -46,6 +46,13 @@ fn parse_string_arg(args: &[String], flag: &str) -> Option<String> {
     None
 }
 
+fn parse_mix_profile(args: &[String]) -> MixProfile {
+    if let Some(raw) = parse_string_arg(args, "--audio-profile") {
+        return MixProfile::parse(&raw).unwrap_or(MixProfile::Default);
+    }
+    MixProfile::Default
+}
+
 fn replay_capture_smoke_summary_json() -> String {
     let mut cap = aurex::runtime::ReplayCapture::new();
     let mut system = aurex::Aurex::new();
@@ -61,7 +68,7 @@ fn replay_capture_smoke_summary_json() -> String {
         };
 
         cap.capture_input(input);
-        system.run_frame(input, None);
+        system.run_frame(input);
         events.clear();
         system.drain_events(&mut events);
         for (i, _event) in events.iter().enumerate() {
@@ -186,13 +193,15 @@ fn main() {
             aurex::runtime::AudioMode::Game
         };
 
-        let engine = aurex::runtime::AudioEngine::new(48_000);
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
         let diag = engine.diagnostics_for_frames(mode, frames);
         if args.iter().any(|a| a == "--json") {
             println!("{}", diag.to_json());
         } else {
             println!(
-                "Audio diagnostics frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={}",
+                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={}",
+                profile.as_str(),
                 diag.frames,
                 diag.peak_l,
                 diag.peak_r,
@@ -211,7 +220,8 @@ fn main() {
         let frames = parse_usize_arg(&args, "--frames", 48_000);
         let out = parse_string_arg(&args, "--out")
             .unwrap_or_else(|| "artifacts/runtime_audio_diag_baseline.json".to_string());
-        let engine = aurex::runtime::AudioEngine::new(48_000);
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
         let baseline = engine.diagnostics_baseline(frames);
         let replay = replay_capture_smoke_summary_json();
         let json = format!(
@@ -303,7 +313,8 @@ fn main() {
         .open_queue::<i16, _>(None, &desired)
         .expect("audio queue open failed");
 
-    let mut synth = AudioEngine::new(queue.spec().freq as u32);
+    let profile = parse_mix_profile(&args);
+    let mut synth = AudioEngine::new_with_profile(queue.spec().freq as u32, profile);
     queue.resume();
 
     let scale: u32 = 3;

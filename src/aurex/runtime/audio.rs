@@ -6,6 +6,56 @@ pub enum AudioMode {
     Game,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MixProfile {
+    Soft,
+    Default,
+    Arcade,
+}
+
+impl MixProfile {
+    fn render_gain_q8(self) -> i32 {
+        match self {
+            Self::Soft => 80,
+            Self::Default => 88,
+            Self::Arcade => 96,
+        }
+    }
+
+    fn lp_smoothing(self) -> i32 {
+        match self {
+            Self::Soft => 5,
+            Self::Default => 4,
+            Self::Arcade => 3,
+        }
+    }
+
+    fn hp_decay_q6(self) -> i32 {
+        match self {
+            Self::Soft => 61,
+            Self::Default => 63,
+            Self::Arcade => 64,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Soft => "soft",
+            Self::Default => "default",
+            Self::Arcade => "arcade",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "soft" => Some(Self::Soft),
+            "default" => Some(Self::Default),
+            "arcade" => Some(Self::Arcade),
+            _ => None,
+        }
+    }
+}
+
 const SAMPLE_RATE_HZ: u32 = 48_000;
 const AUDIO_RAM_BYTES: usize = 512 * 1024;
 const VOICE_COUNT: usize = 16;
@@ -115,8 +165,6 @@ struct Voice {
     delay_line: [i16; 32],
     delay_index: usize,
     lp_state: i32,
-    /// Previous env_level for anti-click smoothing at envelope boundaries
-    prev_env_gain: u16,
 }
 
 impl Voice {
@@ -137,7 +185,6 @@ impl Voice {
             delay_line: [0; 32],
             delay_index: 0,
             lp_state: 0,
-            prev_env_gain: 0,
         }
     }
 }
@@ -244,10 +291,15 @@ pub struct AudioEngine {
     mix_hp_r: i32,
     prev_mix_l: i32,
     prev_mix_r: i32,
+    mix_profile: MixProfile,
 }
 
 impl AudioEngine {
     pub fn new(sample_rate: u32) -> Self {
+        Self::new_with_profile(sample_rate, MixProfile::Default)
+    }
+
+    pub fn new_with_profile(sample_rate: u32, mix_profile: MixProfile) -> Self {
         let mut audio_ram = Box::new([0u8; AUDIO_RAM_BYTES]);
         let wavetable_base = [
             0,
@@ -277,6 +329,7 @@ impl AudioEngine {
             mix_hp_r: 0,
             prev_mix_l: 0,
             prev_mix_r: 0,
+            mix_profile,
         }
     }
 
@@ -334,7 +387,8 @@ impl AudioEngine {
     }
 
     pub fn diagnostics_for_frames(&self, mode: AudioMode, frames: usize) -> AudioDiagnostics {
-        let mut sim = Self::new(self.sample_rate.max(SAMPLE_RATE_HZ));
+        let mut sim =
+            Self::new_with_profile(self.sample_rate.max(SAMPLE_RATE_HZ), self.mix_profile);
         sim.track_id = self.track_id;
 
         let mut peak_l = 0i32;
@@ -406,14 +460,17 @@ impl AudioEngine {
             mix_l += sfx_l;
             mix_r += sfx_r;
 
-            mix_l = (mix_l * 11) / 32;
-            mix_r = (mix_r * 11) / 32;
-            self.mix_lp_l += (mix_l - self.mix_lp_l) / 4;
-            self.mix_lp_r += (mix_r - self.mix_lp_r) / 4;
+            let gain = self.mix_profile.render_gain_q8();
+            mix_l = (mix_l * gain) / 256;
+            mix_r = (mix_r * gain) / 256;
+            let lp = self.mix_profile.lp_smoothing().max(1);
+            self.mix_lp_l += (mix_l - self.mix_lp_l) / lp;
+            self.mix_lp_r += (mix_r - self.mix_lp_r) / lp;
             let hp_in_l = self.mix_lp_l - self.prev_mix_l;
             let hp_in_r = self.mix_lp_r - self.prev_mix_r;
-            self.mix_hp_l = (self.mix_hp_l * 63 + hp_in_l * 64) / 64;
-            self.mix_hp_r = (self.mix_hp_r * 63 + hp_in_r * 64) / 64;
+            let hp_decay = self.mix_profile.hp_decay_q6();
+            self.mix_hp_l = (self.mix_hp_l * hp_decay + hp_in_l * 64) / 64;
+            self.mix_hp_r = (self.mix_hp_r * hp_decay + hp_in_r * 64) / 64;
             self.prev_mix_l = self.mix_lp_l;
             self.prev_mix_r = self.mix_lp_r;
 
@@ -858,6 +915,6 @@ mod tests {
             max_active = max_active.max(active);
         }
 
-        assert!(max_active <= 12, "max_active={max_active}");
+        assert!(max_active <= 9, "max_active={max_active}");
     }
 }
