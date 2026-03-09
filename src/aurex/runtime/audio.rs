@@ -290,15 +290,6 @@ const TRACK5_BASS: [u16; PATTERN_STEPS] = [
 const TRACK5_ARP: [u16; PATTERN_STEPS] = [
     415, 554, 659, 831, 554, 415, 494, 659, 831, 554, 415, 494, 659, 554, 494, 415,
 ];
-const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
-const TRACK_FX: [u8; 6] = [
-    0x01, // NEON: delay
-    0x02, // SKYLINE: drive
-    0x00, // PIXEL: clean
-    0x04, // VOID: low-pass
-    0x12, // MECHA: bitcrush + drive
-    0x03, // ORBITAL: delay + drive
-];
 
 const TRACK0_PERC: [[u16; PATTERN_STEPS]; 4] = [
     [82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0],
@@ -651,12 +642,7 @@ impl AudioEngine {
             (self.sample_rate * 15 / bpm).max(1)
         };
         self.tick_counter = self.tick_counter.wrapping_add(1);
-        let tick_samples = if matches!(mode, AudioMode::Boot) {
-            (self.sample_rate / BOOT_TICK_HZ).max(1)
-        } else {
-            let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
-            (self.sample_rate * 15 / bpm).max(1)
-        };
+        let tick_samples = self.tick_samples_for_mode(mode);
         if self.tick_counter < tick_samples {
             return;
         }
@@ -701,6 +687,14 @@ impl AudioEngine {
             };
             self.note_on(i, hz, inst_id, mode);
         }
+    }
+
+    fn tick_samples_for_mode(&self, mode: AudioMode) -> u32 {
+        if matches!(mode, AudioMode::Boot) {
+            return (self.sample_rate / BOOT_TICK_HZ).max(1);
+        }
+        let bpm = TRACK_BPM[(self.track_id as usize) % TRACK_BPM.len()].max(1) as u32;
+        (self.sample_rate * 15 / bpm).max(1)
     }
 
     pub fn diagnostics_baseline(&self, frames: usize) -> AudioDiagnosticsBaseline {
