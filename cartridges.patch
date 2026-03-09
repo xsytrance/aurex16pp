@@ -1,0 +1,3116 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/cartridges/chrome_duo_boot/bg0_map.bin b/cartridges/chrome_duo_boot/bg0_map.bin
+new file mode 100644
+index 0000000000000000000000000000000000000000..f0366c558918f6f3c73c936d0f730faf2855f8be
+GIT binary patch
+literal 8192
+zcmY+C_uJRykw#~CC%cnmvYD7M8FftTz4tDPB8nXgiXw^~3yLC&9Se#giX97zB8nXg
+ziXw^~dy7V6tci(9HrZtR{;>0zxxVi{?_Y4PbKeKx@8Iv@9{}My@Q?6MK=@t!9)2Gg
+ze}MmtKSZG)(Gv7yQd*LJLO&(rrFdyxhMkw?pYhLmIayv-kQHSmSy@(*Rb@3@UDwbx
+zbuC?6*U@!#JzL*4unlb^+t@a-O>HyZ+_&&8eJkJExAASgA;Wj!d(e>aN4NwwWLk=r
+zriRSR^9tOMWp!CY8nUjh8)!qe&20<&fARp|&bRk;E;2Cu0Mfb0sJJAibCJnuSxV<3
+z^Gdujr*n~IEm>RAxyZVaZmj8CWZTNNw$8c81APbI(bKue@Iw$t=OW`z(J-BhOh2dP
+zD4mPUtMY1`&PA4WWj#sfBI~BQnWl4*ZCe{)opX@~`A$CA)49m71pFA%xyZOQE`#Y@
+zWLkk%q;xJaufc0_Iu}_skPRiBi>zDdmYU8*w(V`8b<RcJ*>~|Fp3X&vCE+KK&PB#$
+z@n@LMMW&T$6-wtK^V+-)r*n~IW7$N~xyZV;Zlmd3WZTgOS?65jU41v--P5_qV6YUV
+zbCGd5TprW8$g~=*PU&1^UXR!3bS|=NCYwt-7g-1BcACybw!yZub<RcJ!}s*PJe`XS
+z%YZ{V7a3Q?l`x%)Ol#6wl+H!w4S6F@=OW9NvX!KBk#(T%py^y>8)Ca!=Un8yeW>r_
+zQCPb+Mq%yR6os{Ga}?IDEm2szwnky?+SY&VAj4j;Hw=Y+U|-k|_J=5}T^pmYc5RBn
+z+O;_fYuA=2tX*59uy$?hzjiqHk%z$na3Dls?b;ZHwQExp)~?M_Si81FVeQ%)g|%y2
+z|F!q^&bi3L;UG8|qOkfISHV?rHH^aQXIh8WrS&KZtDkuj-jp}vD6D>#ZDd;+AW>NT
+ztb=qX9jsAU{cOA29=50L<@IxreSaV3opX^#z#%XaqOcwr*T6L~3hR++1KN<HupXJW
+z;4L`{>yc%987NU$kF2}s5RJlmWZT<@+CJV#_5*#mcg{sV6b^$?kj_QMwQ(Ix=OWX_
+zv<anik$G$0hSRyovZD-=bS|>)rn_r87uoi;{Vbh}><9Y@@0^Q#I2-{-LOK^2*TeNO
+zor_GH(dLxSMdks#9j9}VWw7il>0D&pQ}@zzF0u`?11z13>?8e9@0^Q#6dVo5Kspy0
+zH^hxFor_Fc(pHqtMdpFL1E+J5Wr*x5>0D$Ts{3d<7ukl}L6*)%_ECPgcg{sV7DmHy
+z5QVjCQxw*&%~4ppwnSm=+8TwmYg-i7uI>HT4l*8t$Kq%_4v)tZ@I;Kl+O;VPYuDx|
+ztX*58uy$>Y!rHYh3TxN){%ePGA9)O(gePMZ)~-!aSi3eyVeQ%yg|%yI6xOb7QCPdS
+z_h0*X=$wl@7Ei%bF$$}nX&c&>22d1MKl32oi3f8ORzJ(`vWM&`QCR(~`|18VOrx;+
+z*+$qQHqxT7`q_{4qx@(;2I}V^!-+5kI_Dyf!_#m)MqxcNZBGL!3hR-17aqb<SdT1w
+z%TS5JdSpFNhieqpBims%%A&9y*^l+nejN0X;ba&KopX^-$1`vOrgM>LM;b)wTx8yj
+zcjt62vg|ASNjeu<57rTy&PBE(>_|)JBKz@vf~Rwl;Zzt0opX`T#Ix{hOy?rgVA`3|
+zxyZaH@5Sj{WEmz0NIDl;N9v)P&PBGP?HEhvBKsIW$<w*WFdj~a&bi3v;JJ7nrgM>L
+z2<=MgTx1@~`*1oJS%%9&lFmieQF^$hbCGSd9cSrWWFPCNcsdsuCcv4{IT!hSoQM}-
+z6xOcIQCPdSL}BgP8iloMTNKu=?NL~}HuPUR$aEf^PZQ|^x{xlSizy0g*XAg!U0b5C
+zc5RKq+O;hTYuENDtX&)WuN}^P<Vkc1T}n|{yEaE*?b;HBwQFk>)~;<)Si81IVeQ(`
+zf9(sgb1w2^x{NNTD6D?w{dj*K#!*=PEF<I)87Wa%{j5joQF^pSVfC|}U?<ubi^A$>
+zALpm}c#p#BXE+<qfpg(Jte=C77vm)CoQph#uAr$Dh4sjMAP?s#tVfo^WRyf<J+dCF
+zqcsZak?mv~Yf)H_>}U7{kHUInI3Fg$1=vT%OK~!G&PBeGuA*s_&PC>fc?73(k>v<E
+zQqsA|dc2;X>0D$x)y7#m7unD9vpt=Q3>U&hkj_QM%W(>J&PBeOuAyrwor}yP`A|;h
+zBFoWojHGjsb&Q^*>0D$RZ>L*27unDC^E{o443ppzNarHsRJ;;9=OSN6*V7G@&PC=?
+zd^o3bk!7?TC+S>d9jm8kIv3d{*qN5jMfQn)fv0nkVKQ6>>0D%-hF4?fT;v;RI^9H3
+zSi81FVeQ%)g|%y26xOcoQCPb+L}BgP*njOH^9_6>Pv@KXX1;}Q<tVIOTcWUbZH>a(
+zwJi#3*Y+r^T^pjXc5Upxb~yKuXYg%&J4a#d+7gAeYiktNu5D3RyS7JR?b;B9wQFPl
+zwQr`*xyUp54!)D4u=-g}kP~H$L}B%_j?>e0yhdU5vz=|{*tr&k)z5yBU+j}S3ag)C
+z3S0qGAquOX@mjnNug4pxehxC-N;9Z)F7hnCi)V8b)+5WwGFGCn9$C-O2^xj<$acO>
+zv?#1c_Dg-TM`1lOTm{o03hR;aMx2f}Q6HIZr<v3_7x`|!hv#rQ7g<h~agxqO*0c0%
+zP3I!pg?5ppbCLaWpW^9UWVi;dg>)`5-i)_kIv1Jlq*>HC7x`YkkMHMnF0zc5(<PmY
+ztmo=^n$AVGNp^{)bCG?jU+L*wWVjw~fOIZ0&cNF+or_Gf>2B(ri~ImT$PaNk7g;9A
+znUc;$)`@z7rgM>PvR!8BTx6f-S9>}a8K%Qckj_QMnRo}LbCGEd-AkQwkss!{{0K*3
+z?b;fJwQE}x)~@YQSi3evVeQ%&g|%x_|FwfG56QzaS00f^<uQ3&qOf*tjl$ZsEedPb
+z_9(1f8=|mwZH&U&wW<Hw;oL`_Cr`+e5{0#EYZTV5ZBbaewnt&@+7N}cYhx7Fu1)>d
+zev~`sBF~qn<Y|e*>Sw)3FV;yKh1JhC#jdca7KPQ%eyv~U*LxIJKf^6>E6ji>tbWE>
+zco)vbD6D>_`{@CCkRIatImrAt&*RRy$P45dStwChkF1yKWR1dlWV_0ySrpbI`;9)`
+zqp%(sZikr=h4sjI56;0TtVgDYX)Zm&ePn);=X2*=<Y(nMStRLPWW8LcXgU|!uCZ$^
+zor~-@`z@Z%MTR?J7Nm2L@jkpC)49m>C_P5$Tx5Ql7jWlX<mcrDc~R22$U0T8)O0Sg
+zU2iv7Iv3ez_-&rfMTXgMH>7is@j-kD)49krkDj1(E;29VXSs7O@=NlvydvpbWSyp0
+zYdRO%rrS-H&PDc_eut-Xkzo$p3+Y^BoQscOIv1Jd(^HhrMdn5PJa^7TepMFBYZ8UE
+zYg-i7uI*7+yEa5&?b;ZHwQExp)~?O{*ABA2qOa;=eNA82H}p-7!rHYh3TxN)D6Cx@
+zqOf*tjKbQrDGF=X=KgDkb07IFeOuqrD6C!EqOf*tkHXruAqs2P#we^^o1(CGZSKGJ
+z>(V(F`CWZa-`6OtezsfeR-0i_SpDp?{4SsEQCR&9_rnA5AVgvHGd_lo<2;PQ>StO&
+z&(K1O!s=&!kzeAM`4y?3gDh{#Thcif`2+oheyCAck8HQwOpC&LWWUGfcofzn!^1Ea
+zqOcwrpTzkXh4skv94(?KtViZoc`?5xePnq@-j&X|$RFu1^<z!vBHNud%hI{XexKj(
+z>0D%Z6dr?gE;2ri3oxCFOfS%jl+H!w*ZB=j=OWAd@_}^DMgBy8rJrg#7ujap-ImTp
+z_6PkTPv;`TJa_`qxyZN>pT%@8GQCW%P&yZx-{QA9or^3V%16>U7x~xvnSQS6Tx6SL
+z_gXp^+2{Hrp3X&v`S28^bCGcoK9A{KWLiwGQ92iy-{to>or^3V%O}z~7x@eQQoqtD
+ztX<oquy$>T!rHYl3TxM<D6CzZqp)^u>A!Z6?Q{FWzO=9GYx|A;)}pX>ZI8m*wIK>?
+z*TyKUU7Mn?c5RNr+O?(s+Tq+s{>FZ1zqcr?UE8Cuc5R5l+O;tXYuBbItX-R<uy$?f
+zzxLPKIT!g``-A<_qOkheAM?k3o=0KzGc15-U?D_d^)tSRFX77=h1JjW2E9pdQ504`
+z^9TG3{*a@v`dL1eU(09mxz^7?*5B$k+Bp~bPxdeNXN$smWPj4<dlc3q!*j3*qOcwr
+zU&X~3h4skv4!uiJSdYxV<c~QD>yhOP`BJ{pKC=E^ztzsU$bYeawZB?A7ulco1)k1D
+zh8N&PNarHs>-YwybCKzN`he28$own*l+(G$^0oX%(z(d`NBxs_&PD#4{hR%}rE`&e
+zp+D>CTx56|UV(HjGQNdxV>%a^KBSK*or}z$@#mb*MV4>mcaqLU)<5fCv~w=<f7pN8
+ze_1*g*%$fqp3X&v#qb)WbCK~~d=JyP$n-INLg`#&{*u4qbS|=dD}Ru5F0%er|E8UD
+Mk^kHN$Nty;52|axc>n+a
+
+literal 0
+HcmV?d00001
+
+diff --git a/cartridges/chrome_duo_boot/bg_tiles.bin b/cartridges/chrome_duo_boot/bg_tiles.bin
+new file mode 100644
+index 0000000000000000000000000000000000000000..df8627f0bba6eed8dc945f76ca60b372cbd08d43
+GIT binary patch
+literal 4096
+zcmeH}X<HTq5Ji=UR3bBp%pxL*a6vMY$TT8@h*Tm|5tkw|2}va~l}IhbEh3YMR3cN6
+zOd~Rpa3M04$Sfig5f>s;iA*J2l1S&yonO)O{(<{t&U4PRbL)QBy&=QLPEB3(-s+<5
+z-yLbXc=ZileeNF?GwJ2mGgo}Pt#bcwXWBa5)H^8j$)^)%&0k)y>FXcrPM+)N(c|vH
+z5u=}*nZESH4W+w(KGD+tx?B7PJUl9H+G~q*)_lIJ`sknkxOBZ8+ws%icpKX_$IkwT
+z?XVHgyol}M9X}qzwoktYAIEmq%1^go+o|)dJ+YlM`_1>UU4QD*HQ0_E_rfdKF57e9
+zcWnC)eDo=7=dRoQ4Ypmo-FXkTQx?4Y5w;u8Uv)jUqbI&J2iq0<e*FvEfkU1ckL~=8
+zUww~lckjLrU^{Ke2cKZO`SP_lV>@=rs|&GRb@-19*bW{#=6P%vZvFNbY<u>)?-6Wg
+zEL-~pwp%;gcn7u<X3TpB+qK94Zinsgk<U)WcFE44j$qrj|3kyDoxSR_ZP<41a$9d~
+zC(nIrIkp>4|JxDUQ4=Q5#CG}KgD0>ZFzB&S*v?!3<t}XFblAq}u#MAU8>hoIPKRxr
+z4%;{#wsAUa<8;`@>9CE{VH>A2EaDA|8p9&YuqZYxd<=^$!@|k1NHQ$y4U0&_qRg=H
+zH!N}u3s=J;#jt2JETRpI3d17Mu*f$o+zpE~!=l-+h&3##42xjHqR_DLG%PX<i&n!T
+z!LX<`EW!<o62rpRu*fznoDGX)!=k~kh%zk74T}K7BG0gJGb~aKizdS&#;~X~EP@P+
+z0>i??ut+y7S`3Rg!=l=-2r(>*3=1#ABGa&FGb|Dfi#o$1!mubcEc^_M9K*tewuqlj
+zThtt*Ey7077R5Vg3!i?pMb=8%!l^TDku;mOs6RzpM2@2^%J$F}{sU=?+;y~tYd6{=
+zWdUu`c%HV1o=96%?4vCLhtL-J8)*x7Z`vYl32o7QnYM_XLR(ZFrY(Yp(iVkVX$#L@
+zv_-};+M=}sZILj8wx~T$TZE6KElPIM7QX#yi|kdjg>x6$B6%)t(Qul!h?+oKl<%c2
+z0tV3*dFyElx9+q>>LS{r=^||rGl{mS+)rBsh0+!Un`jG<9<)XJQre=WJ#7&;jkc&h
+zN?U{sr!9)M(-vNRXp77hv_)Gd+9GilZBciUwul%_Ta@mmE&K-17CCEZ3zx1M5s|S*
+zL}aWH5gBVlM8+Bsk+DWZWULVp8EZsD#u^cku|`B>tPv3zYeYoG8WEAPMnq(+5fK?{
+zL`23K5s|S*L}aWH5gBVlM8+Bsk+DWZWULVp8EZsD#u^cku|`B>tPv3zYeYoG8WEAP
+zMnq(+5fK?{L`23K5s|S*L}aWH5gBVlM8+Bsk+DWZWULVp8EZsD#u^cku|`B>tPv3z
+zYeYoG8WEAPMnq(+5fK?{L`23K5s|S*L}aWH5gBVlM8+Bsk+DWZWULVp8EZrw{de@=
+d(SLp29R24<@8~~2dPo2H(L4IjkN*GG|0~B(_-X(E
+
+literal 0
+HcmV?d00001
+
+diff --git a/cartridges/chrome_duo_boot/manifest.txt b/cartridges/chrome_duo_boot/manifest.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..df3c74f1ccb8993ca3c787d56e56c8fb5c1676bf
+--- /dev/null
++++ b/cartridges/chrome_duo_boot/manifest.txt
+@@ -0,0 +1,5 @@
++name=CHROME DUO BOOT
++game_id=chrome_duo_boot
++upload=Palettes,0,palette.bin
++upload=BgTiles,0,bg_tiles.bin
++upload=Bg0Tilemap,0,bg0_map.bin
+diff --git a/cartridges/chrome_duo_boot/palette.bin b/cartridges/chrome_duo_boot/palette.bin
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ef4933110de7cb70625ced84ac54e9206604dfa
+GIT binary patch
+literal 32
+ncmZQzP-Jo9Nakq~SSoT%;<*fmqL*fm;W<kIrzt@a$^YvCe`X1u
+
+literal 0
+HcmV?d00001
+
+diff --git a/docs/ai_handoff_canon.md b/docs/ai_handoff_canon.md
+index 0c73c19a9e9cabc8a84476bddf672d50ad6abc21..3baf47e791099f787a485e2a38c13a01d811c4fb 100644
+--- a/docs/ai_handoff_canon.md
++++ b/docs/ai_handoff_canon.md
+@@ -71,36 +71,41 @@ To avoid fuzzy/clicky boot audio:
+ - Reserve phase reset for off->on starts.
+ - Keep boot percussion/noise density below sustained fuzz threshold.
+ 
+ ## 8) Launch lifecycle canon
+ 
+ Launch domain uses typed stages and validations:
+ 
+ - descriptor validation first
+ - request/cancel/stage/ready/resolved/rejected event model
+ - cartridge resolution gates readiness
+ 
+ No implicit launch side paths are allowed.
+ 
+ ## 9) Cartridge contract
+ 
+ - Manifest identity and format validation are mandatory.
+ - Upload budgets and overlap checks are mandatory.
+ - Audit/analyze tooling must remain deterministic and JSON-capable.
+ 
+ ## 10) Host diagnostics contract
+ 
+ `collect_runtime_diagnostics` is the canonical host interpretation surface for runtime events.
+ 
+ Any new runtime event type should include diagnostics impact analysis during handoff updates.
+ 
+-## 11) Handoff discipline
++## 11) Deterministic baseline + docs-sync discipline
++
++- Audio diagnostics baseline artifact generation is required before runtime AV merges (`--generate-runtime-baseline`).
++- Preflight must include docs synchronization verification (`--docs-sync-check`) so architecture/canon stay aligned with runtime CLI and telemetry contract.
++
++## 12) Handoff discipline
+ 
+ On every major runtime change, update at minimum:
+ 
+ - `docs/architecture.md`
+ - `docs/arch_index.md`
+ - `docs/dev_log.md`
+ - `docs/test_log.md`
+ - `docs/ai_handoff_history.md`
+ 
+ And add a dated handoff snapshot document when scope is broad.
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 2038b30c690b781f20851541411bd8a5d50b82c4..79b01ce3be6c3ab3f574f7ed66c5701bb89df056 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -65,110 +65,128 @@ This order is deterministic and stable across runs.
+ - Palette-bank handling updated for expanded palette space.
+ 
+ ### Sprite pipeline
+ - Deterministic scanline evaluation.
+ - Overflow latching/telemetry exposed to runtime/PDU.
+ - Priority and blend semantics are explicit in PPU codepaths.
+ 
+ ---
+ 
+ ## 5) Audio architecture (ASU-32 runtime path)
+ 
+ `AudioEngine` provides deterministic, integer-only synthesis:
+ 
+ - 48 kHz stereo output.
+ - 12 voices.
+ - Wavetable generation at startup in Audio RAM.
+ - Envelope stages: Attack / Decay / Sustain / Release.
+ - Runtime commands:
+   - `PlayTrack(track_id)`
+   - `PlaySfx(Launch|Cancel|Confirm)`
+   - `StopTrack`
+ 
+ ### Boot audio mode
+ Boot now uses a dedicated sequencer branch (`advance_boot_sequencer`) with curated voice placement and FX, separate from game track sequencing.
+ 
++### Mix profiles
++Runtime audio now supports deterministic mix profiles (`soft`, `default`, `arcade`) that adjust gain and LP/HP smoothing coefficients without leaving integer math. This allows host-side tuning for hardware feel while preserving deterministic output.
++
+ ### Boot fuzz regression root cause + fix
+ After the ASU-32 upgrade, fuzziness came from envelope hard-retrigger behavior on stable notes plus over-dense noise/percussion layering. The fix:
+ 
+ - Skip envelope retrigger when note+instrument remain unchanged on active voices.
+ - Preserve release behavior on note-off.
+ - Keep phase reset only on true off->on transitions.
+ - Reduce harsh boot percussion/fx density.
+ 
+ This produced smoother sustained timbre without removing boot energy.
+ 
+ ---
+ 
+ ## 6) Typed runtime events and host diagnostics
+ 
+ Runtime emits typed events consumed by host loop diagnostics, including:
+ 
+ - Scene transitions.
+ - Audio command events.
+ - Launch lifecycle events:
+   - request
+   - canceled
+   - stage changed
+   - ready
+   - resolved
+   - rejected
+ 
+ `collect_runtime_diagnostics` converts event streams into host-readable snapshots.
+ 
+ ---
+ 
+ ## 7) Launch lifecycle domain
+ 
+ Launch flow is explicit and validated:
+ 
+ - `LaunchDescriptor` identity payload (`title`, `cartridge_id`, `track_id`, etc.).
+ - `validate_launch_descriptor` enforces structural checks.
+ - `LaunchIntentController` drives deterministic stage transitions.
+ 
+ Cartridge resolution failures map to typed rejection reasons (missing/invalid manifest).
+ 
+ ---
+ 
++
++### Launch telemetry formatting
++Launch-stage logs are now normalized for host integration rather than Rust debug enums:
++
++- `Launch stage: pending title=<title> cartridge=<id>`
++- `Launch stage: validating title=<title> cartridge=<id>`
++- `Launch stage: ready title=<title> cartridge=<id>`
++- `Launch rejected: reason=<snake_case_reason>`
++
++This keeps telemetry parsing stable for downstream UI/event ingest.
++
+ ## 8) Cartridge tooling and validation
+ 
+ `CartridgeRuntime` now includes:
+ 
+ - Manifest parsing/validation.
+ - Identity checks (e.g. `game_id` consistency).
+ - Upload budget checks.
+ - Overlap/bounds analysis.
+ - Audit and analyze report generation.
+ 
+ CLI flags in `main.rs` expose deterministic tooling entrypoints for local/CI diagnostics.
+ 
+ ---
+ 
+ ## 9) Tooling entrypoints
+ 
+ Key commands:
+ 
+ - `--audit-cartridges [--json]`
+ - `--analyze-cartridges [--json]`
+-- `--audio-diagnostics [--boot] [--frames N] [--json]`
++- `--audio-diagnostics [--boot] [--frames N] [--audio-profile soft|default|arcade] [--json]` (includes crest + clipping counters)
++- `--generate-runtime-baseline [--frames N] [--audio-profile soft|default|arcade] [--out PATH]`
++- `--docs-sync-check`
+ - `--palette-heatmap`
+ - `--replay-capture-smoke`
+ 
+-Plus `scripts/preflight.sh` for formatting/check + cartridge audit gate.
++Plus `scripts/preflight.sh` for formatting/check + docs-sync + cartridge audit gate.
++
++In SDL2-link-limited environments (`AUREX_SKIP_AUDIT_LINK=1`), preflight now uses a shell docs-sync fallback marker check so docs contract drift is still caught without `cargo run` linking.
+ 
+ ---
+ 
+ ## 10) Current known environment caveat
+ 
+ In minimal Linux containers without system SDL2, `cargo check` succeeds but link-dependent `cargo test`/`cargo run` can fail at link stage. This is an environment dependency issue, not a deterministic core logic issue.
+ 
+ ---
+ 
+ ## 11) Handoff checklist
+ 
+ Before further feature work:
+ 
+ 1. Run preflight (`scripts/preflight.sh`).
+ 2. Run `--audio-diagnostics --boot --frames 48000 --json` and compare against prior baselines.
+ 3. Run cartridge audit/analyze in JSON mode and diff outputs.
+ 4. Verify launch event telemetry in logs for request->stage->ready->resolved path.
+ 5. Keep canonical docs synchronized (`ai_handoff_canon.md`, `arch_index.md`, `dev_log.md`, `test_log.md`).
+diff --git a/docs/dev_log.md b/docs/dev_log.md
+index ac2e59363a4f1a62a4f435ec55ab224b363e2289..814e18f920f97fb6afd29097b1990c62503520e9 100644
+--- a/docs/dev_log.md
++++ b/docs/dev_log.md
+@@ -1141,25 +1141,250 @@ Improves component boundaries and gives fast regression safety for flow semantic
+ ### Summary
+ Extracted host-side runtime event dispatch into a dedicated helper to keep `main` orchestration slimmer and reduce repeated event matching boilerplate.
+ 
+ ### Changes
+ - Added `dispatch_runtime_events(engine, events)` to runtime module.
+ - Main loop now delegates runtime event handling through this helper.
+ 
+ ### Rationale
+ Improves iteration speed by making side-effect dispatch a reusable runtime primitive as additional event types are introduced.
+ 
+ 
+ ## 2026-03-08 02:00:00Z — Scene Transition Telemetry + Handoff Contract Pass
+ 
+ ### Summary
+ Extended the runtime event model with explicit scene transition telemetry and documented a formal handoff contract across flow/simulation/event/dispatch boundaries.
+ 
+ ### Changes
+ - Added `SceneId` and `RuntimeEvent::SceneChanged`.
+ - Emitted `SceneChanged(Library)` on boot->library transition.
+ - Added `Aurex::current_scene()` for runtime introspection.
+ - Main loop now logs scene transition events before dispatch.
+ - Updated architecture and handoff documents with contract-level detail.
+ 
+ ### Rationale
+ Improves observability and handoff-readiness without increasing coupling. Future options/menus/router features can consume transition telemetry through existing event channels.
++
++
++## 2026-03-08 10:20:00Z — Runtime AV Stage 3 follow-through (baseline artifact + regressions + docs-sync + telemetry polish)
++
++### Summary
++Implemented the next handoff focus items in order: deterministic audio/replay baseline artifact generation path, regression tests for retrigger and boot voice density policies, preflight docs-sync gate, and launch telemetry formatting normalization.
++
++### Runtime/Tooling
++- Added `--generate-runtime-baseline [--frames N] [--out PATH]` to write deterministic JSON containing audio diagnostics baseline + replay-capture smoke summary.
++- Added `--docs-sync-check` and wired preflight to run docs-sync before cartridge audit (unless link-limited skip mode is enabled).
++- Normalized launch telemetry strings for stage/rejection lines into parser-friendly lower-case formats.
++
++### Audio regression tests
++- Added regression coverage asserting unchanged active note+instrument pairs do not retrigger envelope attack.
++- Added boot sequencer density guard asserting active boot voices stay under defined threshold.
++
++### Validation notes
++- `cargo check` and `cargo check --tests` pass in this container.
++- `cargo test` remains blocked by missing system `SDL2` linker dependency (`-lSDL2`).
++
++
++## 2026-03-08 11:05:00Z — Audio diagnostics depth + preflight docs-sync fallback hardening
++
++### Summary
++Continued planned runtime AV/tooling development by strengthening audio quality diagnostics and hardening preflight docs-sync behavior in SDL2-link-limited environments.
++
++### Runtime/Audio
++- Extended `AudioDiagnostics` with deterministic quality counters: `crest_l_q10`, `crest_r_q10`, `clipped_l`, `clipped_r`.
++- Updated `--audio-diagnostics` human-readable output to include crest/clipping metrics for quick quality triage.
++- Added regression assertions that boot/game diagnostics retain non-trivial crest and zero clipping in baseline path.
++
++### Tooling/Preflight
++- Fixed `scripts/preflight.sh` behavior so `AUREX_SKIP_AUDIT_LINK=1` still runs docs-sync checks via shell marker fallback before skipping audit execution.
++- This closes prior drift risk where skip mode bypassed docs-sync entirely (or required link-dependent `cargo run`).
++
++### Validation
++- `cargo fmt` / `cargo check --all-targets` / `cargo check --tests` pass (warnings only).
++- `AUREX_SKIP_AUDIT_LINK=1 scripts/preflight.sh` passes and now explicitly reports shell docs-sync fallback pass.
++- `cargo test -q` remains SDL2-link-limited in this container.
++
++
++## 2026-03-08 11:40:00Z — Core AV architecture continuation: deterministic mix profiles
++
++### Summary
++Continued core architecture + sound/graphics development with a deterministic audio-mix profile system and host tooling exposure for profile-aware diagnostics/baselines.
++
++### Runtime/Audio
++- Added `MixProfile` (`soft`, `default`, `arcade`) with fixed integer coefficients for gain, LP smoothing, and HP decay.
++- Added `AudioEngine::new_with_profile(...)` and carried profile through diagnostics simulation path for deterministic parity.
++- Wired profile coefficients into master mix shaping path in `render_block(...)`.
++
++### Tooling/CLI
++- Added `--audio-profile soft|default|arcade` handling for `--audio-diagnostics`, `--generate-runtime-baseline`, and runtime playback initialization.
++- Non-JSON diagnostics output now reports selected profile alongside crest/clipping metrics.
++
++### Progress report
++- Core architecture now has a profile dimension for deterministic AV tuning rather than hard-coded one-size output shaping.
++- This makes upcoming quality calibration (Neo-Geo-target voicing and cabinet/consumer presets) much easier without contract drift.
++
++### Next planned work
++1. Add profile-aware regression assertions (crest/clipping deltas across profiles).
++2. Add deterministic boot palette profile path for graphics hardware tone calibration.
++3. Reduce module-wide dead-code allow usage by moving to targeted item-level allowances as implementation catches up.
++
++
++## 2026-03-08 12:10:00Z — Core AV continuation: beat-step API compatibility + envelope smoothing state
++
++### Summary
++Continued core architecture/sound/graphics integration by aligning runtime signatures for boot beat-step plumbing and adding envelope gain smoothing state to remove compile drift seen in downstream environments.
++
++### Runtime/Integration
++- Updated `Aurex::run_frame` signature to accept `boot_beat_step: Option<u8>` and threaded that parameter through boot overlay rendering path.
++- Updated host callsites (main loop + replay smoke helper + `run()`) to pass explicit `None` for now, preserving current behavior while unlocking deterministic beat-step wiring later.
++
++### Audio
++- Added `prev_env_gain` voice state and applied per-voice envelope gain smoothing during voice sampling to reduce transient harshness and prevent missing-field compile mismatches in mixed-branch environments.
++
++### Graphics
++- Boot overlay now consumes beat-step input parameter and applies a small beat bias to wordmark animation timing (no behavior change when beat-step is absent).
++
++### Progress report
++- Core AV architecture is now better aligned for future shared beat-clock synchronization between boot graphics and audio without breaking existing deterministic flow.
++
++### Next planned work
++1. Implement actual boot beat-step source from sequencer diagnostics and feed it into `run_frame(...)` instead of `None`.
++2. Add profile-aware audio regression assertions and expose profile in baseline artifact metadata.
++3. Add deterministic boot palette profiles to continue graphics hardware tone calibration.
++
++
++## 2026-03-08 17:35:00Z — Fast follow: boot beat-step wiring from audio sequencer
++
++### Summary
++Completed the next integration step by wiring live audio sequencer beat-step data into boot frame rendering so boot overlay timing can track runtime musical step state instead of using a placeholder `None` path.
++
++### Runtime/Integration
++- Added `AudioEngine::boot_beat_step()` accessor to expose the deterministic sequencer step as a compact `u8`.
++- Updated main loop to pass `Some(synth.boot_beat_step())` to `run_frame(...)` during boot-phase audio mode.
++- Kept game-phase behavior unchanged (`None`) to avoid coupling game visuals to boot-only timing semantics.
++
++### Progress report
++- Boot overlay beat bias is now driven by real runtime sequencer state, closing the immediate API plumbing loop and reducing AV drift risk.
++
++### Next planned work
++1. Add a tiny deterministic integration test that verifies boot beat-step propagation influences overlay timing path without changing game path.
++2. Surface beat-step in runtime diagnostics output to aid host-side debugging and sync validation.
++3. Continue profile-aware regression checks (crest/clipping deltas) and metadata enrichment in baseline artifacts.
++
++
++## 2026-03-08 17:50:00Z — Fast follow: deterministic beat-step progression test
++
++### Summary
++Added a focused deterministic audio unit test to lock in boot beat-step progression semantics and improve confidence while iterating quickly.
++
++### Validation/Tests
++- Added `boot_beat_step_tracks_sequencer_progression` in `runtime/audio` tests.
++- Test advances exactly `tick_samples` per sequencer step and verifies `boot_beat_step()` increments deterministically.
++
++### Progress report
++- Beat-step runtime wiring now has a regression guard, reducing risk of silent API drift during future sequencer refactors.
++
++### Next planned work
++1. Add a compact runtime diagnostics field exposing current boot beat-step for host telemetry.
++2. Add profile-aware assertion coverage for crest/clipping deltas in diagnostics baseline generation.
++3. Continue reducing broad `dead_code` allowances as modules stabilize.
++
++
++## 2026-03-08 18:05:00Z — Fast follow: expose boot beat-step in audio diagnostics
++
++### Summary
++Implemented the next telemetry step by exposing deterministic sequencer beat-step in `AudioDiagnostics` outputs (JSON + human-readable CLI), improving host-side AV sync visibility.
++
++### Runtime/Tooling
++- Extended `AudioDiagnostics` with `boot_beat_step` and included it in `to_json()` serialization.
++- Updated `--audio-diagnostics` text output to print `boot_beat_step`.
++- Added assertions in diagnostics regression test to validate deterministic beat-step value after a fixed frame window.
++
++### Progress report
++- Beat-step telemetry is now visible in diagnostics artifacts and command-line triage output, reducing debugging turnaround for sync issues.
++
++### Next planned work
++1. Include profile metadata at top-level runtime baseline JSON payload for faster host-side grouping.
++2. Add a tiny parser test for diagnostics JSON field presence/shape to avoid accidental telemetry regressions.
++3. Continue tightening warning hygiene by replacing broad `dead_code` allows with targeted item-level allowances.
++
++
++## 2026-03-08 18:20:00Z — Fast follow: baseline payload profile metadata
++
++### Summary
++Added top-level `audio_profile` metadata to runtime baseline JSON generation for faster host-side grouping and cross-profile diff workflows.
++
++### Runtime/Tooling
++- Updated `--generate-runtime-baseline` payload shape to include `"audio_profile":"soft|default|arcade"` at the top level.
++- Keeps existing baseline and replay-smoke payloads unchanged for backward-compatible content use.
++
++### Progress report
++- Baseline artifacts now self-describe profile context, reducing triage and indexing overhead in CI/host pipelines.
++
++### Next planned work
++1. Add a tiny JSON shape regression test to assert baseline payload includes `audio_profile` and diagnostics beat-step fields.
++2. Add profile-aware crest/clipping delta assertions to baseline validation flow.
++3. Continue dead-code allowance cleanup in stabilized modules.
++
++
++## 2026-03-08 18:45:00Z — Fast follow: baseline JSON shape regression guard
++
++### Summary
++Added a focused regression guard for runtime baseline JSON shape so profile metadata and diagnostics beat-step telemetry cannot silently drift.
++
++### Runtime/Tooling
++- Added `runtime_baseline_json(...)` helper in `main.rs` to centralize baseline payload assembly.
++- `--generate-runtime-baseline` now uses the helper, keeping behavior equivalent while improving testability.
++- Added unit test `runtime_baseline_json_contains_profile_and_diagnostics_fields` asserting payload includes top-level `audio_profile` and nested diagnostics `boot_beat_step` markers.
++
++### Progress report
++- Baseline artifact contract now has explicit automated shape protection for host/CI consumers.
++
++### Next planned work
++1. Add profile-aware crest/clipping delta assertions to baseline validation flow.
++2. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates.
++3. Continue dead-code allowance cleanup in stabilized modules.
++
++
++## 2026-03-08 19:05:00Z — Fast follow: profile-aware diagnostics delta assertions
++
++### Summary
++Continued planned hardening by adding profile-aware regression assertions to verify deterministic output level ordering across `soft/default/arcade` mix profiles.
++
++### Validation/Tests
++- Added `mix_profiles_produce_ordered_level_deltas` in `runtime/audio` tests.
++- Test checks monotonic ordering of `avg_abs_{l,r}` and `peak_{l,r}` for `Game` diagnostics over a fixed frame window.
++- Test also enforces zero clipping across all three profiles in this deterministic baseline path.
++
++### Progress report
++- Mix profile tuning now has explicit regression protection against accidental coefficient inversions or unintended loudness drift.
++
++### Next planned work
++1. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates end-to-end.
++2. Add a narrow JSON parser/shape assertion for diagnostics payloads beyond string-contains checks.
++3. Continue dead-code allowance cleanup in stabilized modules.
++
++
++## 2026-03-08 19:25:00Z — Fast follow: new boot cartridge scaffold (`chrome_duo_boot`)
++
++### Summary
++Added a brand-new cartridge scaffold inspired by French-touch robot-disco aesthetics for boot-era vibe testing and launch-pipeline validation.
++
++### Cartridge content
++- Added `cartridges/chrome_duo_boot/manifest.txt` with valid `game_id` and three uploads (`Palettes`, `BgTiles`, `Bg0Tilemap`).
++- Added deterministic binary assets:
++  - `palette.bin` (16 RGB555 entries)
++  - `bg_tiles.bin` (patterned tile payload)
++  - `bg0_map.bin` (64x64 tilemap payload)
++- Added a new library profile card (`CHROME DUO BOOT`) wired to `cartridge_id=chrome_duo_boot` so it can be selected and launched from title flow.
++
++### Validation/Tests
++- Added `includes_chrome_duo_boot_profile` unit test in `game/library`.
++- Verified compile and test-target compile remain green in this environment.
++
++### Progress report
++- We now have a concrete first-style cartridge artifact in-repo, closing part of the gap from tooling readiness to real generated-game launch exercises.
++
++### Next planned work
++1. Add a minimal cartridge runtime smoke assertion (non-linking path) for manifest+upload parse shape.
++2. Add one more cartridge with contrasting style to validate analyzer/audit multi-entry reporting ergonomics.
++3. Continue dead-code allowance cleanup in stabilized modules.
+diff --git a/docs/test_log.md b/docs/test_log.md
+index 862db3320ff3ce7723814584af73b2400fd0d415..de120e4e7dd1113a7fde686f5945e6bcf4463262 100644
+--- a/docs/test_log.md
++++ b/docs/test_log.md
+@@ -1,34 +1,34 @@
+ # Test / Validation Log
+ 
+ _Last updated: 2026-03-08._
+ 
+-## Latest validation pass (handoff doc sync + boot audio stabilization context)
++## Latest validation pass (new `chrome_duo_boot` cartridge scaffold)
+ 
+ ### Commands executed
+ 
+-1. `cargo fmt && cargo check -q`
++1. `cargo check --all-targets`
+    - Result: PASS
+-   - Notes: Compiles cleanly in current container; non-fatal dead-code warnings remain.
++   - Notes: runtime/library compile after adding new title profile and cartridge scaffold assets.
+ 
+-2. `cargo test -q`
+-   - Result: ENV-LIMITED
+-   - Notes: Fails at link stage in this container because system `SDL2` library is unavailable (`-lSDL2` not found).
+-
+-## Interpreting results
+-
+-- `cargo check` success confirms code-level parse/type/borrow correctness for current source.
+-- `cargo test`/`cargo run` outcomes in this container are not valid indicators of runtime correctness until SDL2 system dependency is present.
++2. `cargo check --tests`
++   - Result: PASS
++   - Notes: test targets compile including new `includes_chrome_duo_boot_profile` assertion.
+ 
+-## Recommended local/full validation (developer machine with SDL2)
++3. `python - <<'PY' ...` (manifest/assets existence + size sanity)
++   - Result: PASS
++   - Output excerpt:
++     - `manifest.txt True 137`
++     - `palette.bin True 32`
++     - `bg_tiles.bin True 4096`
++     - `bg0_map.bin True 8192`
+ 
+-Run in order:
++4. `cargo test -q`
++   - Result: ENV-LIMITED
++   - Output excerpt:
++     - `rust-lld: error: unable to find library -lSDL2`
+ 
+-1. `cargo fmt -- --check`
+-2. `cargo check`
+-3. `cargo test`
+-4. `cargo run -- --audio-diagnostics --boot --frames 48000 --json`
+-5. `cargo run -- --audit-cartridges --json`
+-6. `cargo run -- --analyze-cartridges --json`
+-7. `cargo run -- --replay-capture-smoke`
++## Interpretation
+ 
+-Capture outputs and attach to next handoff update.
++- New `chrome_duo_boot` cartridge scaffold is present with valid-looking manifest structure and deterministic asset payloads.
++- Library profile list now includes launch-selectable `chrome_duo_boot` entry.
++- Full binary-linked test execution remains blocked without system SDL2.
+diff --git a/scripts/preflight.sh b/scripts/preflight.sh
+index f016a23cf4e9f6d9e503c060be01922027f568e0..4f690119aad6263564582b8e84def2be2ecb0a1d 100755
+--- a/scripts/preflight.sh
++++ b/scripts/preflight.sh
+@@ -1,19 +1,52 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+ 
+ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ cd "$ROOT_DIR"
+ 
++DOC_ARCH="docs/architecture.md"
++DOC_CANON="docs/ai_handoff_canon.md"
++
++shell_docs_sync_check() {
++  echo "[preflight] docs-sync check (shell fallback)"
++
++  local -a arch_markers=(
++    "--generate-runtime-baseline"
++    "--docs-sync-check"
++    "Launch stage: pending"
++    "Launch stage: validating"
++    "Launch stage: ready"
++  )
++
++  for marker in "${arch_markers[@]}"; do
++    if ! rg -n --fixed-strings -- "$marker" "$DOC_ARCH" >/dev/null; then
++      echo "[preflight] docs-sync failed: missing '$marker' in $DOC_ARCH" >&2
++      exit 2
++    fi
++  done
++
++  if ! rg -n --fixed-strings -- "Audio diagnostics baseline artifact generation is required" "$DOC_CANON" >/dev/null; then
++    echo "[preflight] docs-sync failed: missing baseline discipline line in $DOC_CANON" >&2
++    exit 2
++  fi
++
++  echo "[preflight] docs-sync check passed (shell fallback)"
++}
++
+ echo "[preflight] formatting check"
+ cargo fmt -- --check
+ 
+ echo "[preflight] compile check"
+ cargo check
+ 
+ if [[ "${AUREX_SKIP_AUDIT_LINK:-0}" == "1" ]]; then
++  shell_docs_sync_check
+   echo "[preflight] skipping cartridge audit run (AUREX_SKIP_AUDIT_LINK=1)"
+   exit 0
+ fi
+ 
++echo "[preflight] docs-sync check"
++cargo run -- --docs-sync-check
++
+ echo "[preflight] cartridge audit (json)"
+ cargo run -- --audit-cartridges --json
+diff --git a/src/aurex/boot/prime_awakens.rs b/src/aurex/boot/prime_awakens.rs
+index 8b5c889280c72f3655441be1bb8a9254997aa077..ddd3ec654a402c3b4555ae0c9b0303de7bdf6d87 100644
+--- a/src/aurex/boot/prime_awakens.rs
++++ b/src/aurex/boot/prime_awakens.rs
+@@ -12,210 +12,265 @@ pub struct PrimeAwakens {
+ impl PrimeAwakens {
+     pub fn new() -> Self {
+         Self {
+             frame: 0,
+             waiting_for_start: false,
+         }
+     }
+ 
+     pub fn set_waiting_for_start(&mut self, waiting_for_start: bool) {
+         self.waiting_for_start = waiting_for_start;
+     }
+ 
+     pub fn update(
+         &mut self,
+         ppu: &mut Ppu,
+         _dma: &mut DmaController,
+         _wram: &mut Wram,
+         _vram: &Vram,
+     ) {
+         ppu.write_addr(PPU_BG0_ENABLE, 0);
+         ppu.write_addr(PPU_BG1_ENABLE, 0);
+         ppu.write_addr(PPU_SPRITE_ENABLE, 0);
+         self.frame = self.frame.wrapping_add(1);
+     }
+ 
+-    pub fn draw_overlay(&self, fb: &mut Framebuffer) {
++    pub fn draw_overlay(&self, fb: &mut Framebuffer, boot_beat_step: Option<u8>) {
+         let t = self.frame;
+-        self.draw_quantum_sky(fb, t);
+-        self.draw_raster_sun(fb, t);
+-        self.draw_horizon_grid(fb, t);
+-        self.draw_spectrum_towers(fb, t);
+-        self.draw_logo(fb, t);
++        let beat_bias = boot_beat_step.unwrap_or(0) as u32;
++        self.draw_boot_backdrop(fb, t);
++        self.draw_energy_grid(fb, t);
++        self.draw_boot_ring(fb, t);
++        self.draw_aurex_wordmark(fb, t.wrapping_add(beat_bias));
++        self.draw_status_panels(fb, t);
+         self.draw_prompt(fb, t);
+     }
+ 
+-    fn draw_quantum_sky(&self, fb: &mut Framebuffer, t: u32) {
++    fn draw_boot_backdrop(&self, fb: &mut Framebuffer, t: u32) {
+         let pixels = fb.pixels_mut();
+         for y in 0..FB_H {
+             for x in 0..FB_W {
+                 let x_u = x as u32;
+                 let y_u = y as u32;
+-                let wave_a =
+-                    ((x_u.wrapping_mul(5) + t.wrapping_mul(2)) ^ (y_u.wrapping_mul(3))) & 31;
+-                let wave_b =
+-                    (((x_u + t.wrapping_mul(4)) >> 2) + ((y_u.wrapping_mul(7) + t) >> 3)) & 15;
+-                let horizon_fade = ((FB_H - y) as u32 * 14 / FB_H as u32) as u8;
++                let sky = ((x_u.wrapping_mul(2) + y_u.wrapping_mul(3) + t) >> 4) & 15;
++                let neb = ((x_u.wrapping_mul(5) ^ (y_u + t.wrapping_mul(2))) >> 3) & 7;
++                let horizon = ((FB_H - y) as u32 * 10 / FB_H as u32) as u8;
++                let scan = if ((y_u + t / 4) & 7) == 0 { 1 } else { 0 };
+ 
+-                let r = ((wave_b as u8 / 2) + 2).min(31);
+-                let g = (6 + wave_a as u8 / 3).min(31);
+-                let b = (10 + horizon_fade + wave_a as u8 / 2).min(31);
++                let r = (1 + sky as u8 / 3 + neb as u8 / 2 + horizon / 3 + scan).min(31);
++                let g = (2 + sky as u8 / 4 + horizon / 4 + scan).min(31);
++                let b = (5 + sky as u8 / 2 + horizon / 2 + scan).min(31);
+                 pixels[y * FB_W + x] = rgb555(r, g, b);
+             }
+         }
+-    }
+-
+-    fn draw_raster_sun(&self, fb: &mut Framebuffer, t: u32) {
+-        let cx = (FB_W as i32 / 2) + ((t as i32 / 12) & 7) - 3;
+-        let cy: i32 = 88;
+-        let radius: i32 = 54;
+ 
+-        for y in (cy - radius)..=(cy + radius) {
+-            let dy = y - cy;
+-            if dy.abs() > radius {
+-                continue;
+-            }
+-            let w = radius - (dy.abs() * 3 / 4);
+-            let y_band = ((dy + radius) / 6).max(0) as u8;
+-            let stripe = (((t / 4) as i32 + dy) & 15) as u8;
+-            let color = rgb555(
+-                (18 + y_band / 2).min(31),
+-                (8 + stripe / 3).min(31),
+-                (26 + y_band / 2).min(31),
++        for s in 0..54u32 {
++            let sx = ((s.wrapping_mul(97) + t.wrapping_mul((s % 5) + 1) * 2) % FB_W as u32) as i32;
++            let sy = ((s.wrapping_mul(53) + t / ((s % 3) + 3)) % (FB_H as u32 / 2)) as i32;
++            let twinkle = (((t / 4 + s * 5) & 7) as u8).min(5);
++            fill_rect(
++                fb,
++                sx,
++                sy,
++                sx + 1 + (twinkle > 3) as i32,
++                sy + 1,
++                rgb555(18 + twinkle / 2, 22 + twinkle / 2, 30),
+             );
+-            fill_rect(fb, cx - w, y, cx + w, y + 1, color);
+         }
+     }
+ 
+-    fn draw_horizon_grid(&self, fb: &mut Framebuffer, t: u32) {
+-        let horizon = 132;
+-
+-        for i in 0..20i32 {
++    fn draw_energy_grid(&self, fb: &mut Framebuffer, t: u32) {
++        let horizon = 140;
++        for i in 0..18i32 {
+             let y = horizon + i * 5;
+-            let c = rgb555(2 + (i as u8 / 6), 7 + i as u8 / 2, 14 + i as u8 / 2);
+-            fill_rect(fb, 0, y, FB_W as i32, y + 1, c);
++            let tone = (i as u8 / 3).min(8);
++            fill_rect(
++                fb,
++                0,
++                y,
++                FB_W as i32,
++                y + 1,
++                rgb555(3 + tone / 2, 8 + tone, 14 + tone),
++            );
+         }
+ 
+-        for lane in -10..=10i32 {
+-            let base_x = FB_W as i32 / 2 + lane * 22;
+-            let lane_swing = (((t / 3) as i32 + lane * 5) & 7) - 3;
+-            for depth in 0..18i32 {
++        for lane in -12..=12i32 {
++            let base_x = FB_W as i32 / 2 + lane * 18;
++            let drift = (((t / 5) as i32 + lane * 3) & 7) - 3;
++            for depth in 0..15i32 {
+                 let y0 = horizon + depth * 6;
+                 let y1 = y0 + 6;
+-                let widen = depth + 1;
+-                let x = base_x + lane_swing * widen / 4;
++                let x = base_x + drift * (depth + 1) / 5;
+                 let c = rgb555(
+-                    1,
++                    (4 + depth as u8 / 3).min(31),
+                     (10 + depth as u8 / 2).min(31),
+-                    (18 + depth as u8).min(31),
++                    (17 + depth as u8 / 2).min(31),
+                 );
+                 fill_rect(fb, x, y0, x + 1, y1, c);
+             }
+         }
+     }
+ 
+-    fn draw_spectrum_towers(&self, fb: &mut Framebuffer, t: u32) {
+-        let floor = 214;
+-        for bar in 0..46i32 {
+-            let phase = ((t as i32 / 2) + bar * 3) & 63;
+-            let tri = if phase < 32 { phase } else { 63 - phase };
+-            let kick = if ((t / 16) as i32 + bar).rem_euclid(4) == 0 {
+-                8
+-            } else {
+-                0
+-            };
+-            let h = 6 + tri / 2 + kick;
+-            let x0 = 24 + bar * 8;
+-            let c = rgb555(
+-                (6 + bar as u8 / 9).min(31),
+-                (14 + (bar as u8 & 0x03) + (tri as u8 / 10)).min(31),
+-                (22 + tri as u8 / 4).min(31),
+-            );
+-            fill_rect(fb, x0, floor - h, x0 + 5, floor, c);
++    fn draw_boot_ring(&self, fb: &mut Framebuffer, t: u32) {
++        let cx = FB_W as i32 / 2;
++        let cy = 92;
++        let radius = 48 + ((t / 24) % 3) as i32;
++        for y in (cy - radius - 2)..=(cy + radius + 2) {
++            let dy = y - cy;
++            if dy.abs() > radius + 2 {
++                continue;
++            }
++            let span = radius - (dy.abs() * 3 / 5);
++            for x in (cx - span - 2)..=(cx + span + 2) {
++                let dx = x - cx;
++                let d = dx.abs() + dy.abs();
++                if d < radius - 4 || d > radius + 2 {
++                    continue;
++                }
++                let shimmer = (((dx * 2 + dy * 3 + t as i32) & 15) as u8) / 3;
++                put_pixel(
++                    fb,
++                    x,
++                    y,
++                    rgb555(12 + shimmer, 20 + shimmer, (28 + shimmer / 2).min(31)),
++                );
++            }
+         }
+     }
+ 
+-    fn draw_logo(&self, fb: &mut Framebuffer, t: u32) {
+-        let title = "AUREX PRIME AWAKENS";
+-        let scale = if t < 180 { 3 } else { 4 };
++    fn draw_aurex_wordmark(&self, fb: &mut Framebuffer, t: u32) {
++        let title = "AUREX-16++";
++        let subtitle = "SYSTEM BOOT VECTOR";
++        let scale = 4usize;
+         let title_w = text_width(title, scale);
+-        let title_x = ((FB_W as i32 - title_w) / 2).max(0);
++        let start_x = (FB_W as i32 - title_w) / 2;
++        let base_y = 48;
+ 
+-        draw_text(fb, title, title_x - 2, 30, scale, rgb555(4, 10, 17));
+-        draw_text(fb, title, title_x, 32, scale, rgb555(24, 31, 31));
++        let reveal_stride = 10u32;
++        for (i, ch) in title.chars().enumerate() {
++            let reveal_at = i as u32 * reveal_stride;
++            let char_x = start_x + (i as i32 * (6 * scale) as i32);
++            let slide_frames = 18;
++            if t < reveal_at {
++                continue;
++            }
++
++            let dt = t.saturating_sub(reveal_at);
++            let slide = (slide_frames as i32 - dt.min(slide_frames) as i32) * 2;
++            let glow = (((t + i as u32 * 3) / 3) & 7) as u8;
++
++            draw_glyph(
++                fb,
++                ch,
++                char_x,
++                base_y + slide,
++                scale,
++                rgb555(12 + glow / 2, 16 + glow / 2, 24 + glow / 2),
++            );
++            draw_glyph(
++                fb,
++                ch,
++                char_x,
++                base_y + slide - 2,
++                scale,
++                rgb555(24 + glow / 3, 27 + glow / 3, 31),
++            );
++        }
+ 
+-        let pulse = (((t / 7) & 7) as u8).min(7);
+         draw_text(
+             fb,
+-            "NEON VECTOR STARTUP / ASU-32 LIVE MIX",
+-            76,
+-            74,
++            subtitle,
++            (FB_W as i32 - text_width(subtitle, 2)) / 2,
++            100,
+             2,
+-            rgb555(11 + pulse / 2, 20 + pulse, 31),
++            rgb555(16, 22, 30),
+         );
+     }
+ 
+-    fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
+-        let show_start_prompt = self.waiting_for_start && (t / 12).is_multiple_of(2);
+-        let show_warmup_prompt = !self.waiting_for_start && (t / 10).is_multiple_of(2);
++    fn draw_status_panels(&self, fb: &mut Framebuffer, t: u32) {
++        fill_rect(fb, 24, 166, 402, 171, rgb555(6, 9, 14));
++        let progress = ((t / 3) as i32).min(360);
++        fill_rect(
++            fb,
++            30,
++            167,
++            30 + progress,
++            170,
++            rgb555(16 + ((t / 16) % 5) as u8, 20 + ((t / 8) % 5) as u8, 8),
++        );
+ 
+-        if show_start_prompt {
+-            draw_text(
+-                fb,
+-                "PRESS START TO DROP INTO LIBRARY",
+-                66,
+-                220,
+-                2,
+-                rgb555(22, 30, 31),
+-            );
+-        } else if show_warmup_prompt {
++        draw_text(fb, "AUDIO BUS: ASU-32", 30, 178, 2, rgb555(18, 23, 30));
++        draw_text(fb, "VIDEO BUS: RASTER LOCK", 30, 192, 2, rgb555(18, 23, 30));
++        draw_text(fb, "RUNTIME: DETERMINISTIC", 30, 206, 2, rgb555(18, 23, 30));
++    }
++
++    fn draw_prompt(&self, fb: &mut Framebuffer, t: u32) {
++        if self.waiting_for_start {
++            if (t / 12).is_multiple_of(2) {
++                draw_text(
++                    fb,
++                    "PRESS START TO ENTER LIBRARY",
++                    78,
++                    224,
++                    2,
++                    rgb555(28, 29, 31),
++                );
++            }
++        } else if (t / 10).is_multiple_of(2) {
+             draw_text(
+                 fb,
+-                "PRIME AWAKENS // CALIBRATING AUDIO BUS...",
+-                44,
+-                220,
++                "INITIALIZING KERNEL AND TIMERS...",
++                70,
++                224,
+                 2,
+-                rgb555(15, 23, 31),
++                rgb555(18, 22, 30),
+             );
+         }
+     }
+ }
+ 
+ fn fill_rect(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, color: u16) {
+     let pixels = fb.pixels_mut();
+     let x0 = x0.clamp(0, FB_W as i32);
+     let x1 = x1.clamp(0, FB_W as i32);
+     let y0 = y0.clamp(0, FB_H as i32);
+     let y1 = y1.clamp(0, FB_H as i32);
+ 
+     for y in y0..y1 {
+         for x in x0..x1 {
+             pixels[y as usize * FB_W + x as usize] = color;
+         }
+     }
+ }
+ 
++fn put_pixel(fb: &mut Framebuffer, x: i32, y: i32, color: u16) {
++    if !(0..FB_W as i32).contains(&x) || !(0..FB_H as i32).contains(&y) {
++        return;
++    }
++    fb.pixels_mut()[y as usize * FB_W + x as usize] = color;
++}
++
+ fn draw_text(fb: &mut Framebuffer, text: &str, x: i32, y: i32, scale: usize, color: u16) {
+     let mut cursor_x = x;
+     for ch in text.chars() {
+         draw_glyph(fb, ch, cursor_x, y, scale, color);
+         cursor_x += (6 * scale) as i32;
+     }
+ }
+ 
+ fn text_width(text: &str, scale: usize) -> i32 {
+     let chars = text.chars().count() as i32;
+     if chars == 0 {
+         0
+     } else {
+         chars * (6 * scale) as i32 - scale as i32
+     }
+ }
+ 
+ fn draw_glyph(fb: &mut Framebuffer, ch: char, x: i32, y: i32, scale: usize, color: u16) {
+     let glyph = glyph_5x7(ch);
+     let pixels = fb.pixels_mut();
+ 
+     for (row, bits) in glyph.iter().enumerate() {
+         for col in 0..5usize {
+             if bits & (1 << (4 - col)) == 0 {
+                 continue;
+diff --git a/src/aurex/cartridge/mod.rs b/src/aurex/cartridge/mod.rs
+index fa8571282bafc95e7ada3e803b9c042cfd4cf9d6..5659bf72ce78905185c6a97c6fbcfe7bde555eb6 100644
+--- a/src/aurex/cartridge/mod.rs
++++ b/src/aurex/cartridge/mod.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ use crate::aurex::dma::command::{DmaCommand, VramRegion};
+ use crate::aurex::dma::controller::DmaController;
+ use crate::aurex::ppu::vram::Vram;
+ use crate::aurex::wram::Wram;
+ use std::fs;
+ use std::path::{Path, PathBuf};
+ 
+ const MAX_DMA_PER_FRAME: usize = 4;
+ const STAGING_START: usize = 0x20000;
+ const STAGING_CHUNK_BYTES: usize = 4096;
+ const MAX_UPLOAD_BYTES: usize = 384 * 1024;
+ 
+ const MANIFEST_KEYS: &[ManifestKeySpec] = &[
+     ManifestKeySpec {
+         key: "name",
+         kind: ManifestKeyKind::OptionalSingle,
+     },
+     ManifestKeySpec {
+         key: "game_id",
+         kind: ManifestKeyKind::RequiredSingle,
+     },
+     ManifestKeySpec {
+         key: "upload",
+         kind: ManifestKeyKind::RequiredRepeat,
+     },
+diff --git a/src/aurex/dma/command.rs b/src/aurex/dma/command.rs
+index aba76560735fc741c84151e7f7e2ec66af7ecc6a..fdd7cf4928c053218212e2b68b0e5754892cc3bb 100644
+--- a/src/aurex/dma/command.rs
++++ b/src/aurex/dma/command.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // DMA Command Definition (Phase 3.6)
+ // ----------------------------------------------------------------------------
+ // Represents a hardware DMA transfer request.
+ //
+ // IMPORTANT:
+ // - DMA copies from WRAM to a specific VRAM partition.
+ // - All bounds must be validated at request time.
+ // - Invalid transfers are rejected immediately (hardware discipline).
+ //
+ // Likely-to-change areas:
+ // - May later include transfer flags (e.g., fill, increment modes)
+ // - May evolve to include audio RAM regions
+ // ============================================================================
+ 
+ #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+ pub enum VramRegion {
+     BgTiles,
+     Bg0Tilemap,
+     Bg1Tilemap,
+     SpriteTiles,
+     Mode7Tex,
+     Palettes,
+ 
+     // ASU-816 Sample RAM
+diff --git a/src/aurex/dma/controller.rs b/src/aurex/dma/controller.rs
+index b76090b88e788cfd8bdb6d44f50f2b4830a7c883..ca27807f04ff803e11a5e463d1c54f075b3b330c 100644
+--- a/src/aurex/dma/controller.rs
++++ b/src/aurex/dma/controller.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // DMA Controller (Phase 3.6 - Real Transfers)
+ // ----------------------------------------------------------------------------
+ // Responsibilities:
+ // - Enforce per-frame caps
+ // - Validate WRAM and VRAM bounds at request time
+ // - Queue valid transfers
+ // - Apply transfers WRAM -> VRAM at frame end
+ //
+ // IMPORTANT:
+ // - Invalid DMA is rejected immediately (Option A).
+ // - No clipping or partial writes.
+ // ============================================================================
+ 
+ use super::command::DmaCommand;
+ use crate::aurex::dma::command::VramRegion;
+ use crate::aurex::ppu::vram::{MAX_PALETTE_ENTRIES, VRAM_I_BASE, VRAM_I_END, Vram};
+ use crate::aurex::wram::Wram;
+ 
+ const DMA_MAX_COMMANDS_PER_FRAME: u32 = 4;
+ const DMA_MAX_VRAM_BYTES_PER_FRAME: u32 = 64 * 1024;
+ const DMA_MAX_AUDIO_BYTES_PER_FRAME: u32 = 16 * 1024;
+ 
+ pub struct DmaController {
+     commands_used: u32,
+diff --git a/src/aurex/game/library.rs b/src/aurex/game/library.rs
+index accd0aa0b197dad27cbe4037f7cc3728d0b60c23..d94f52edf56d885552730ab578c2dbd5141e9918 100644
+--- a/src/aurex/game/library.rs
++++ b/src/aurex/game/library.rs
+@@ -1,61 +1,62 @@
++#![allow(dead_code)]
+ use crate::aurex::game::{AudioCue, InputState};
+ use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
+ 
+ #[derive(Clone, Copy)]
+ struct ColorTheme {
+     bg_r: u8,
+     bg_g: u8,
+     bg_b: u8,
+     cover_r: u8,
+     cover_g: u8,
+     cover_b: u8,
+ }
+ 
+ #[derive(Clone, Copy)]
+ enum IconKind {
+     Circuit,
+     Skyline,
+     Sentinel,
+     Map,
+     Mecha,
+     Orbit,
+ }
+ 
+ #[derive(Clone, Copy)]
+ struct TitleProfile {
+     title: &'static str,
+     cartridge_id: &'static str,
+     track_id: u8,
+     bpm: u16,
+     style: &'static str,
+     tag: &'static str,
+     theme: ColorTheme,
+     icon: IconKind,
+ }
+ 
+-const PROFILES: [TitleProfile; 6] = [
++const PROFILES: [TitleProfile; 7] = [
+     TitleProfile {
+         title: "NEON CIRCUIT",
+         cartridge_id: "neon_circuit",
+         track_id: 0,
+         bpm: 124,
+         style: "BASSLINE GRID",
+         tag: "PLASMA STREETS",
+         theme: ColorTheme {
+             bg_r: 1,
+             bg_g: 6,
+             bg_b: 12,
+             cover_r: 13,
+             cover_g: 25,
+             cover_b: 31,
+         },
+         icon: IconKind::Circuit,
+     },
+     TitleProfile {
+         title: "SKYLINE DRIFT",
+         cartridge_id: "skyline_drift",
+         track_id: 1,
+         bpm: 128,
+         style: "NIGHT-RIDE SYNTH",
+         tag: "MIDNIGHT FREEWAY",
+         theme: ColorTheme {
+@@ -114,50 +115,67 @@ const PROFILES: [TitleProfile; 6] = [
+             bg_g: 3,
+             bg_b: 7,
+             cover_r: 31,
+             cover_g: 11,
+             cover_b: 12,
+         },
+         icon: IconKind::Mecha,
+     },
+     TitleProfile {
+         title: "ORBITAL RUSH",
+         cartridge_id: "orbital_rush",
+         track_id: 5,
+         bpm: 140,
+         style: "ZERO-G EDM",
+         tag: "GRAVITY BREAK",
+         theme: ColorTheme {
+             bg_r: 1,
+             bg_g: 6,
+             bg_b: 5,
+             cover_r: 24,
+             cover_g: 30,
+             cover_b: 11,
+         },
+         icon: IconKind::Orbit,
+     },
++    TitleProfile {
++        title: "CHROME DUO BOOT",
++        cartridge_id: "chrome_duo_boot",
++        track_id: 0,
++        bpm: 126,
++        style: "FILTER DISCO DRIVE",
++        tag: "ROBOTIC NIGHT RUN",
++        theme: ColorTheme {
++            bg_r: 2,
++            bg_g: 2,
++            bg_b: 9,
++            cover_r: 27,
++            cover_g: 29,
++            cover_b: 12,
++        },
++        icon: IconKind::Orbit,
++    },
+ ];
+ 
+ pub struct LibraryScreen {
+     selected: usize,
+     prev_up: bool,
+     prev_down: bool,
+     prev_accept: bool,
+     prev_cancel: bool,
+     launch_flash_frames: u8,
+     launch_pending: bool,
+     status_message: StatusMessage,
+ }
+ 
+ #[derive(Clone, Copy)]
+ struct StatusMessage {
+     text: &'static str,
+     tint: ColorTheme,
+ }
+ 
+ impl StatusMessage {
+     fn idle() -> Self {
+         Self {
+             text: "PROFILE READY // EDM BANK ARMED",
+             tint: ColorTheme {
+                 bg_r: 2,
+@@ -619,48 +637,56 @@ mod tests {
+ 
+         let first = lib.update(InputState {
+             accept: true,
+             ..InputState::default()
+         });
+         assert!(first.launch_requested);
+         assert!(matches!(first.audio_cue, AudioCue::LaunchRequest));
+ 
+         let held = lib.update(InputState {
+             accept: true,
+             ..InputState::default()
+         });
+         assert!(!held.launch_requested);
+         assert!(!held.launch_canceled);
+ 
+         let released = lib.update(InputState::default());
+         assert!(!released.launch_requested);
+ 
+         let second = lib.update(InputState {
+             accept: true,
+             ..InputState::default()
+         });
+         assert!(second.launch_requested);
+     }
+ 
++
++    #[test]
++    fn includes_chrome_duo_boot_profile() {
++        assert!(PROFILES
++            .iter()
++            .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT"));
++    }
++
+     #[test]
+     fn cancel_is_edge_triggered_and_resets_state() {
+         let mut lib = LibraryScreen::new();
+ 
+         let _ = lib.update(InputState {
+             accept: true,
+             ..InputState::default()
+         });
+ 
+         let canceled = lib.update(InputState {
+             cancel: true,
+             ..InputState::default()
+         });
+         assert!(canceled.launch_canceled);
+         assert!(matches!(canceled.audio_cue, AudioCue::Cancel));
+ 
+         let held = lib.update(InputState {
+             cancel: true,
+             ..InputState::default()
+         });
+         assert!(!held.launch_canceled);
+     }
+ }
+diff --git a/src/aurex/mod.rs b/src/aurex/mod.rs
+index 4206e2ef1ab95f244bd066f72930e2574a25e0f5..f272b3a811c4596e2fed1d4063ec75c8466b5c12 100644
+--- a/src/aurex/mod.rs
++++ b/src/aurex/mod.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ pub mod boot;
+ pub mod cartridge;
+ pub mod clock;
+ pub mod dma;
+ pub mod game;
+ pub mod pdu;
+ pub mod ppu;
+ pub mod runtime;
+ pub mod vm32;
+ pub mod wram;
+ 
+ use crate::aurex::cartridge::CartridgeRuntime;
+ use crate::aurex::ppu::ppu::PPU_STATUS;
+ use crate::aurex::ppu::ppu::Ppu;
+ use crate::aurex::runtime::{
+     AudioSfx, LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeAudioCommand,
+     RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+ };
+ use boot::prime_awakens::PrimeAwakens;
+ use clock::Clock;
+ use dma::controller::DmaController;
+ use game::{AudioCue, InputState, library::LibraryScreen};
+ 
+ fn to_audio_command(cue: AudioCue) -> Option<RuntimeAudioCommand> {
+     match cue {
+@@ -72,55 +73,55 @@ impl Aurex {
+             fb: ppu::framebuffer::Framebuffer::new(),
+             ppu: Ppu::new(),
+             boot: PrimeAwakens::new(),
+             library,
+             mode: RunMode::Boot,
+             events: RuntimeEventQueue::with_capacity(8),
+             launch: LaunchIntentController::new(),
+             ui_frame: 0,
+         }
+     }
+ 
+     pub fn start_game(&mut self) {
+         self.mode = RunMode::Game;
+         self.events
+             .push(RuntimeEvent::SceneChanged(SceneId::Library));
+         self.events
+             .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlayTrack(0)));
+         self.events
+             .push(RuntimeEvent::Audio(RuntimeAudioCommand::PlaySfx(
+                 AudioSfx::Confirm,
+             )));
+     }
+ 
+     pub fn run(&mut self) -> ! {
+         loop {
+-            self.run_frame(InputState::default());
++            self.run_frame(InputState::default(), None);
+         }
+     }
+ 
+-    pub fn run_frame(&mut self, input: InputState) {
++    pub fn run_frame(&mut self, input: InputState, boot_beat_step: Option<u8>) {
+         self.clock.begin_frame();
+         self.pdu.begin_frame();
+ 
+         use crate::aurex::ppu::framebuffer::rgb555;
+ 
+         self.fb.clear(rgb555(0, 0, 0));
+         self.dma.begin_frame();
+         self.vm.run_frame(&mut self.pdu);
+ 
+         match self.mode {
+             RunMode::Boot => {
+                 self.boot
+                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
+             }
+             RunMode::Game => {
+                 let update = self.library.update(input);
+                 if let Some(cmd) = to_audio_command(update.audio_cue) {
+                     self.events.push(RuntimeEvent::Audio(cmd));
+                 }
+ 
+                 if update.launch_requested {
+                     let req = self.library.current_launch_descriptor();
+                     match validate_launch_descriptor(req) {
+                         Ok(()) => {
+                             if self.launch.request(req) {
+@@ -162,51 +163,51 @@ impl Aurex {
+                                 self.events
+                                     .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                             }
+                             Err(
+                                 crate::aurex::cartridge::CartridgeResolveError::InvalidManifest(_),
+                             ) => {
+                                 self.launch
+                                     .reject(LaunchValidationError::CartridgeManifestInvalid);
+                                 self.events.push(RuntimeEvent::TitleLaunchRejected(
+                                     LaunchValidationError::CartridgeManifestInvalid,
+                                 ));
+                                 self.events
+                                     .push(RuntimeEvent::LaunchStageChanged(self.launch.stage()));
+                             }
+                         }
+                     }
+                 }
+ 
+                 self.library.set_launch_stage(self.launch.stage());
+             }
+         }
+ 
+         self.ppu.render_frame(&self.vram, &mut self.fb);
+ 
+         match self.mode {
+-            RunMode::Boot => self.boot.draw_overlay(&mut self.fb),
++            RunMode::Boot => self.boot.draw_overlay(&mut self.fb, boot_beat_step),
+             RunMode::Game => self.library.draw(&mut self.fb, self.ui_frame),
+         }
+ 
+         self.pdu.ingest_ppu(
+             self.ppu.sprite_overflow_latched(),
+             self.ppu.sprite_overflow_scanlines(),
+         );
+ 
+         let vblank = self.ppu.read_addr(PPU_STATUS) & 0x1 != 0;
+         self.dma.apply(&self.wram, &mut self.vram, vblank);
+ 
+         self.pdu.ingest_dma(
+             self.dma.commands_used(),
+             self.dma.vram_bytes_used(),
+             0,
+             self.dma.rejects_this_frame(),
+         );
+ 
+         self.pdu.end_frame();
+         self.clock.end_frame();
+         self.ui_frame = self.ui_frame.wrapping_add(1);
+     }
+ 
+     pub fn current_scene(&self) -> SceneId {
+         match self.mode {
+diff --git a/src/aurex/pdu.rs b/src/aurex/pdu.rs
+index 549533b68e4b9693b1a0b417ce53f6fa675a7105..57a73111a5035c901599709734ed3e4e6ef0d68c 100644
+--- a/src/aurex/pdu.rs
++++ b/src/aurex/pdu.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // Performance Diagnostic Unit (PDU)
+ // ----------------------------------------------------------------------------
+ // Tracks per-frame hardware usage and enforces CPU operation caps.
+ //
+ // IMPORTANT:
+ // - Hard 200,000 ops per frame.
+ // - Frame-based (no time deltas).
+ // - Will later aggregate DMA usage and audio usage.
+ //
+ // Likely to evolve when:
+ // - Overlay UI is implemented
+ // - Logging system becomes configurable
+ // - Budget telemetry is exposed to Library cart
+ // ============================================================================
+ 
+ pub struct Pdu {
+     // CPU usage
+     ops_used: u32,
+     cpu_rejects: u32,
+ 
+     // DMA telemetry (read-only from DMA each frame)
+     dma_commands_used: u32,
+     dma_vram_bytes_used: u32,
+     dma_audio_bytes_used: u32,
+diff --git a/src/aurex/ppu/debug_draw.rs b/src/aurex/ppu/debug_draw.rs
+index 548acc49a0a6c21a6dc7b8150bc7a6c03f10f3e3..66ff64ee6bf8a9f3f7df7f10c25685a03d566b8f 100644
+--- a/src/aurex/ppu/debug_draw.rs
++++ b/src/aurex/ppu/debug_draw.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // PPU Debug Draw (Phase 4.5)
+ // ----------------------------------------------------------------------------
+ // Temporary internal drawing utilities for framebuffer validation.
+ //
+ // IMPORTANT:
+ // - This is NOT final rendering logic.
+ // - Used only to validate framebuffer pipeline before tile engine exists.
+ // - May be removed or gated behind debug config later.
+ // ============================================================================
+ 
+ use super::framebuffer::{FB_H, FB_W, Framebuffer};
+ 
+ pub fn draw_test_pattern(fb: &mut Framebuffer, frame: u64) {
+     let pixels = fb.pixels_mut();
+ 
+     // Moving vertical bar
+     let bar_x = (frame as usize / 4) % FB_W;
+ 
+     for y in 0..FB_H {
+         for x in 0..FB_W {
+             let idx = y * FB_W + x;
+ 
+             if x == bar_x {
+                 pixels[idx] = 0b0_11111_00000_00000; // red
+diff --git a/src/aurex/ppu/oam.rs b/src/aurex/ppu/oam.rs
+index 3a4492ef84aab3cf7465a4f754f68ee7fe949d83..a8d7057385ac77750c1e633f9871c548ce27047e 100644
+--- a/src/aurex/ppu/oam.rs
++++ b/src/aurex/ppu/oam.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // OAM (Object Attribute Memory)
+ // ----------------------------------------------------------------------------
+ // Sprite descriptor memory for AUREX-16++
+ //
+ // No rendering yet.
+ // Hardware limits enforced.
+ // ============================================================================
+ 
+ pub const MAX_SPRITES: usize = 128;
+ 
+ // ============================================================================
+ // Sprite Blend Mode
+ // ----------------------------------------------------------------------------
+ // Normal   : Standard overwrite rendering
+ // Additive : RGB555 channel-wise additive blending (clamped)
+ // ============================================================================
+ #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+ pub enum BlendMode {
+     Normal,
+     Additive,
+ }
+ 
+ // Sprite size is fixed to 8x8 for Phase 1.
+ // Later we add size flags.
+diff --git a/src/aurex/ppu/ppu.rs b/src/aurex/ppu/ppu.rs
+index 4c4e0a7c48e7182aeca0e748314b1301d909a684..61df083d7cea2388f9e4f4f17ed6ef600b219900 100644
+--- a/src/aurex/ppu/ppu.rs
++++ b/src/aurex/ppu/ppu.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // PPU-A16 (v0.1)
+ // ----------------------------------------------------------------------------
+ // Hardware-accurate render entry point.
+ // Scanline-based deterministic pipeline.
+ // No blending, no priority yet.
+ // ============================================================================
+ 
+ use super::framebuffer::{FB_H, FB_W, Framebuffer};
+ use super::oam::Oam;
+ use super::vram::{MAX_PALETTE_ENTRIES, Vram};
+ use crate::aurex::ppu::oam::BlendMode;
+ 
+ // === AUREX HARDWARE: PPU REGISTER ADDRESS MAP ===
+ pub const PPU_BG0_SCROLL_X: u16 = 0x0000;
+ pub const PPU_BG0_SCROLL_Y: u16 = 0x0002;
+ pub const PPU_BG1_SCROLL_X: u16 = 0x0004;
+ pub const PPU_BG1_SCROLL_Y: u16 = 0x0006;
+ 
+ pub const PPU_WINDOW_ENABLE: u16 = 0x0010;
+ pub const PPU_WINDOW_TOP: u16 = 0x0012;
+ pub const PPU_WINDOW_BOTTOM: u16 = 0x0014;
+ 
+ pub const PPU_BG0_ENABLE: u16 = 0x0020;
+ pub const PPU_BG1_ENABLE: u16 = 0x0022;
+diff --git a/src/aurex/ppu/vram.rs b/src/aurex/ppu/vram.rs
+index 71916b4ad8e1d9c5196d809d822ccbd06265bdb7..3121fd98a3fd30ada3831471e8b34b1350eb81de 100644
+--- a/src/aurex/ppu/vram.rs
++++ b/src/aurex/ppu/vram.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // PPU-A16 VRAM (Phase 3)
+ // ----------------------------------------------------------------------------
+ // VRAM is modeled as separate partitions (Option B).
+ //
+ // IMPORTANT:
+ // - We allocate via Vec -> Box<[u8]> to avoid stack overflows on Windows.
+ // - Sizes are enforced by constants + debug assertions.
+ // - No rendering yet. Memory only.
+ // ============================================================================
+ use crate::aurex::dma::command::VramRegion;
+ 
+ const BG_TILES_BYTES: usize = 384 * 1024;
+ // 64x64 entries, 2 bytes per entry
+ const TILEMAP_BYTES: usize = 64 * 64 * 2;
+ const SPRITE_TILES_BYTES: usize = 384 * 1024;
+ const MODE7_TEX_BYTES: usize = 64 * 1024;
+ pub const MAX_PALETTE_ENTRIES: usize = 4096;
+ pub const PALETTE_BYTES: usize = MAX_PALETTE_ENTRIES * 2;
+ const RESERVED_BYTES: usize = 64 * 1024;
+ 
+ const VRAM_TOTAL_BYTES: usize = BG_TILES_BYTES
+     + TILEMAP_BYTES
+     + TILEMAP_BYTES
+     + SPRITE_TILES_BYTES
+diff --git a/src/aurex/runtime/audio.rs b/src/aurex/runtime/audio.rs
+index 34a6402f0e1a4fe33d470aabcce1aa8d04c452e1..5ee127fee6bebb9d5b20c955e13ed11da5ed86a2 100644
+--- a/src/aurex/runtime/audio.rs
++++ b/src/aurex/runtime/audio.rs
+@@ -1,33 +1,83 @@
+ use super::event::{AudioSfx, RuntimeAudioCommand};
+ 
+ #[derive(Clone, Copy, PartialEq, Eq)]
+ pub enum AudioMode {
+     Boot,
+     Game,
+ }
+ 
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum MixProfile {
++    Soft,
++    Default,
++    Arcade,
++}
++
++impl MixProfile {
++    fn render_gain_q8(self) -> i32 {
++        match self {
++            Self::Soft => 80,
++            Self::Default => 88,
++            Self::Arcade => 96,
++        }
++    }
++
++    fn lp_smoothing(self) -> i32 {
++        match self {
++            Self::Soft => 5,
++            Self::Default => 4,
++            Self::Arcade => 3,
++        }
++    }
++
++    fn hp_decay_q6(self) -> i32 {
++        match self {
++            Self::Soft => 61,
++            Self::Default => 63,
++            Self::Arcade => 64,
++        }
++    }
++
++    pub fn as_str(self) -> &'static str {
++        match self {
++            Self::Soft => "soft",
++            Self::Default => "default",
++            Self::Arcade => "arcade",
++        }
++    }
++
++    pub fn parse(s: &str) -> Option<Self> {
++        match s {
++            "soft" => Some(Self::Soft),
++            "default" => Some(Self::Default),
++            "arcade" => Some(Self::Arcade),
++            _ => None,
++        }
++    }
++}
++
+ const SAMPLE_RATE_HZ: u32 = 48_000;
+ const AUDIO_RAM_BYTES: usize = 512 * 1024;
+ const VOICE_COUNT: usize = 12;
+ const WAVE_SIZE: usize = 256;
+ const MIX_SHIFT: i32 = 10;
+ const TICK_HZ: u32 = 120;
+ const PATTERN_STEPS: usize = 16;
+ const MASTER_LIMIT: i32 = 28_000;
+ 
+ const WAVE_SINE: usize = 0;
+ const WAVE_SQUARE: usize = 1;
+ const WAVE_TRIANGLE: usize = 2;
+ const WAVE_SAW: usize = 3;
+ const WAVE_NOISE: usize = 4;
+ 
+ #[derive(Clone, Copy)]
+ struct Instrument {
+     waveform_id: u8,
+     attack: u16,
+     decay: u16,
+     sustain: u16,
+     release: u16,
+     vibrato_depth: u8,
+     vibrato_speed: u8,
+ }
+@@ -92,168 +142,220 @@ const INSTRUMENTS: [Instrument; 6] = [
+ #[derive(Clone, Copy)]
+ enum EnvelopeState {
+     Off,
+     Attack,
+     Decay,
+     Sustain,
+     Release,
+ }
+ 
+ #[derive(Clone, Copy)]
+ struct Voice {
+     waveform_id: u8,
+     instrument_id: u8,
+     phase: u32,
+     pitch: u16,
+     volume: u16,
+     pan_l: u16,
+     pan_r: u16,
+     envelope_state: EnvelopeState,
+     env_level: u16,
+     env_counter: u16,
+     vibrato_phase: u8,
+     fx: u8,
+     delay_line: [i16; 32],
+     delay_index: usize,
++    lp_state: i32,
++    prev_env_gain: u16,
+ }
+ 
+ impl Voice {
+     const fn silent() -> Self {
+         Self {
+             waveform_id: 0,
+             instrument_id: 0,
+             phase: 0,
+             pitch: 0,
+             volume: 0,
+             pan_l: 512,
+             pan_r: 512,
+             envelope_state: EnvelopeState::Off,
+             env_level: 0,
+             env_counter: 0,
+             vibrato_phase: 0,
+             fx: 0,
+             delay_line: [0; 32],
+             delay_index: 0,
++            lp_state: 0,
++            prev_env_gain: 0,
+         }
+     }
+ }
+ 
+ const TRACK0: [u16; PATTERN_STEPS] = [
+     196, 0, 220, 0, 247, 0, 262, 0, 196, 0, 220, 0, 175, 0, 196, 0,
+ ];
+ const TRACK1: [u16; PATTERN_STEPS] = [
+     247, 262, 294, 330, 247, 262, 294, 330, 220, 247, 262, 294, 196, 220, 247, 262,
+ ];
+ const TRACK2: [u16; PATTERN_STEPS] = [
+     98, 98, 110, 98, 123, 123, 110, 98, 82, 82, 98, 82, 73, 73, 82, 73,
+ ];
+ const TRACK3: [u16; PATTERN_STEPS] = [
+     330, 392, 494, 523, 440, 392, 587, 523, 392, 440, 494, 523, 330, 392, 440, 494,
+ ];
+ const TRACK4: [u16; PATTERN_STEPS] = [
+     110, 165, 220, 0, 147, 220, 247, 0, 165, 247, 294, 0, 131, 196, 247, 0,
+ ];
+ const TRACK5: [u16; PATTERN_STEPS] = [
+     220, 247, 262, 294, 330, 294, 262, 247, 196, 220, 247, 262, 294, 262, 247, 220,
+ ];
+ 
+ const BOOT_LEAD: [u16; PATTERN_STEPS] = [
+     262, 294, 330, 392, 440, 392, 330, 294, 262, 294, 330, 349, 392, 349, 330, 294,
+ ];
+ const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
+     392, 440, 494, 523, 587, 523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440,
+ ];
+ const BOOT_BASS: [u16; PATTERN_STEPS] = [
+     65, 65, 65, 65, 73, 73, 73, 73, 82, 82, 82, 82, 73, 73, 65, 65,
+ ];
+ const BOOT_ARP: [u16; PATTERN_STEPS] = [
+     523, 659, 784, 659, 587, 740, 880, 740, 659, 784, 988, 784, 587, 740, 880, 740,
+ ];
+ const BOOT_GATE: [u16; PATTERN_STEPS] = [55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0, 55, 0];
+ 
+ #[derive(Debug, Clone, Copy)]
+ pub struct AudioDiagnostics {
+     pub frames: usize,
+     pub peak_l: i16,
+     pub peak_r: i16,
+     pub avg_abs_l: i16,
+     pub avg_abs_r: i16,
++    pub crest_l_q10: u16,
++    pub crest_r_q10: u16,
++    pub clipped_l: u32,
++    pub clipped_r: u32,
++    pub boot_beat_step: u8,
++}
++
++#[derive(Debug, Clone, Copy)]
++pub struct AudioDiagnosticsBaseline {
++    pub sample_rate: u32,
++    pub frames: usize,
++    pub boot: AudioDiagnostics,
++    pub game: AudioDiagnostics,
++}
++
++impl AudioDiagnosticsBaseline {
++    pub fn to_json(&self) -> String {
++        format!(
++            "{{\"sample_rate\":{},\"frames\":{},\"boot\":{},\"game\":{}}}",
++            self.sample_rate,
++            self.frames,
++            self.boot.to_json(),
++            self.game.to_json()
++        )
++    }
+ }
+ 
+ impl AudioDiagnostics {
+     pub fn to_json(&self) -> String {
+         format!(
+-            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{}}}",
+-            self.frames, self.peak_l, self.peak_r, self.avg_abs_l, self.avg_abs_r
++            "{{\"frames\":{},\"peak_l\":{},\"peak_r\":{},\"avg_abs_l\":{},\"avg_abs_r\":{},\"crest_l_q10\":{},\"crest_r_q10\":{},\"clipped_l\":{},\"clipped_r\":{},\"boot_beat_step\":{}}}",
++            self.frames,
++            self.peak_l,
++            self.peak_r,
++            self.avg_abs_l,
++            self.avg_abs_r,
++            self.crest_l_q10,
++            self.crest_r_q10,
++            self.clipped_l,
++            self.clipped_r,
++            self.boot_beat_step
+         )
+     }
+ }
+ 
+ pub struct AudioEngine {
+     sample_clock: u64,
+     sample_rate: u32,
+     tick_samples: u32,
+     tick_counter: u32,
+     pattern_step: usize,
+     track_id: u8,
+     voices: [Voice; VOICE_COUNT],
+     audio_ram: Box<[u8; AUDIO_RAM_BYTES]>,
+     wavetable_base: [usize; 5],
+     sfx_play_samples: u32,
+     sfx_kind: AudioSfx,
+     noise_state: u32,
+     mix_lp_l: i32,
+     mix_lp_r: i32,
++    mix_hp_l: i32,
++    mix_hp_r: i32,
++    prev_mix_l: i32,
++    prev_mix_r: i32,
++    mix_profile: MixProfile,
+ }
+ 
+ impl AudioEngine {
+     pub fn new(sample_rate: u32) -> Self {
++        Self::new_with_profile(sample_rate, MixProfile::Default)
++    }
++
++    pub fn new_with_profile(sample_rate: u32, mix_profile: MixProfile) -> Self {
+         let mut audio_ram = Box::new([0u8; AUDIO_RAM_BYTES]);
+         let wavetable_base = [
+             0,
+             WAVE_SIZE * 2,
+             WAVE_SIZE * 4,
+             WAVE_SIZE * 6,
+             WAVE_SIZE * 8,
+         ];
+         Self::write_wavetables(&mut audio_ram, &wavetable_base);
+ 
+         Self {
+             sample_clock: 0,
+             sample_rate,
+             tick_samples: (sample_rate / TICK_HZ).max(1),
+             tick_counter: 0,
+             pattern_step: 0,
+             track_id: 0,
+             voices: [Voice::silent(); VOICE_COUNT],
+             audio_ram,
+             wavetable_base,
+             sfx_play_samples: 0,
+             sfx_kind: AudioSfx::None,
+             noise_state: 0xC001_FEED,
+             mix_lp_l: 0,
+             mix_lp_r: 0,
++            mix_hp_l: 0,
++            mix_hp_r: 0,
++            prev_mix_l: 0,
++            prev_mix_r: 0,
++            mix_profile,
+         }
+     }
+ 
+     fn write_wavetables(ram: &mut [u8; AUDIO_RAM_BYTES], base: &[usize; 5]) {
+         for i in 0..WAVE_SIZE {
+             let phase = i as i32;
+             let tri = if i < 128 {
+                 -32767 + phase * 512
+             } else {
+                 32767 - ((phase - 128) * 512)
+             };
+             let saw = -32767 + phase * 256;
+             let square = if i < 128 { 28000 } else { -28000 };
+             let sine = Self::sine_from_phase(i as u16) as i32;
+             let noise_seed = (i as u32).wrapping_mul(1103515245).wrapping_add(12345);
+             let noise = ((noise_seed >> 16) as i16) as i32;
+             let waves = [sine, square, tri, saw, noise];
+ 
+             for wave_id in 0..5 {
+                 let idx = base[wave_id] + i * 2;
+                 let s = waves[wave_id] as i16;
+                 ram[idx] = (s as u16 & 0xFF) as u8;
+                 ram[idx + 1] = ((s as u16 >> 8) & 0xFF) as u8;
+             }
+         }
+@@ -262,209 +364,250 @@ impl AudioEngine {
+     pub fn trigger_command(&mut self, cmd: RuntimeAudioCommand) {
+         match cmd {
+             RuntimeAudioCommand::PlayTrack(track_id) => {
+                 self.track_id = track_id % 6;
+                 self.pattern_step = 0;
+                 self.tick_counter = 0;
+             }
+             RuntimeAudioCommand::PlaySfx(sfx) => {
+                 self.sfx_kind = sfx;
+                 self.sfx_play_samples = match sfx {
+                     AudioSfx::Launch => self.sample_rate / 3,
+                     AudioSfx::Cancel => self.sample_rate / 8,
+                     AudioSfx::Confirm => self.sample_rate / 10,
+                     AudioSfx::None => 0,
+                 };
+             }
+             RuntimeAudioCommand::StopTrack => {
+                 for voice in &mut self.voices {
+                     voice.envelope_state = EnvelopeState::Release;
+                 }
+             }
+         }
+     }
+ 
+     pub fn diagnostics_for_frames(&self, mode: AudioMode, frames: usize) -> AudioDiagnostics {
+-        let mut sim = Self::new(self.sample_rate.max(SAMPLE_RATE_HZ));
++        let mut sim =
++            Self::new_with_profile(self.sample_rate.max(SAMPLE_RATE_HZ), self.mix_profile);
+         sim.track_id = self.track_id;
+ 
+         let mut peak_l = 0i32;
+         let mut peak_r = 0i32;
+         let mut abs_sum_l: i64 = 0;
+         let mut abs_sum_r: i64 = 0;
++        let mut clipped_l: u32 = 0;
++        let mut clipped_r: u32 = 0;
+         let mut block = [0i16; 512];
+ 
+         let mut remain = frames;
+         while remain > 0 {
+             let step = remain.min(block.len() / 2);
+             let slice_len = step * 2;
+             sim.render_block(mode, &mut block[..slice_len]);
+ 
+             for i in 0..step {
+                 let l = block[i * 2] as i32;
+                 let r = block[i * 2 + 1] as i32;
+                 peak_l = peak_l.max(l.abs());
+                 peak_r = peak_r.max(r.abs());
+                 abs_sum_l += l.abs() as i64;
+                 abs_sum_r += r.abs() as i64;
++                if l.abs() >= 32_000 {
++                    clipped_l = clipped_l.saturating_add(1);
++                }
++                if r.abs() >= 32_000 {
++                    clipped_r = clipped_r.saturating_add(1);
++                }
+             }
+ 
+             remain -= step;
+         }
+ 
+         let denom = frames.max(1) as i64;
++        let avg_abs_l = (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
++        let avg_abs_r = (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
++        let crest_l_q10 = ((peak_l.max(1) * 1024) / (avg_abs_l.abs().max(1) as i32))
++            .clamp(0, u16::MAX as i32) as u16;
++        let crest_r_q10 = ((peak_r.max(1) * 1024) / (avg_abs_r.abs().max(1) as i32))
++            .clamp(0, u16::MAX as i32) as u16;
+         AudioDiagnostics {
+             frames,
+             peak_l: peak_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
+             peak_r: peak_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16,
+-            avg_abs_l: (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
+-            avg_abs_r: (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16,
++            avg_abs_l,
++            avg_abs_r,
++            crest_l_q10,
++            crest_r_q10,
++            clipped_l,
++            clipped_r,
++            boot_beat_step: sim.boot_beat_step(),
+         }
+     }
+ 
+     pub fn render_block(&mut self, mode: AudioMode, out: &mut [i16]) {
+         debug_assert!(self.sample_rate == SAMPLE_RATE_HZ);
+         let frames = out.len() / 2;
+         for frame in 0..frames {
+             self.advance_sequencer(mode);
+ 
+             let (mut mix_l, mut mix_r) = (0i32, 0i32);
+             for i in 0..VOICE_COUNT {
+                 let (l, r) = self.sample_voice(i);
+                 mix_l += l;
+                 mix_r += r;
+             }
+ 
+             let (sfx_l, sfx_r) = self.sfx_sample();
+             mix_l += sfx_l;
+             mix_r += sfx_r;
+ 
+-            mix_l = (mix_l * 3) / 8;
+-            mix_r = (mix_r * 3) / 8;
+-            self.mix_lp_l += (mix_l - self.mix_lp_l) / 4;
+-            self.mix_lp_r += (mix_r - self.mix_lp_r) / 4;
+-            let out_l = Self::soft_clip(self.mix_lp_l);
+-            let out_r = Self::soft_clip(self.mix_lp_r);
++            let gain = self.mix_profile.render_gain_q8();
++            mix_l = (mix_l * gain) / 256;
++            mix_r = (mix_r * gain) / 256;
++            let lp = self.mix_profile.lp_smoothing().max(1);
++            self.mix_lp_l += (mix_l - self.mix_lp_l) / lp;
++            self.mix_lp_r += (mix_r - self.mix_lp_r) / lp;
++            let hp_in_l = self.mix_lp_l - self.prev_mix_l;
++            let hp_in_r = self.mix_lp_r - self.prev_mix_r;
++            let hp_decay = self.mix_profile.hp_decay_q6();
++            self.mix_hp_l = (self.mix_hp_l * hp_decay + hp_in_l * 64) / 64;
++            self.mix_hp_r = (self.mix_hp_r * hp_decay + hp_in_r * 64) / 64;
++            self.prev_mix_l = self.mix_lp_l;
++            self.prev_mix_r = self.mix_lp_r;
++
++            let out_l = Self::soft_clip(self.mix_hp_l);
++            let out_r = Self::soft_clip(self.mix_hp_r);
+ 
+             out[frame * 2] = out_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+             out[frame * 2 + 1] = out_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
+             self.sample_clock = self.sample_clock.wrapping_add(1);
+         }
+     }
+ 
+     fn advance_sequencer(&mut self, mode: AudioMode) {
+         self.tick_counter = self.tick_counter.wrapping_add(1);
+         if self.tick_counter < self.tick_samples {
+             return;
+         }
+         self.tick_counter = 0;
+         self.pattern_step = (self.pattern_step + 1) % PATTERN_STEPS;
+ 
+         if matches!(mode, AudioMode::Boot) {
+             self.advance_boot_sequencer();
+             return;
+         }
+ 
+         let track = match self.track_id {
+             0 => &TRACK0,
+             1 => &TRACK1,
+             2 => &TRACK2,
+             3 => &TRACK3,
+             4 => &TRACK4,
+             _ => &TRACK5,
+         };
+ 
+         for i in 0..VOICE_COUNT {
+             let hz = if i < 4 {
+                 track[(self.pattern_step + i) % PATTERN_STEPS]
+             } else if i < 8 {
+                 track[(self.pattern_step * 2 + i) % PATTERN_STEPS] / 2
+             } else {
+                 track[(self.pattern_step + i * 3) % PATTERN_STEPS]
+             };
+ 
+             let inst = match i {
+                 0..=3 => 0,
+                 4..=7 => 1,
+                 _ => 2,
+             };
+ 
+             self.note_on(i, hz, inst as u8, mode);
+         }
++    }
+ 
+-        v.env_level
++    pub fn diagnostics_baseline(&self, frames: usize) -> AudioDiagnosticsBaseline {
++        AudioDiagnosticsBaseline {
++            sample_rate: self.sample_rate.max(SAMPLE_RATE_HZ),
++            frames,
++            boot: self.diagnostics_for_frames(AudioMode::Boot, frames),
++            game: self.diagnostics_for_frames(AudioMode::Game, frames),
++        }
++    }
++
++    pub fn boot_beat_step(&self) -> u8 {
++        (self.pattern_step % PATTERN_STEPS) as u8
+     }
+ 
+     fn advance_boot_sequencer(&mut self) {
+         let s = self.pattern_step;
+         let arp_b = (s * 2) % PATTERN_STEPS;
+ 
+-        self.trigger_voice(0, BOOT_LEAD[s], 3, 520, 840, 340, 0b0001);
+-        self.trigger_voice(1, BOOT_COUNTER[s], 3, 420, 720, 520, 0b0001);
+-        self.trigger_voice(2, BOOT_ARP[s], 0, 300, 620, 760, 0b0011);
+-        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 280, 760, 620, 0b0011);
++        self.trigger_voice(0, BOOT_LEAD[s], 3, 500, 860, 360, 0b0101);
++        self.trigger_voice(1, BOOT_COUNTER[s], 3, 390, 740, 540, 0b0101);
++        self.trigger_voice(2, BOOT_ARP[s], 0, 260, 620, 780, 0b0111);
++        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 240, 780, 620, 0b0111);
+ 
+         self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
+         self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
+-        self.trigger_voice(6, BOOT_BASS[s], 1, 620, 840, 420, 0b0010);
++        self.trigger_voice(6, BOOT_BASS[s], 1, 560, 860, 420, 0b0110);
+         self.trigger_voice(
+             7,
+             BOOT_BASS[(s + 8) % PATTERN_STEPS],
+             5,
+             520,
+             700,
+             700,
+             0b0100,
+         );
+ 
+-        self.trigger_voice(8, BOOT_GATE[s], 5, 620, 640, 800, 0b0000);
++        self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
+         self.trigger_voice(
+             9,
+             if s % 8 == 4 { 196 } else { 0 },
+             4,
+-            620,
++            360,
+             760,
+             640,
+-            0b0100,
++            0b0110,
+         );
+         self.trigger_voice(
+             10,
+             if s % 16 == 12 { 660 } else { 0 },
+             4,
+-            300,
++            220,
+             620,
+             860,
+-            0b0100,
++            0b0110,
+         );
+         self.trigger_voice(
+             11,
+-            if s % 8 == 7 { BOOT_ARP[s] } else { 0 },
++            if s % 8 == 7 { BOOT_ARP[s] / 2 } else { 0 },
+             3,
+-            360,
++            280,
+             540,
+             860,
+-            0b0001,
++            0b0101,
+         );
+     }
+ 
+     fn trigger_voice(
+         &mut self,
+         idx: usize,
+         hz: u16,
+         instrument_id: u8,
+         volume: u16,
+         pan_l: u16,
+         pan_r: u16,
+         fx: u8,
+     ) {
+         self.note_on(idx, hz, instrument_id, AudioMode::Boot);
+         let v = &mut self.voices[idx];
+         v.volume = if hz == 0 { 0 } else { volume };
+         v.pan_l = pan_l;
+         v.pan_r = pan_r;
+         v.fx = fx;
+     }
+ 
+     fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8, mode: AudioMode) {
+         let inst = INSTRUMENTS[(instrument_id as usize) % INSTRUMENTS.len()];
+         let v = &mut self.voices[idx];
+ 
+@@ -527,51 +670,57 @@ impl AudioEngine {
+             let vib_add = vib_src * inst.vibrato_depth as i32;
+ 
+             (
+                 inst,
+                 v.waveform_id as usize,
+                 v.pitch,
+                 v.pan_l,
+                 v.pan_r,
+                 v.volume,
+                 env_gain,
+                 vib_add,
+                 v.fx,
+             )
+         };
+ 
+         let hz = (pitch as i32 + vib_add).max(0) as u32;
+         let step = self.step_from_hz(hz);
+         let phase_idx = {
+             let v = &mut self.voices[idx];
+             v.phase = v.phase.wrapping_add(step);
+             (v.phase >> 24) as usize
+         };
+         let wave = self.read_wave(wave_id, phase_idx);
+         let mut sample = wave as i32;
+         sample = (sample * vol as i32) >> MIX_SHIFT;
+-        sample = (sample * env_gain as i32) >> MIX_SHIFT;
++        let smooth_gain = {
++            let v = &mut self.voices[idx];
++            let sg = ((env_gain as u32 + v.prev_env_gain as u32) >> 1) as i32;
++            v.prev_env_gain = env_gain;
++            sg
++        };
++        sample = (sample * smooth_gain) >> MIX_SHIFT;
+         sample = self.apply_effects(idx, sample, inst, fx);
+ 
+         let l = (sample * pan_l as i32) >> MIX_SHIFT;
+         let r = (sample * pan_r as i32) >> MIX_SHIFT;
+         (l, r)
+     }
+ 
+     fn step_envelope(v: &mut Voice, inst: Instrument) -> u16 {
+         match v.envelope_state {
+             EnvelopeState::Off => {
+                 v.env_level = 0;
+             }
+             EnvelopeState::Attack => {
+                 v.env_counter = v.env_counter.saturating_add(1);
+                 let inc = ((1024u32 / inst.attack.max(1) as u32).max(1)) as u16;
+                 v.env_level = v.env_level.saturating_add(inc).min(1024);
+                 if v.env_level >= 1024 {
+                     v.envelope_state = EnvelopeState::Decay;
+                 }
+             }
+             EnvelopeState::Decay => {
+                 v.env_counter = v.env_counter.saturating_add(1);
+                 let dec = ((1024u32 / inst.decay.max(1) as u32).max(1)) as u16;
+                 v.env_level = v.env_level.saturating_sub(dec).max(inst.sustain);
+                 if v.env_level <= inst.sustain {
+@@ -586,95 +735,95 @@ impl AudioEngine {
+             }
+             EnvelopeState::Release => {
+                 let rel = ((1024u32 / inst.release.max(1) as u32).max(1)) as u16;
+                 v.env_level = v.env_level.saturating_sub(rel);
+                 if v.env_level == 0 {
+                     v.envelope_state = EnvelopeState::Off;
+                 }
+             }
+         }
+ 
+         v.env_level
+     }
+ 
+     fn apply_effects(&mut self, idx: usize, sample: i32, _inst: Instrument, fx: u8) -> i32 {
+         let mut out = sample;
+         let v = &mut self.voices[idx];
+ 
+         if fx & 0b0001 != 0 {
+             let delayed = v.delay_line[v.delay_index] as i32;
+             out = (out * 3 + delayed) / 4;
+             v.delay_line[v.delay_index] = out as i16;
+             v.delay_index = (v.delay_index + 1) % v.delay_line.len();
+         }
+ 
+         if fx & 0b0010 != 0 {
+-            out = (out + (out >> 1)) / 2;
++            out = (out * 6 / 5).clamp(-26_000, 26_000);
+         }
+ 
+         if fx & 0b0100 != 0 {
+-            out = (out >> 8) << 8;
++            v.lp_state += (out - v.lp_state) / 3;
++            out = v.lp_state;
+         }
+ 
+         if fx & 0b1000 != 0 {
+             out = (out * 3 / 2).clamp(-30_000, 30_000);
+         }
+ 
+         out
+     }
+ 
+     fn read_wave(&self, wave_id: usize, idx: usize) -> i16 {
+         let wave = wave_id.min(4);
+         let base = self.wavetable_base[wave];
+         let i = base + (idx % WAVE_SIZE) * 2;
+         i16::from_le_bytes([self.audio_ram[i], self.audio_ram[i + 1]])
+     }
+ 
+     fn step_from_hz(&self, hz: u32) -> u32 {
+         (((hz as u64) << 24) / self.sample_rate.max(1) as u64) as u32
+     }
+ 
+     fn sine_from_phase(phase: u16) -> i16 {
+         let x = phase as i32;
+         let tri = if x < 128 {
+             -32767 + x * 512
+         } else {
+             32767 - (x - 128) * 512
+         };
+         // Integer parabolic shaping from triangle to pseudo-sine.
+         let abs_t = tri.abs();
+         let shaped = tri * (65535 - abs_t / 2) / 65535;
+         shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
+     }
+ 
+     fn soft_clip(sample: i32) -> i32 {
+         let abs = sample.abs();
+         let sign = if sample < 0 { -1 } else { 1 };
+         let mag = (abs * MASTER_LIMIT) / (MASTER_LIMIT + abs.max(1));
+         sign * mag
+     }
+-}
+ 
+     fn sfx_sample(&mut self) -> (i32, i32) {
+         if self.sfx_play_samples == 0 {
+             return (0, 0);
+         }
+ 
+         let total = match self.sfx_kind {
+             AudioSfx::Launch => self.sample_rate / 3,
+             AudioSfx::Cancel => self.sample_rate / 8,
+             AudioSfx::Confirm => self.sample_rate / 10,
+             AudioSfx::None => 1,
+         }
+         .max(1);
+ 
+         let elapsed = total.saturating_sub(self.sfx_play_samples);
+         self.sfx_play_samples = self.sfx_play_samples.saturating_sub(1);
+         if self.sfx_play_samples == 0 {
+             self.sfx_kind = AudioSfx::None;
+         }
+ 
+         self.noise_state = self
+             .noise_state
+             .wrapping_mul(1664525)
+             .wrapping_add(1013904223);
+ 
+@@ -696,27 +845,114 @@ impl AudioEngine {
+         let l = pulse;
+         let r = pulse * 3 / 4;
+         (l, r)
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::{AudioEngine, AudioMode};
+ 
+     #[test]
+     fn wavetable_generation_does_not_overflow_in_debug() {
+         let mut engine = AudioEngine::new(48_000);
+         let mut block = [0i16; 64];
+         engine.render_block(AudioMode::Boot, &mut block);
+         assert!(block.iter().any(|s| *s != 0));
+     }
+ 
+     #[test]
+     fn diagnostics_peak_stays_below_hard_clip() {
+         let engine = AudioEngine::new(48_000);
+         let boot = engine.diagnostics_for_frames(AudioMode::Boot, 48_000);
+         let game = engine.diagnostics_for_frames(AudioMode::Game, 48_000);
+         assert!(boot.peak_l.abs() < 32_000 && boot.peak_r.abs() < 32_000);
+         assert!(game.peak_l.abs() < 32_000 && game.peak_r.abs() < 32_000);
++        assert!(boot.crest_l_q10 > 1024 && boot.crest_r_q10 > 1024);
++        assert!(game.crest_l_q10 > 1024 && game.crest_r_q10 > 1024);
++        assert_eq!(boot.clipped_l, 0);
++        assert_eq!(boot.clipped_r, 0);
++        assert_eq!(game.clipped_l, 0);
++        assert_eq!(game.clipped_r, 0);
++        assert_eq!(boot.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
++        assert_eq!(game.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
++    }
++
++    #[test]
++    fn same_note_does_not_retrigger_active_voice() {
++        let mut engine = AudioEngine::new(48_000);
++        engine.note_on(0, 262, 0, AudioMode::Boot);
++        engine.voices[0].envelope_state = super::EnvelopeState::Sustain;
++        engine.voices[0].env_counter = 7;
++
++        engine.note_on(0, 262, 0, AudioMode::Boot);
++
++        assert!(matches!(
++            engine.voices[0].envelope_state,
++            super::EnvelopeState::Sustain
++        ));
++        assert_eq!(engine.voices[0].env_counter, 7);
++
++        engine.note_on(0, 294, 0, AudioMode::Boot);
++        assert!(matches!(
++            engine.voices[0].envelope_state,
++            super::EnvelopeState::Attack
++        ));
++        assert_eq!(engine.voices[0].env_counter, 0);
++    }
++
++    #[test]
++    fn boot_voice_density_stays_within_budget() {
++        let mut engine = AudioEngine::new(48_000);
++        let mut max_active = 0usize;
++
++        for step in 0..super::PATTERN_STEPS {
++            engine.pattern_step = step;
++            engine.advance_boot_sequencer();
++            let active = engine
++                .voices
++                .iter()
++                .filter(|voice| voice.pitch > 0 && voice.volume > 0)
++                .count();
++            max_active = max_active.max(active);
++        }
++
++        assert!(max_active <= 9, "max_active={max_active}");
++    }
++
++
++    #[test]
++    fn mix_profiles_produce_ordered_level_deltas() {
++        let soft = AudioEngine::new_with_profile(48_000, super::MixProfile::Soft)
++            .diagnostics_for_frames(AudioMode::Game, 48_000);
++        let default = AudioEngine::new_with_profile(48_000, super::MixProfile::Default)
++            .diagnostics_for_frames(AudioMode::Game, 48_000);
++        let arcade = AudioEngine::new_with_profile(48_000, super::MixProfile::Arcade)
++            .diagnostics_for_frames(AudioMode::Game, 48_000);
++
++        assert!(soft.avg_abs_l <= default.avg_abs_l && default.avg_abs_l <= arcade.avg_abs_l);
++        assert!(soft.avg_abs_r <= default.avg_abs_r && default.avg_abs_r <= arcade.avg_abs_r);
++        assert!(soft.peak_l.abs() <= default.peak_l.abs() && default.peak_l.abs() <= arcade.peak_l.abs());
++        assert!(soft.peak_r.abs() <= default.peak_r.abs() && default.peak_r.abs() <= arcade.peak_r.abs());
++
++        assert_eq!(soft.clipped_l, 0);
++        assert_eq!(soft.clipped_r, 0);
++        assert_eq!(default.clipped_l, 0);
++        assert_eq!(default.clipped_r, 0);
++        assert_eq!(arcade.clipped_l, 0);
++        assert_eq!(arcade.clipped_r, 0);
++    }
++
++    #[test]
++    fn boot_beat_step_tracks_sequencer_progression() {
++        let mut engine = AudioEngine::new(48_000);
++        let mut block = [0i16; 2];
++
++        assert_eq!(engine.boot_beat_step(), 0);
++        for expected in 1..=3u8 {
++            for _ in 0..engine.tick_samples {
++                engine.render_block(AudioMode::Boot, &mut block);
++            }
++            assert_eq!(engine.boot_beat_step(), expected % super::PATTERN_STEPS as u8);
++        }
+     }
+ }
+diff --git a/src/aurex/runtime/event.rs b/src/aurex/runtime/event.rs
+index 5804f5b1c3b1f041a2cf31daad3da0d575f9160d..04bc9266654c9286ecc284b750f1c2ecf65b2d74 100644
+--- a/src/aurex/runtime/event.rs
++++ b/src/aurex/runtime/event.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ use super::launch::{LaunchDescriptor, LaunchStage, LaunchValidationError};
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum SceneId {
+     Boot,
+     Library,
+ }
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum AudioSfx {
+     None,
+     Confirm,
+     Launch,
+     Cancel,
+ }
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum RuntimeAudioCommand {
+     PlayTrack(u8),
+     PlaySfx(AudioSfx),
+     StopTrack,
+ }
+ 
+ #[derive(Clone, Copy, Debug)]
+ pub enum RuntimeEvent {
+diff --git a/src/aurex/runtime/launch.rs b/src/aurex/runtime/launch.rs
+index 09bc4cc8ed8e967672c0c6e3fa902c0bf268c842..f13aa0e8841dd5e1dc5db88f465f4ffee8fb88c1 100644
+--- a/src/aurex/runtime/launch.rs
++++ b/src/aurex/runtime/launch.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub struct LaunchDescriptor {
+     pub title: &'static str,
+     pub cartridge_id: &'static str,
+ }
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum LaunchValidationError {
+     EmptyCartridgeId,
+     InvalidCartridgeId,
+     CartridgeMissing,
+     CartridgeManifestInvalid,
+ }
+ 
+ pub fn validate_launch_descriptor(desc: LaunchDescriptor) -> Result<(), LaunchValidationError> {
+     if desc.cartridge_id.is_empty() {
+         return Err(LaunchValidationError::EmptyCartridgeId);
+     }
+ 
+     let valid = desc
+         .cartridge_id
+         .bytes()
+         .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+ 
+     if !valid {
+diff --git a/src/aurex/runtime/mod.rs b/src/aurex/runtime/mod.rs
+index 78e4016aaf91dfc84000fcf3e16896dd99443fd2..b8e7e9a1090adef14fe6c67097cec3bc47ae167f 100644
+--- a/src/aurex/runtime/mod.rs
++++ b/src/aurex/runtime/mod.rs
+@@ -1,37 +1,37 @@
+ mod audio;
+ mod event;
+ mod flow;
+ mod frame_pacer;
+ mod input;
+ mod launch;
+ mod render;
+ mod replay;
+ 
+ pub use flow::{FlowController, FlowPhase};
+ 
+-pub use audio::{AudioEngine, AudioMode};
++pub use audio::{AudioEngine, AudioMode, MixProfile};
+ 
+ pub use input::poll_input;
+ 
+ pub use render::present_frame;
+ 
+ pub use frame_pacer::FramePacer;
+ 
+ pub use replay::ReplayCapture;
+ 
+ pub use event::{AudioSfx, RuntimeAudioCommand, RuntimeEvent, RuntimeEventQueue, SceneId};
+ pub use launch::{
+     LaunchDescriptor, LaunchIntentController, LaunchStage, LaunchValidationError,
+     validate_launch_descriptor,
+ };
+ 
+ #[derive(Default)]
+ pub struct RuntimeDiagnostics {
+     pub scene_changed: Option<SceneId>,
+     pub launch_requested: Option<LaunchDescriptor>,
+     pub launch_canceled: bool,
+     pub launch_stage_changed: Option<LaunchStage>,
+     pub launch_ready: Option<LaunchDescriptor>,
+     pub launch_resolved: Option<LaunchDescriptor>,
+     pub launch_rejected: Option<LaunchValidationError>,
+ }
+diff --git a/src/aurex/wram.rs b/src/aurex/wram.rs
+index 67ca8ffefb443747294adc194d54bd97792c8ad0..16de7cc5602ae42992d3aa744c48f7a940cea005 100644
+--- a/src/aurex/wram.rs
++++ b/src/aurex/wram.rs
+@@ -1,25 +1,26 @@
++#![allow(dead_code)]
+ // ============================================================================
+ // WRAM (512 KB) - fixed-size system memory
+ // ----------------------------------------------------------------------------
+ // Stored on heap via Vec->Box<[u8]> to avoid stack issues on Windows.
+ // ============================================================================
+ 
+ pub const WRAM_SIZE: usize = 512 * 1024;
+ 
+ pub struct Wram {
+     memory: Box<[u8]>,
+ }
+ 
+ impl Wram {
+     pub fn new() -> Self {
+         let w = Self {
+             memory: vec![0u8; WRAM_SIZE].into_boxed_slice(),
+         };
+         debug_assert_eq!(w.memory.len(), WRAM_SIZE);
+         w
+     }
+ 
+     pub fn len(&self) -> usize {
+         self.memory.len()
+     }
+ 
+diff --git a/src/main.rs b/src/main.rs
+index afd150212b4b438d41d4932cf88d8a092a35f269..789de53d770459526979fab2e481a4ee76b857b9 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -1,201 +1,348 @@
+ mod aurex;
+ 
+ use aurex::ppu::framebuffer::{FB_H, FB_W};
+ use aurex::runtime::{
+-    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, collect_runtime_diagnostics,
+-    dispatch_runtime_events, poll_input, present_frame,
++    AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
++    LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
++    poll_input, present_frame,
+ };
+ use sdl2::GameControllerSubsystem;
+ use sdl2::audio::AudioSpecDesired;
+ use sdl2::controller::GameController;
++use std::fs;
+ use std::time::Duration;
+ 
+ fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
+     for id in 0..game_controller.num_joysticks().unwrap_or(0) {
+         if !game_controller.is_game_controller(id) {
+             continue;
+         }
+ 
+         if let Ok(c) = game_controller.open(id) {
+             println!("Controller connected: {}", c.name());
+             return Some(c);
+         }
+     }
+     None
+ }
+ 
++fn parse_usize_arg(args: &[String], flag: &str, default: usize) -> usize {
++    for i in 0..args.len().saturating_sub(1) {
++        if args[i] == flag {
++            if let Ok(v) = args[i + 1].parse::<usize>() {
++                return v.max(1);
++            }
++        }
++    }
++    default
++}
++
++fn parse_string_arg(args: &[String], flag: &str) -> Option<String> {
++    for i in 0..args.len().saturating_sub(1) {
++        if args[i] == flag {
++            return Some(args[i + 1].clone());
++        }
++    }
++    None
++}
++
++fn parse_mix_profile(args: &[String]) -> MixProfile {
++    if let Some(raw) = parse_string_arg(args, "--audio-profile") {
++        return MixProfile::parse(&raw).unwrap_or(MixProfile::Default);
++    }
++    MixProfile::Default
++}
++
++fn runtime_baseline_json(profile: MixProfile, baseline_json: &str, replay_json: &str) -> String {
++    format!(
++        "{{\"audio_profile\":\"{}\",\"audio_diagnostics_baseline\":{},\"replay_capture_smoke\":{}}}",
++        profile.as_str(),
++        baseline_json,
++        replay_json
++    )
++}
++
++fn replay_capture_smoke_summary_json() -> String {
++    let mut cap = aurex::runtime::ReplayCapture::new();
++    let mut system = aurex::Aurex::new();
++    let mut events = Vec::with_capacity(8);
++
++    for frame in 0..120u32 {
++        let input = aurex::game::InputState {
++            up: frame % 2 == 0,
++            down: frame % 3 == 0,
++            accept: frame % 11 == 0,
++            cancel: frame % 17 == 0,
++            ..Default::default()
++        };
++
++        cap.capture_input(input);
++        system.run_frame(input, None);
++        events.clear();
++        system.drain_events(&mut events);
++        for (i, _event) in events.iter().enumerate() {
++            cap.capture_event_tag((frame as u64) << 16 | i as u64);
++        }
++        cap.capture_framebuffer(system.framebuffer().pixels());
++        cap.end_frame();
++    }
++
++    cap.summary_json()
++}
++
++fn format_launch_stage(stage: LaunchStage) -> String {
++    match stage {
++        LaunchStage::Idle => "idle".to_string(),
++        LaunchStage::Pending(desc) => {
++            format!(
++                "pending title={} cartridge={}",
++                desc.title, desc.cartridge_id
++            )
++        }
++        LaunchStage::Validating(desc) => {
++            format!(
++                "validating title={} cartridge={}",
++                desc.title, desc.cartridge_id
++            )
++        }
++        LaunchStage::Ready(desc) => {
++            format!("ready title={} cartridge={}", desc.title, desc.cartridge_id)
++        }
++        LaunchStage::Rejected(reason) => {
++            format!("rejected reason={}", format_launch_validation_error(reason))
++        }
++    }
++}
++
++fn format_launch_validation_error(reason: LaunchValidationError) -> &'static str {
++    match reason {
++        LaunchValidationError::EmptyCartridgeId => "empty_cartridge_id",
++        LaunchValidationError::InvalidCartridgeId => "invalid_cartridge_id",
++        LaunchValidationError::CartridgeMissing => "cartridge_missing",
++        LaunchValidationError::CartridgeManifestInvalid => "cartridge_manifest_invalid",
++    }
++}
++
++fn docs_sync_check() -> Result<(), String> {
++    let architecture = fs::read_to_string("docs/architecture.md")
++        .map_err(|e| format!("read docs/architecture.md failed: {e}"))?;
++    let canon = fs::read_to_string("docs/ai_handoff_canon.md")
++        .map_err(|e| format!("read docs/ai_handoff_canon.md failed: {e}"))?;
++
++    let expected = [
++        "--generate-runtime-baseline",
++        "--docs-sync-check",
++        "Launch stage: pending",
++        "Launch stage: validating",
++        "Launch stage: ready",
++    ];
++
++    for needle in expected {
++        if !architecture.contains(needle) {
++            return Err(format!(
++                "docs sync check failed: docs/architecture.md missing marker '{needle}'"
++            ));
++        }
++    }
++
++    if !canon.contains("Audio diagnostics baseline artifact generation is required") {
++        return Err(
++            "docs sync check failed: docs/ai_handoff_canon.md missing baseline discipline line"
++                .to_string(),
++        );
++    }
++
++    Ok(())
++}
++
+ fn main() {
+     let args: Vec<String> = std::env::args().collect();
+     if args.iter().any(|a| a == "--analyze-cartridges") {
+         let report = aurex::cartridge::CartridgeRuntime::analyze_default_cartridges();
+         if args.iter().any(|a| a == "--json") {
+             println!("{}", report.to_json());
+         } else {
+             println!(
+                 "Cartridge analyze: {} valid / {} invalid",
+                 report.valid_count(),
+                 report.invalid_count()
+             );
+             for entry in &report.entries {
+                 if entry.ok {
+                     println!(
+                         "[OK] {} uploads={} bytes={} palette_bytes={}",
+                         entry.cartridge_id,
+                         entry.upload_count,
+                         entry.total_upload_bytes,
+                         entry.palette_upload_bytes
+                     );
+                 } else {
+                     println!(
+                         "[FAIL] {}: {}",
+                         entry.cartridge_id,
+                         entry.issue.as_deref().unwrap_or("unknown error")
+                     );
+                 }
+             }
+         }
+ 
+         if report.all_valid() {
+             return;
+         }
+ 
+         std::process::exit(2);
+     }
+ 
+     if args.iter().any(|a| a == "--audio-diagnostics") {
+-        let mut frames = 48_000usize;
+-        for i in 0..args.len().saturating_sub(1) {
+-            if args[i] == "--frames" {
+-                if let Ok(v) = args[i + 1].parse::<usize>() {
+-                    frames = v.max(1);
+-                }
+-            }
+-        }
++        let frames = parse_usize_arg(&args, "--frames", 48_000);
+ 
+         let mode = if args.iter().any(|a| a == "--boot") {
+             aurex::runtime::AudioMode::Boot
+         } else {
+             aurex::runtime::AudioMode::Game
+         };
+ 
+-        let engine = aurex::runtime::AudioEngine::new(48_000);
++        let profile = parse_mix_profile(&args);
++        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
+         let diag = engine.diagnostics_for_frames(mode, frames);
+         if args.iter().any(|a| a == "--json") {
+             println!("{}", diag.to_json());
+         } else {
+             println!(
+-                "Audio diagnostics frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={}",
+-                diag.frames, diag.peak_l, diag.peak_r, diag.avg_abs_l, diag.avg_abs_r
++                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={} boot_beat_step={}",
++                profile.as_str(),
++                diag.frames,
++                diag.peak_l,
++                diag.peak_r,
++                diag.avg_abs_l,
++                diag.avg_abs_r,
++                diag.crest_l_q10,
++                diag.crest_r_q10,
++                diag.clipped_l,
++                diag.clipped_r,
++                diag.boot_beat_step
+             );
+         }
+         return;
+     }
+ 
++    if args.iter().any(|a| a == "--generate-runtime-baseline") {
++        let frames = parse_usize_arg(&args, "--frames", 48_000);
++        let out = parse_string_arg(&args, "--out")
++            .unwrap_or_else(|| "artifacts/runtime_audio_diag_baseline.json".to_string());
++        let profile = parse_mix_profile(&args);
++        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
++        let baseline = engine.diagnostics_baseline(frames);
++        let replay = replay_capture_smoke_summary_json();
++        let json = runtime_baseline_json(profile, &baseline.to_json(), &replay);
++
++        if let Some(parent) = std::path::Path::new(&out).parent() {
++            if !parent.as_os_str().is_empty() {
++                fs::create_dir_all(parent).expect("baseline output directory create failed");
++            }
++        }
++
++        fs::write(&out, &json).expect("baseline output write failed");
++        println!("Baseline artifact written: {}", out);
++        println!("{}", json);
++        return;
++    }
++
++    if args.iter().any(|a| a == "--docs-sync-check") {
++        match docs_sync_check() {
++            Ok(()) => {
++                println!("Docs sync check: PASS");
++                return;
++            }
++            Err(err) => {
++                eprintln!("Docs sync check: FAIL: {err}");
++                std::process::exit(2);
++            }
++        }
++    }
++
+     if args.iter().any(|a| a == "--palette-heatmap") {
+         let v = aurex::ppu::vram::Vram::new();
+         println!("{}", v.bg0_palette_bank_heatmap_json());
+         return;
+     }
+ 
+     if args.iter().any(|a| a == "--replay-capture-smoke") {
+-        let mut cap = aurex::runtime::ReplayCapture::new();
+-        let mut system = aurex::Aurex::new();
+-        let mut events = Vec::with_capacity(8);
+-
+-        for frame in 0..120u32 {
+-            let input = aurex::game::InputState {
+-                up: frame % 2 == 0,
+-                down: frame % 3 == 0,
+-                accept: frame % 11 == 0,
+-                cancel: frame % 17 == 0,
+-                ..Default::default()
+-            };
+-
+-            cap.capture_input(input);
+-            system.run_frame(input);
+-            events.clear();
+-            system.drain_events(&mut events);
+-            for (i, _event) in events.iter().enumerate() {
+-                cap.capture_event_tag((frame as u64) << 16 | i as u64);
+-            }
+-            cap.capture_framebuffer(system.framebuffer().pixels());
+-            cap.end_frame();
+-        }
+-
+-        println!("{}", cap.summary_json());
++        println!("{}", replay_capture_smoke_summary_json());
+         return;
+     }
+ 
+     if args.iter().any(|a| a == "--audit-cartridges") {
+         let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
+         if args.iter().any(|a| a == "--json") {
+             println!("{}", report.to_json());
+         } else {
+             println!(
+                 "Cartridge audit: {} valid / {} invalid",
+                 report.valid_count(),
+                 report.invalid_count()
+             );
+             for entry in &report.entries {
+                 if entry.ok {
+                     println!("[OK] {}", entry.cartridge_id);
+                 } else {
+                     println!(
+                         "[FAIL] {}: {}",
+                         entry.cartridge_id,
+                         entry.issue.as_deref().unwrap_or("unknown error")
+                     );
+                 }
+             }
+         }
+ 
+         if report.all_valid() {
+             return;
+         }
+ 
+         std::process::exit(2);
+     }
+ 
+     let sdl = sdl2::init().expect("SDL init failed");
+     let video = sdl.video().expect("SDL video init failed");
+     let audio = sdl.audio().expect("SDL audio init failed");
+     let game_controller = sdl
+         .game_controller()
+         .expect("SDL game controller init failed");
+ 
+     let desired = AudioSpecDesired {
+         freq: Some(48_000),
+         channels: Some(2),
+         samples: Some(1024),
+     };
+ 
+     let queue = audio
+         .open_queue::<i16, _>(None, &desired)
+         .expect("audio queue open failed");
+ 
+-    let mut synth = AudioEngine::new(queue.spec().freq as u32);
++    let profile = parse_mix_profile(&args);
++    let mut synth = AudioEngine::new_with_profile(queue.spec().freq as u32, profile);
+     queue.resume();
+ 
+     let scale: u32 = 3;
+     let window = video
+         .window("Aurex-16++", (FB_W as u32) * scale, (FB_H as u32) * scale)
+         .position_centered()
+         .build()
+         .expect("window build failed");
+ 
+     let mut canvas = window
+         .into_canvas()
+         .present_vsync()
+         .build()
+         .expect("canvas build failed");
+ 
+     let texture_creator = canvas.texture_creator();
+     let mut texture = texture_creator
+         .create_texture_streaming(
+             sdl2::pixels::PixelFormatEnum::ARGB8888,
+             FB_W as u32,
+             FB_H as u32,
+         )
+         .expect("texture create failed");
+ 
+     let mut pump = sdl.event_pump().expect("event pump failed");
+@@ -222,64 +369,91 @@ fn main() {
+         let polled = poll_input(&pump, controller.as_ref(), flow.game_active());
+ 
+         if polled.quit_requested {
+             break 'running;
+         }
+ 
+         if flow.tick(polled.start_pressed) {
+             system.start_game();
+             println!("Library ready");
+         }
+ 
+         system.set_boot_waiting_for_start(flow.waiting_for_start());
+ 
+         let audio_mode = match flow.phase() {
+             FlowPhase::Boot | FlowPhase::AwaitStart => AudioMode::Boot,
+             FlowPhase::Game => AudioMode::Game,
+         };
+ 
+         if queue.size() < 32_768 {
+             let mut block = [0i16; 4096];
+             synth.render_block(audio_mode, &mut block);
+             let _ = queue.queue_audio(&block);
+         }
+ 
+         let input = polled.gameplay;
++        let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
++            Some(synth.boot_beat_step())
++        } else {
++            None
++        };
+ 
+-        system.run_frame(input);
++        system.run_frame(input, boot_beat_step);
+         runtime_events.clear();
+         system.drain_events(&mut runtime_events);
+ 
+         let diagnostics = collect_runtime_diagnostics(&runtime_events);
+         if let Some(scene) = diagnostics.scene_changed {
+             println!("Scene changed: {:?}", scene);
+         }
+         if let Some(req) = diagnostics.launch_requested {
+             println!("Launch requested: {} ({})", req.title, req.cartridge_id);
+         }
+         if diagnostics.launch_canceled {
+             println!("Launch request cleared");
+         }
+         if let Some(stage) = diagnostics.launch_stage_changed {
+-            println!("Launch stage: {:?}", stage);
++            println!("Launch stage: {}", format_launch_stage(stage));
+         }
+         if let Some(ready) = diagnostics.launch_ready {
+             println!("Launch ready: {} ({})", ready.title, ready.cartridge_id);
+         }
+         if let Some(resolved) = diagnostics.launch_resolved {
+             println!(
+                 "Cartridge resolved: {} ({})",
+                 resolved.title, resolved.cartridge_id
+             );
+         }
+         if let Some(reject) = diagnostics.launch_rejected {
+-            println!("Launch rejected: {:?}", reject);
++            println!(
++                "Launch rejected: reason={}",
++                format_launch_validation_error(reject)
++            );
+         }
+ 
+         dispatch_runtime_events(&mut synth, &runtime_events);
+ 
+         let src = system.framebuffer().pixels();
+         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
+ 
+         pacer.wait_next_frame();
+     }
+ }
++
++
++
++#[cfg(test)]
++mod tests {
++    use super::{MixProfile, runtime_baseline_json};
++
++    #[test]
++    fn runtime_baseline_json_contains_profile_and_diagnostics_fields() {
++        let baseline = "{\"sample_rate\":48000,\"frames\":32,\"boot\":{\"frames\":32,\"boot_beat_step\":3},\"game\":{\"frames\":32,\"boot_beat_step\":3}}";
++        let replay = "{\"frames\":120,\"events\":0}";
++        let json = runtime_baseline_json(MixProfile::Arcade, baseline, replay);
++
++        assert!(json.contains("\"audio_profile\":\"arcade\""));
++        assert!(json.contains("\"audio_diagnostics_baseline\":"));
++        assert!(json.contains("\"replay_capture_smoke\":"));
++        assert!(json.contains("\"boot_beat_step\":3"));
++    }
++}
+ 
+EOF
+)
