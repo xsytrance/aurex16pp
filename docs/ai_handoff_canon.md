@@ -34,9 +34,10 @@ Deterministic ordering is mandatory; no nondeterministic blending order.
 
 ## 4) Palette and tile semantics
 
-- Palette address space supports up to **4096 RGB555 entries**.
+- Palette address space supports up to **4096 RGB555 entries**; max colors on screen **4096**.
 - Legacy assumptions for lower palette banks remain supported.
 - Tile/sprite palette interpretation must remain explicit and bounds checked.
+- **16 sprites per scanline** (overflow telemetry if more); sprite sizes 8×8 and 16×16.
 
 ## 5) Runtime mode contract
 
@@ -52,13 +53,14 @@ Boot-to-game transition is explicitly controlled by flow state and start input e
 `AudioEngine` canonical behavior:
 
 - 48 kHz stereo deterministic synthesis
-- 12 voices
+- 16 voices
 - wavetable-backed voice sampling
-- ADSR-style envelope states
+- ADSR-style envelope states; per-voice anti-click smoothing; FX: delay, drive, LP, distortion, bitcrush (0x10)
 - command API:
   - `PlayTrack(u8)`
   - `PlaySfx(AudioSfx)`
   - `StopTrack`
+- `pattern_step()` for boot overlay beat sync
 
 Boot and Game audio mode routing are distinct and deterministic.
 

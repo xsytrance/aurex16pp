@@ -660,6 +660,14 @@ mod tests {
         assert!(second.launch_requested);
     }
 
+
+    #[test]
+    fn includes_chrome_duo_boot_profile() {
+        assert!(PROFILES
+            .iter()
+            .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT"));
+    }
+
     #[test]
     fn all_profiles_map_to_valid_runtime_track_ids() {
         assert!(
