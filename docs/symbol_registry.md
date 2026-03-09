@@ -67,7 +67,7 @@ Aurex
 
 run(&mut self) -> !
 
-run_frame(&mut self)
+run_frame(&mut self, input: InputState, boot_beat_step: Option<u8>)
 
 framebuffer(&self) -> &Framebuffer
 

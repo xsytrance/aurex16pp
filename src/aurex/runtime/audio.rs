@@ -633,6 +633,12 @@ impl AudioEngine {
     }
 
     fn advance_sequencer(&mut self, mode: AudioMode) {
+        let tick_samples = if matches!(mode, AudioMode::Boot) {
+            (self.sample_rate / BOOT_TICK_HZ).max(1)
+        } else {
+            let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
+            (self.sample_rate * 15 / bpm).max(1)
+        };
         self.tick_counter = self.tick_counter.wrapping_add(1);
         let tick_samples = self.tick_samples_for_mode(mode);
         if self.tick_counter < tick_samples {

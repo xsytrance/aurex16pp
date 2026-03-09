@@ -1,3 +1,33 @@
+## 2026-03-08 — AV Upgrade Execution (Phase 1–3)
+
+### Summary
+Executed the proposed AV architecture upgrade: audio (16 voices, anti-click, bitcrush), graphics (16 sprites/scanline, OAM size_16 fix), boot beat sync, and documentation alignment.
+
+### Phase 1 — Audio
+- **Tech spec:** Audio RAM corrected to **512 KB** (was 256 KB).
+- **ASU-32:** Voice count increased from 12 to **16**; removed duplicate `AudioDiagnosticsBaseline` and duplicate unit tests.
+- **Anti-click:** Per-voice `prev_env_gain` smoothing at envelope boundaries (integer blend of current and previous env_level).
+- **Bitcrush:** New FX bit `0x10` in `apply_effects` (6-bit quantize, integer-only).
+- Docs: `tech_spec_report.md`, `architecture.md`, `ai_handoff_canon.md` updated for 16 voices and FX.
+
+### Phase 2 — Graphics
+- **PPU:** Sprites per scanline increased from 8 to **16** (`evaluate_sprites_for_scanline` and overflow semantics).
+- **Sprite size:** Render path now uses OAM `size_16` (8×8 vs 16×16) instead of hardcoded 16.
+- **Docs:** Max colors on screen (4096) and sprite limits (16/scanline, 8×8/16×16) documented in tech_spec, architecture, canon.
+
+### Phase 3 — Boot
+- **Beat sync:** `AudioEngine::pattern_step()` added; `run_frame(input, boot_beat_step: Option<u8>)` added; PrimeAwakens `draw_overlay(fb, boot_beat_step)` with beat-aligned pulse in status panels (step % 4 == 0).
+- **Main:** Passes `boot_beat_step` from synth when in Boot/AwaitStart.
+
+### Phase 4
+- Library UI / diagnostics polish deferred (no code change).
+
+### Documentation
+- Canon, architecture, tech_spec, symbol_registry (`run_frame` signature) updated. `dev_log` and handoff docs aligned.
+
+### Progress
+Build passes (`cargo check`). Determinism and integer-only constraints preserved.
+
 ## 2026-03-08 16:20:00Z — Handoff Documentation Synchronization Pass
 
 ### Summary
