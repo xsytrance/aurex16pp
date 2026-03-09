@@ -6,3 +6,7 @@
 
 # Cartridge generated payloads
 cartridges/default/*.bin
+
+# Binary artifacts
+*.bin
+target/
