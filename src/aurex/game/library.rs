@@ -688,6 +688,25 @@ mod tests {
     }
 
     #[test]
+    fn all_profiles_map_to_valid_runtime_track_ids() {
+        assert!(
+            PROFILES
+                .iter()
+                .all(|profile| (profile.track_id as usize) < AUDIO_TRACK_COUNT),
+            "library profile references out-of-range runtime track id"
+        );
+    }
+
+    #[test]
+    fn includes_chrome_duo_boot_profile() {
+        assert!(
+            PROFILES
+                .iter()
+                .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT")
+        );
+    }
+
+    #[test]
     fn cancel_is_edge_triggered_and_resets_state() {
         let mut lib = LibraryScreen::new();
 
