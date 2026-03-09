@@ -75,7 +75,8 @@ const TICK_HZ: u32 = 120;
 const BOOT_TICK_HZ: u32 = 4;
 const PATTERN_STEPS: usize = 16;
 
-const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
+pub const TRACK_COUNT: usize = 6;
+const TRACK_BPM: [u16; TRACK_COUNT] = [140, 130, 120, 100, 122, 136];
 const MASTER_LIMIT: i32 = 28_000;
 
 const WAVE_SINE: usize = 0;

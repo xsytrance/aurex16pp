@@ -604,6 +604,7 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
 mod tests {
     use super::{LibraryScreen, PROFILES};
     use crate::aurex::game::{AudioCue, InputState};
+    use crate::aurex::runtime::AUDIO_TRACK_COUNT;
 
     #[test]
     fn navigation_wraps_and_emits_track_cue() {
@@ -665,6 +666,25 @@ mod tests {
         assert!(PROFILES
             .iter()
             .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT"));
+    }
+
+    #[test]
+    fn all_profiles_map_to_valid_runtime_track_ids() {
+        assert!(
+            PROFILES
+                .iter()
+                .all(|profile| (profile.track_id as usize) < AUDIO_TRACK_COUNT),
+            "library profile references out-of-range runtime track id"
+        );
+    }
+
+    #[test]
+    fn includes_chrome_duo_boot_profile() {
+        assert!(
+            PROFILES
+                .iter()
+                .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT")
+        );
     }
 
     #[test]

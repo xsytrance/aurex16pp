@@ -11,6 +11,8 @@ pub use flow::{FlowController, FlowPhase};
 
 pub use audio::{AudioEngine, AudioMode, MixProfile};
 
+pub const AUDIO_TRACK_COUNT: usize = audio::TRACK_COUNT;
+
 pub use input::poll_input;
 
 pub use render::present_frame;
