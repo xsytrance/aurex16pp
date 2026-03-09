@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::launch::{LaunchDescriptor, LaunchStage, LaunchValidationError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -12,12 +13,19 @@ pub enum AudioSfx {
     Confirm,
     Launch,
     Cancel,
+    BootChime,
+    PlusChime,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeAudioCommand {
     PlayTrack(u8),
     PlaySfx(AudioSfx),
+    PlayPcm {
+        channel: u8,
+        sample_id: u8,
+        volume: u16,
+    },
     StopTrack,
 }
 
