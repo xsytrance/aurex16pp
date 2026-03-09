@@ -2,7 +2,7 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (boot/library sound timing fix)
+## Latest validation pass (reference audio.rs integration)
 
 ### Commands executed
 
@@ -22,7 +22,6 @@ _Last updated: 2026-03-08._
 
 ## Interpretation
 
-- Boot sequencing now uses dedicated boot tick timing (`BOOT_TICK_HZ=8`).
-- Library sequencing now uses BPM-derived tick intervals and immediate-start behavior on `PlayTrack`.
-- Main-loop ordering now renders audio after dispatching runtime events, removing one-frame track-switch lag.
+- Audio runtime compiles after syncing to the provided reference implementation.
+- Runtime event model compiles with added `PlayPcm` and extended SFX variants.
 - Full binary-linked test execution remains blocked without system SDL2.

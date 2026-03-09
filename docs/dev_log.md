@@ -1489,3 +1489,29 @@ Implemented the requested audio timing fix set so boot and library playback use 
 1. Add a tiny deterministic test for BPM-derived step-rate sanity across all tracks.
 2. Add an A/B diagnostics helper for profile+track timing telemetry snapshots.
 3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 21:05:00Z — Audio engine sync to provided reference implementation
+
+### Summary
+Replaced `src/aurex/runtime/audio.rs` behavior to match the provided reference implementation for boot/library timing, track character, and boot mix behavior.
+
+### Audio/runtime changes
+- Synced `MixProfile` to include `Boot` profile with dedicated LP/HP settings for boot rendering path.
+- Synced timing constants and scheduling model (`BOOT_TICK_HZ = 4`, BPM-based game ticks with `sample_rate * 15 / bpm`).
+- Synced track content model to melody/bass/arp + optional percussion layers with expanded voice budget and per-track instrument routing.
+- Synced `PlayTrack` immediate-start behavior and per-track FX overlay model (`TRACK_FX`).
+- Synced boot sequencer to the provided single-voice dramatic melody path.
+- Added PCM channel model and `PlayPcm` command handling paths from the provided implementation.
+
+### Compatibility glue
+- Preserved `boot_beat_step` in diagnostics/output and `boot_beat_step()` accessor for existing host/overlay integration points.
+- Extended runtime event enums to include new provided audio commands/SFX variants.
+
+### Progress report
+- Audio engine now follows the provided known-good reference structure rather than incremental local patching, reducing drift risk versus the target build.
+
+### Next planned work
+1. Validate in an SDL2-enabled environment for audible crackle/distortion confirmation.
+2. Add focused unit assertions for `PlayPcm` command state transitions.
+3. Continue dead-code allowance cleanup once AV behavior stabilizes.

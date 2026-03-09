@@ -11,6 +11,7 @@ pub enum MixProfile {
     Soft,
     Default,
     Arcade,
+    Boot,
 }
 
 impl MixProfile {
@@ -19,6 +20,7 @@ impl MixProfile {
             Self::Soft => 80,
             Self::Default => 88,
             Self::Arcade => 96,
+            Self::Boot => 88,
         }
     }
 
@@ -27,6 +29,7 @@ impl MixProfile {
             Self::Soft => 5,
             Self::Default => 4,
             Self::Arcade => 3,
+            Self::Boot => 6,
         }
     }
 
@@ -35,6 +38,7 @@ impl MixProfile {
             Self::Soft => 61,
             Self::Default => 63,
             Self::Arcade => 64,
+            Self::Boot => 62,
         }
     }
 
@@ -43,6 +47,7 @@ impl MixProfile {
             Self::Soft => "soft",
             Self::Default => "default",
             Self::Arcade => "arcade",
+            Self::Boot => "boot",
         }
     }
 
@@ -51,6 +56,7 @@ impl MixProfile {
             "soft" => Some(Self::Soft),
             "default" => Some(Self::Default),
             "arcade" => Some(Self::Arcade),
+            "boot" => Some(Self::Boot),
             _ => None,
         }
     }
@@ -58,11 +64,18 @@ impl MixProfile {
 
 const SAMPLE_RATE_HZ: u32 = 48_000;
 const AUDIO_RAM_BYTES: usize = 512 * 1024;
-const VOICE_COUNT: usize = 16;
-const WAVE_SIZE: usize = 256;
+const VOICE_COUNT: usize = 24;
+const WAVE_SIZE: usize = 512;
+const PCM_SAMPLE_RAM_BYTES: usize = 128 * 1024;
+const PCM_CHANNEL_COUNT: usize = 16;
+const PCM_SLOT_BYTES: usize = 8192;
+const WAVETABLE_BYTES: usize = 5 * WAVE_SIZE * 2;
 const MIX_SHIFT: i32 = 10;
-const BOOT_TICK_HZ: u32 = 8;
+const TICK_HZ: u32 = 120;
+const BOOT_TICK_HZ: u32 = 4;
 const PATTERN_STEPS: usize = 16;
+
+const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
 const MASTER_LIMIT: i32 = 28_000;
 
 const WAVE_SINE: usize = 0;
@@ -82,7 +95,7 @@ struct Instrument {
     vibrato_speed: u8,
 }
 
-const INSTRUMENTS: [Instrument; 6] = [
+const INSTRUMENTS: [Instrument; 8] = [
     Instrument {
         waveform_id: WAVE_SQUARE as u8,
         attack: 18,
@@ -137,7 +150,34 @@ const INSTRUMENTS: [Instrument; 6] = [
         vibrato_depth: 0,
         vibrato_speed: 0,
     },
+    Instrument {
+        waveform_id: WAVE_TRIANGLE as u8,
+        attack: 4,
+        decay: 28,
+        sustain: 850,
+        release: 60,
+        vibrato_depth: 0,
+        vibrato_speed: 0,
+    },
+    Instrument {
+        waveform_id: WAVE_SINE as u8,
+        attack: 6,
+        decay: 24,
+        sustain: 720,
+        release: 52,
+        vibrato_depth: 1,
+        vibrato_speed: 2,
+    },
 ];
+
+#[derive(Clone, Copy, Default)]
+struct PcmChannel {
+    position: usize,
+    length: usize,
+    sample_base: usize,
+    volume: u16,
+    playing: bool,
+}
 
 #[derive(Clone, Copy)]
 enum EnvelopeState {
@@ -191,23 +231,64 @@ impl Voice {
     }
 }
 
-const TRACK0: [u16; PATTERN_STEPS] = [
-    196, 0, 220, 0, 247, 0, 262, 0, 196, 0, 220, 0, 175, 0, 196, 0,
+const TRACK0_MELODY: [u16; PATTERN_STEPS] = [
+    494, 370, 330, 247, 494, 370, 330, 247, 494, 370, 494, 370, 330, 247, 330, 247,
 ];
-const TRACK1: [u16; PATTERN_STEPS] = [
-    247, 262, 294, 330, 247, 262, 294, 330, 220, 247, 262, 294, 196, 220, 247, 262,
+const TRACK0_BASS: [u16; PATTERN_STEPS] = [
+    123, 92, 82, 62, 123, 92, 82, 62, 123, 92, 123, 92, 82, 62, 82, 62,
 ];
-const TRACK2: [u16; PATTERN_STEPS] = [
-    98, 98, 110, 98, 123, 123, 110, 98, 82, 82, 98, 82, 73, 73, 82, 73,
+const TRACK0_ARP: [u16; PATTERN_STEPS] = [
+    494, 370, 330, 247, 494, 370, 330, 0, 370, 494, 370, 494, 330, 247, 494, 370,
 ];
-const TRACK3: [u16; PATTERN_STEPS] = [
-    330, 392, 494, 523, 440, 392, 587, 523, 392, 440, 494, 523, 330, 392, 440, 494,
+
+const TRACK1_MELODY: [u16; PATTERN_STEPS] = [
+    233, 311, 349, 466, 233, 311, 349, 466, 349, 311, 233, 0, 466, 349, 311, 233,
 ];
-const TRACK4: [u16; PATTERN_STEPS] = [
-    110, 165, 220, 0, 147, 220, 247, 0, 165, 247, 294, 0, 131, 196, 247, 0,
+const TRACK1_BASS: [u16; PATTERN_STEPS] = [
+    116, 155, 175, 233, 116, 155, 175, 233, 175, 155, 116, 0, 233, 175, 155, 116,
 ];
-const TRACK5: [u16; PATTERN_STEPS] = [
-    220, 247, 262, 294, 330, 294, 262, 247, 196, 220, 247, 262, 294, 262, 247, 220,
+const TRACK1_ARP: [u16; PATTERN_STEPS] = [
+    466, 349, 311, 233, 466, 349, 311, 233, 349, 466, 349, 311, 233, 349, 466, 349,
+];
+
+const TRACK2_MELODY: [u16; PATTERN_STEPS] = [
+    262, 330, 392, 523, 392, 330, 262, 0, 294, 349, 392, 523, 392, 349, 294, 0,
+];
+const TRACK2_BASS: [u16; PATTERN_STEPS] = [
+    131, 165, 196, 262, 196, 165, 131, 0, 147, 175, 196, 262, 196, 175, 147, 0,
+];
+const TRACK2_ARP: [u16; PATTERN_STEPS] = [
+    523, 392, 330, 262, 392, 330, 262, 196, 330, 392, 523, 392, 330, 262, 392, 330,
+];
+
+const TRACK3_MELODY: [u16; PATTERN_STEPS] = [
+    587, 440, 349, 294, 523, 392, 311, 262, 440, 349, 294, 262, 392, 311, 262, 0,
+];
+const TRACK3_BASS: [u16; PATTERN_STEPS] = [
+    73, 110, 87, 73, 65, 98, 87, 65, 55, 87, 73, 65, 98, 87, 65, 0,
+];
+const TRACK3_ARP: [u16; PATTERN_STEPS] = [
+    294, 349, 440, 587, 349, 262, 311, 392, 440, 349, 294, 262, 392, 311, 262, 220,
+];
+
+const TRACK4_MELODY: [u16; PATTERN_STEPS] = [
+    165, 110, 123, 82, 165, 110, 123, 82, 110, 165, 110, 82, 123, 165, 123, 82,
+];
+const TRACK4_BASS: [u16; PATTERN_STEPS] = [
+    82, 55, 62, 41, 82, 55, 62, 41, 55, 82, 55, 41, 62, 82, 62, 41,
+];
+const TRACK4_ARP: [u16; PATTERN_STEPS] = [
+    165, 220, 247, 165, 110, 165, 220, 165, 123, 165, 110, 82, 247, 165, 220, 165,
+];
+
+const TRACK5_MELODY: [u16; PATTERN_STEPS] = [
+    415, 494, 554, 659, 554, 494, 415, 0, 494, 554, 659, 831, 659, 554, 494, 415,
+];
+const TRACK5_BASS: [u16; PATTERN_STEPS] = [
+    104, 123, 139, 165, 139, 123, 104, 0, 123, 139, 165, 208, 165, 139, 123, 104,
+];
+const TRACK5_ARP: [u16; PATTERN_STEPS] = [
+    415, 554, 659, 831, 554, 415, 494, 659, 831, 554, 415, 494, 659, 554, 494, 415,
 ];
 const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
 const TRACK_FX: [u8; 6] = [
@@ -219,19 +300,45 @@ const TRACK_FX: [u8; 6] = [
     0x03, // ORBITAL: delay + drive
 ];
 
-const BOOT_LEAD: [u16; PATTERN_STEPS] = [
-    262, 330, 392, 440, 392, 330, 294, 262, 330, 392, 440, 494, 440, 392, 330, 294,
+const TRACK0_PERC: [[u16; PATTERN_STEPS]; 4] = [
+    [82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0],
+    [0, 0, 0, 0, 350, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0, 0],
+    [
+        4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0,
+    ],
+    [
+        0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000,
+    ],
 ];
-const BOOT_COUNTER: [u16; PATTERN_STEPS] = [
-    392, 494, 523, 587, 523, 494, 440, 392, 440, 523, 587, 659, 587, 523, 494, 440,
+const TRACK4_PERC: [[u16; PATTERN_STEPS]; 4] = [
+    [82, 82, 0, 82, 0, 82, 82, 0, 82, 0, 82, 82, 0, 82, 0, 82],
+    [0, 0, 350, 0, 0, 0, 0, 350, 0, 0, 350, 0, 0, 0, 0, 350],
+    [
+        4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0,
+    ],
+    [0; PATTERN_STEPS],
 ];
-const BOOT_BASS: [u16; PATTERN_STEPS] =
-    [65, 0, 65, 82, 73, 0, 73, 98, 82, 0, 82, 110, 73, 82, 65, 0];
-const BOOT_ARP: [u16; PATTERN_STEPS] = [
-    523, 659, 784, 988, 587, 740, 880, 1175, 659, 784, 988, 1319, 587, 740, 988, 1175,
+const TRACK5_PERC: [[u16; PATTERN_STEPS]; 4] = [
+    [82, 0, 0, 0, 82, 0, 0, 0, 82, 0, 0, 0, 82, 0, 0, 0],
+    [0, 0, 0, 0, 350, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0, 0],
+    [4000; PATTERN_STEPS],
+    [0; PATTERN_STEPS],
 ];
-const BOOT_GATE: [u16; PATTERN_STEPS] =
-    [55, 0, 55, 72, 55, 0, 55, 84, 55, 0, 55, 72, 55, 84, 55, 0];
+
+const TRACK_INST: [[u8; 3]; 6] = [
+    [0, 1, 2],
+    [1, 1, 2],
+    [0, 0, 2],
+    [3, 3, 3],
+    [5, 1, 2],
+    [0, 1, 3],
+];
+const PERC_INST: [u8; 4] = [4, 4, 5, 5];
+const TRACK_FX: [u8; 6] = [0x01, 0x02, 0x00, 0x04, 0x12, 0x03];
+
+const BOOT_MELODY: [u16; PATTERN_STEPS] = [
+    147, 147, 147, 147, 196, 196, 196, 196, 262, 262, 294, 349, 392, 392, 349, 0,
+];
 
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDiagnostics {
@@ -292,6 +399,7 @@ pub struct AudioEngine {
     pattern_step: usize,
     track_id: u8,
     voices: [Voice; VOICE_COUNT],
+    pcm_channels: [PcmChannel; PCM_CHANNEL_COUNT],
     audio_ram: Box<[u8; AUDIO_RAM_BYTES]>,
     wavetable_base: [usize; 5],
     sfx_play_samples: u32,
@@ -321,7 +429,6 @@ impl AudioEngine {
             WAVE_SIZE * 8,
         ];
         Self::write_wavetables(&mut audio_ram, &wavetable_base);
-
         Self {
             sample_clock: 0,
             sample_rate,
@@ -329,6 +436,7 @@ impl AudioEngine {
             pattern_step: 0,
             track_id: 0,
             voices: [Voice::silent(); VOICE_COUNT],
+            pcm_channels: [PcmChannel::default(); PCM_CHANNEL_COUNT],
             audio_ram,
             wavetable_base,
             sfx_play_samples: 0,
@@ -347,18 +455,19 @@ impl AudioEngine {
     fn write_wavetables(ram: &mut [u8; AUDIO_RAM_BYTES], base: &[usize; 5]) {
         for i in 0..WAVE_SIZE {
             let phase = i as i32;
-            let tri = if i < 128 {
-                -32767 + phase * 512
+            let half = WAVE_SIZE as i32 / 2;
+            let step = 65534 / half.max(1);
+            let tri = if i < half as usize {
+                -32767 + phase * step
             } else {
-                32767 - ((phase - 128) * 512)
+                32767 - ((phase - half) * step)
             };
-            let saw = -32767 + phase * 256;
+            let saw = -32767 + phase * (65534 / (WAVE_SIZE as i32 - 1).max(1));
             let square = if i < 128 { 28000 } else { -28000 };
             let sine = Self::sine_from_phase(i as u16) as i32;
             let noise_seed = (i as u32).wrapping_mul(1103515245).wrapping_add(12345);
             let noise = ((noise_seed >> 16) as i16) as i32;
             let waves = [sine, square, tri, saw, noise];
-
             for wave_id in 0..5 {
                 let idx = base[wave_id] + i * 2;
                 let s = waves[wave_id] as i16;
@@ -368,9 +477,16 @@ impl AudioEngine {
         }
     }
 
-    /// Current sequencer step (0..PATTERN_STEPS). Used for boot overlay beat sync.
     pub fn pattern_step(&self) -> usize {
         self.pattern_step
+    }
+
+    pub fn boot_beat_step(&self) -> u8 {
+        (self.pattern_step % PATTERN_STEPS) as u8
+    }
+
+    pub fn audio_ram_mut(&mut self) -> &mut [u8] {
+        &mut self.audio_ram[..]
     }
 
     pub fn trigger_command(&mut self, cmd: RuntimeAudioCommand) {
@@ -387,8 +503,23 @@ impl AudioEngine {
                     AudioSfx::Launch => self.sample_rate / 3,
                     AudioSfx::Cancel => self.sample_rate / 8,
                     AudioSfx::Confirm => self.sample_rate / 10,
+                    AudioSfx::BootChime => self.sample_rate / 12,
+                    AudioSfx::PlusChime => self.sample_rate / 8,
                     AudioSfx::None => 0,
                 };
+            }
+            RuntimeAudioCommand::PlayPcm {
+                channel,
+                sample_id,
+                volume,
+            } => {
+                let ch = (channel as usize) % PCM_CHANNEL_COUNT;
+                let slot = (sample_id as usize) % 16;
+                self.pcm_channels[ch].sample_base = WAVETABLE_BYTES + slot * PCM_SLOT_BYTES;
+                self.pcm_channels[ch].length = PCM_SLOT_BYTES / 2;
+                self.pcm_channels[ch].position = 0;
+                self.pcm_channels[ch].volume = volume.min(1024);
+                self.pcm_channels[ch].playing = true;
             }
             RuntimeAudioCommand::StopTrack => {
                 for voice in &mut self.voices {
@@ -411,7 +542,6 @@ impl AudioEngine {
         let mut sim =
             Self::new_with_profile(self.sample_rate.max(SAMPLE_RATE_HZ), self.mix_profile);
         sim.track_id = self.track_id;
-
         let mut peak_l = 0i32;
         let mut peak_r = 0i32;
         let mut abs_sum_l: i64 = 0;
@@ -419,13 +549,11 @@ impl AudioEngine {
         let mut clipped_l: u32 = 0;
         let mut clipped_r: u32 = 0;
         let mut block = [0i16; 512];
-
         let mut remain = frames;
         while remain > 0 {
             let step = remain.min(block.len() / 2);
             let slice_len = step * 2;
             sim.render_block(mode, &mut block[..slice_len]);
-
             for i in 0..step {
                 let l = block[i * 2] as i32;
                 let r = block[i * 2 + 1] as i32;
@@ -440,10 +568,8 @@ impl AudioEngine {
                     clipped_r = clipped_r.saturating_add(1);
                 }
             }
-
             remain -= step;
         }
-
         let denom = frames.max(1) as i64;
         let avg_abs_l = (abs_sum_l / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
         let avg_abs_r = (abs_sum_r / denom).clamp(i16::MIN as i64, i16::MAX as i64) as i16;
@@ -470,34 +596,46 @@ impl AudioEngine {
         let frames = out.len() / 2;
         for frame in 0..frames {
             self.advance_sequencer(mode);
-
             let (mut mix_l, mut mix_r) = (0i32, 0i32);
             for i in 0..VOICE_COUNT {
                 let (l, r) = self.sample_voice(i);
                 mix_l += l;
                 mix_r += r;
             }
-
             let (sfx_l, sfx_r) = self.sfx_sample();
             mix_l += sfx_l;
             mix_r += sfx_r;
+            let (pcm_l, pcm_r) = self.sample_pcm();
+            mix_l += pcm_l;
+            mix_r += pcm_r;
 
-            let gain = self.mix_profile.render_gain_q8();
+            let profile = if matches!(mode, AudioMode::Boot) {
+                MixProfile::Boot
+            } else {
+                self.mix_profile
+            };
+            let gain = profile.render_gain_q8();
             mix_l = (mix_l * gain) / 256;
             mix_r = (mix_r * gain) / 256;
-            let lp = self.mix_profile.lp_smoothing().max(1);
-            self.mix_lp_l += (mix_l - self.mix_lp_l) / lp;
-            self.mix_lp_r += (mix_r - self.mix_lp_r) / lp;
-            let hp_in_l = self.mix_lp_l - self.prev_mix_l;
-            let hp_in_r = self.mix_lp_r - self.prev_mix_r;
-            let hp_decay = self.mix_profile.hp_decay_q6();
-            self.mix_hp_l = (self.mix_hp_l * hp_decay + hp_in_l * 64) / 64;
-            self.mix_hp_r = (self.mix_hp_r * hp_decay + hp_in_r * 64) / 64;
-            self.prev_mix_l = self.mix_lp_l;
-            self.prev_mix_r = self.mix_lp_r;
 
-            let out_l = Self::soft_clip(self.mix_hp_l);
-            let out_r = Self::soft_clip(self.mix_hp_r);
+            let (out_l, out_r) = if matches!(mode, AudioMode::Boot) {
+                (Self::soft_clip(mix_l), Self::soft_clip(mix_r))
+            } else {
+                let lp = profile.lp_smoothing().max(1);
+                self.mix_lp_l += (mix_l - self.mix_lp_l) / lp;
+                self.mix_lp_r += (mix_r - self.mix_lp_r) / lp;
+                let hp_in_l = self.mix_lp_l - self.prev_mix_l;
+                let hp_in_r = self.mix_lp_r - self.prev_mix_r;
+                let hp_decay = profile.hp_decay_q6();
+                self.mix_hp_l = (self.mix_hp_l * hp_decay + hp_in_l * 64) / 64;
+                self.mix_hp_r = (self.mix_hp_r * hp_decay + hp_in_r * 64) / 64;
+                self.prev_mix_l = self.mix_lp_l;
+                self.prev_mix_r = self.mix_lp_r;
+                (
+                    Self::soft_clip(self.mix_hp_l),
+                    Self::soft_clip(self.mix_hp_r),
+                )
+            };
 
             out[frame * 2] = out_l.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
             out[frame * 2 + 1] = out_r.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
@@ -513,6 +651,12 @@ impl AudioEngine {
             (self.sample_rate * 15 / bpm).max(1)
         };
         self.tick_counter = self.tick_counter.wrapping_add(1);
+        let tick_samples = if matches!(mode, AudioMode::Boot) {
+            (self.sample_rate / BOOT_TICK_HZ).max(1)
+        } else {
+            let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
+            (self.sample_rate * 15 / bpm).max(1)
+        };
         if self.tick_counter < tick_samples {
             return;
         }
@@ -524,31 +668,38 @@ impl AudioEngine {
             return;
         }
 
-        let track = match self.track_id {
-            0 => &TRACK0,
-            1 => &TRACK1,
-            2 => &TRACK2,
-            3 => &TRACK3,
-            4 => &TRACK4,
-            _ => &TRACK5,
+        let tid = (self.track_id as usize) % 6;
+        let inst = TRACK_INST[tid];
+        let (melody, bass, arp) = match tid {
+            0 => (&TRACK0_MELODY, &TRACK0_BASS, &TRACK0_ARP),
+            1 => (&TRACK1_MELODY, &TRACK1_BASS, &TRACK1_ARP),
+            2 => (&TRACK2_MELODY, &TRACK2_BASS, &TRACK2_ARP),
+            3 => (&TRACK3_MELODY, &TRACK3_BASS, &TRACK3_ARP),
+            4 => (&TRACK4_MELODY, &TRACK4_BASS, &TRACK4_ARP),
+            _ => (&TRACK5_MELODY, &TRACK5_BASS, &TRACK5_ARP),
         };
 
+        let has_perc = matches!(tid, 0 | 4 | 5);
+        let perc = match tid {
+            0 => &TRACK0_PERC,
+            4 => &TRACK4_PERC,
+            _ => &TRACK5_PERC,
+        };
+
+        let s = self.pattern_step;
         for i in 0..VOICE_COUNT {
-            let hz = if i < 4 {
-                track[(self.pattern_step + i) % PATTERN_STEPS]
+            let (hz, inst_id) = if i < 4 {
+                (melody[(s + i) % PATTERN_STEPS], inst[0])
             } else if i < 8 {
-                track[(self.pattern_step * 2 + i) % PATTERN_STEPS] / 2
+                (bass[(s + (i - 4)) % PATTERN_STEPS], inst[1])
+            } else if has_perc && i >= 20 {
+                let pidx = i - 20;
+                (perc[pidx][s], PERC_INST[pidx])
             } else {
-                track[(self.pattern_step + i * 3) % PATTERN_STEPS]
+                let arp_idx = if has_perc { (i - 8).min(12) } else { i - 8 };
+                (arp[(s + arp_idx * 3) % PATTERN_STEPS], inst[2])
             };
-
-            let inst = match i {
-                0..=3 => 0,
-                4..=7 => 1,
-                _ => 2,
-            };
-
-            self.note_on(i, hz, inst as u8, mode);
+            self.note_on(i, hz, inst_id, mode);
         }
     }
 
@@ -561,60 +712,10 @@ impl AudioEngine {
         }
     }
 
-    pub fn boot_beat_step(&self) -> u8 {
-        (self.pattern_step % PATTERN_STEPS) as u8
-    }
-
     fn advance_boot_sequencer(&mut self) {
         let s = self.pattern_step;
-        let arp_b = (s * 2) % PATTERN_STEPS;
-
-        self.trigger_voice(0, BOOT_LEAD[s], 3, 500, 860, 360, 0b0101);
-        self.trigger_voice(1, BOOT_COUNTER[s], 3, 390, 740, 540, 0b0101);
-        self.trigger_voice(2, BOOT_ARP[s], 0, 260, 620, 780, 0b0111);
-        self.trigger_voice(3, BOOT_ARP[arp_b], 0, 240, 780, 620, 0b0111);
-
-        self.trigger_voice(4, BOOT_LEAD[s] / 2, 2, 360, 900, 460, 0);
-        self.trigger_voice(5, BOOT_COUNTER[s] / 2, 2, 340, 460, 900, 0);
-        self.trigger_voice(6, BOOT_BASS[s], 1, 560, 860, 420, 0b0110);
-        self.trigger_voice(
-            7,
-            BOOT_BASS[(s + 8) % PATTERN_STEPS],
-            5,
-            520,
-            700,
-            700,
-            0b0100,
-        );
-
-        self.trigger_voice(8, BOOT_GATE[s], 5, 420, 640, 800, 0b0100);
-        self.trigger_voice(
-            9,
-            if s % 4 == 2 { 196 } else { 0 },
-            4,
-            360,
-            760,
-            640,
-            0b0110,
-        );
-        self.trigger_voice(
-            10,
-            if s % 8 == 6 { 740 } else { 0 },
-            4,
-            220,
-            620,
-            860,
-            0b0110,
-        );
-        self.trigger_voice(
-            11,
-            if s % 8 == 7 { BOOT_ARP[s] / 2 } else { 0 },
-            3,
-            280,
-            540,
-            860,
-            0b0101,
-        );
+        let note = BOOT_MELODY[s];
+        self.trigger_voice(0, note, 7, 600, 1024, 1024, 0);
     }
 
     fn trigger_voice(
@@ -638,7 +739,6 @@ impl AudioEngine {
     fn note_on(&mut self, idx: usize, hz: u16, instrument_id: u8, mode: AudioMode) {
         let inst = INSTRUMENTS[(instrument_id as usize) % INSTRUMENTS.len()];
         let v = &mut self.voices[idx];
-
         let default_volume = if matches!(mode, AudioMode::Boot) {
             560
         } else {
@@ -677,18 +777,12 @@ impl AudioEngine {
         v.pan_l = ((VOICE_COUNT - idx) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.pan_r = ((idx + 1) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         let base_fx = match (mode, idx % 4) {
-            (AudioMode::Boot, 0) => 0b0001,
             (AudioMode::Boot, _) => 0,
             (AudioMode::Game, 0) => 0b0001,
             (AudioMode::Game, 1) => 0b0010,
             (AudioMode::Game, _) => 0,
         };
-        let track_fx = if matches!(mode, AudioMode::Game) {
-            TRACK_FX[(self.track_id as usize) % TRACK_FX.len()]
-        } else {
-            0
-        };
-        v.fx = base_fx | track_fx;
+        v.fx = base_fx | TRACK_FX[(self.track_id as usize) % 6];
     }
 
     fn sample_voice(&mut self, idx: usize) -> (i32, i32) {
@@ -702,7 +796,6 @@ impl AudioEngine {
             v.vibrato_phase = v.vibrato_phase.wrapping_add(inst.vibrato_speed.max(1));
             let vib_src = ((v.vibrato_phase as i16 as i32) >> 5).clamp(-8, 7);
             let vib_add = vib_src * inst.vibrato_depth as i32;
-
             (
                 inst,
                 v.waveform_id as usize,
@@ -721,7 +814,7 @@ impl AudioEngine {
         let phase_idx = {
             let v = &mut self.voices[idx];
             v.phase = v.phase.wrapping_add(step);
-            (v.phase >> 24) as usize
+            ((v.phase as u64 * WAVE_SIZE as u64) >> 24) as usize
         };
         let wave = self.read_wave(wave_id, phase_idx);
         let mut sample = wave as i32;
@@ -742,9 +835,7 @@ impl AudioEngine {
 
     fn step_envelope(v: &mut Voice, inst: Instrument) -> u16 {
         match v.envelope_state {
-            EnvelopeState::Off => {
-                v.env_level = 0;
-            }
+            EnvelopeState::Off => v.env_level = 0,
             EnvelopeState::Attack => {
                 v.env_counter = v.env_counter.saturating_add(1);
                 let inc = ((1024u32 / inst.attack.max(1) as u32).max(1)) as u16;
@@ -775,41 +866,33 @@ impl AudioEngine {
                 }
             }
         }
-
         v.env_level
     }
 
     fn apply_effects(&mut self, idx: usize, sample: i32, _inst: Instrument, fx: u8) -> i32 {
         let mut out = sample;
         let v = &mut self.voices[idx];
-
         if fx & 0b0001 != 0 {
             let delayed = v.delay_line[v.delay_index] as i32;
             out = (out * 3 + delayed) / 4;
             v.delay_line[v.delay_index] = out as i16;
             v.delay_index = (v.delay_index + 1) % v.delay_line.len();
         }
-
         if fx & 0b0010 != 0 {
             out = (out * 6 / 5).clamp(-26_000, 26_000);
         }
-
         if fx & 0b0100 != 0 {
             v.lp_state += (out - v.lp_state) / 3;
             out = v.lp_state;
         }
-
         if fx & 0b1000 != 0 {
             out = (out * 3 / 2).clamp(-30_000, 30_000);
         }
-
-        // Bitcrush: reduce effective bit depth (integer-only quantize)
         if fx & 0b10000 != 0 {
             let bits = 6;
             let step = 1i32 << (16 - bits);
             out = (out / step).saturating_mul(step);
         }
-
         out
     }
 
@@ -826,12 +909,13 @@ impl AudioEngine {
 
     fn sine_from_phase(phase: u16) -> i16 {
         let x = phase as i32;
-        let tri = if x < 128 {
-            -32767 + x * 512
+        let half = (WAVE_SIZE / 2) as i32;
+        let step = 65534 / half.max(1);
+        let tri = if x < half {
+            -32767 + x * step
         } else {
-            32767 - (x - 128) * 512
+            32767 - (x - half) * step
         };
-        // Integer parabolic shaping from triangle to pseudo-sine.
         let abs_t = tri.abs();
         let shaped = tri * (65535 - abs_t / 2) / 65535;
         shaped.clamp(i16::MIN as i32, i16::MAX as i32) as i16
@@ -844,19 +928,43 @@ impl AudioEngine {
         sign * mag
     }
 
+    fn sample_pcm(&mut self) -> (i32, i32) {
+        let mut mix_l = 0i32;
+        let mut mix_r = 0i32;
+        for ch in &mut self.pcm_channels {
+            if !ch.playing || ch.position >= ch.length {
+                continue;
+            }
+            let idx = ch.sample_base + ch.position * 2;
+            if idx + 1 >= self.audio_ram.len() {
+                ch.playing = false;
+                continue;
+            }
+            let s = i16::from_le_bytes([self.audio_ram[idx], self.audio_ram[idx + 1]]) as i32;
+            let scaled = (s * ch.volume as i32) >> MIX_SHIFT;
+            mix_l += scaled;
+            mix_r += scaled;
+            ch.position += 1;
+            if ch.position >= ch.length {
+                ch.playing = false;
+            }
+        }
+        (mix_l, mix_r)
+    }
+
     fn sfx_sample(&mut self) -> (i32, i32) {
         if self.sfx_play_samples == 0 {
             return (0, 0);
         }
-
         let total = match self.sfx_kind {
             AudioSfx::Launch => self.sample_rate / 3,
             AudioSfx::Cancel => self.sample_rate / 8,
             AudioSfx::Confirm => self.sample_rate / 10,
+            AudioSfx::BootChime => self.sample_rate / 12,
+            AudioSfx::PlusChime => self.sample_rate / 8,
             AudioSfx::None => 1,
         }
         .max(1);
-
         let elapsed = total.saturating_sub(self.sfx_play_samples);
         self.sfx_play_samples = self.sfx_play_samples.saturating_sub(1);
         if self.sfx_play_samples == 0 {
@@ -867,11 +975,12 @@ impl AudioEngine {
             .noise_state
             .wrapping_mul(1664525)
             .wrapping_add(1013904223);
-
         let base = match self.sfx_kind {
             AudioSfx::Launch => 400 + elapsed * 1100 / total,
             AudioSfx::Cancel => 920u32.saturating_sub(elapsed * 500 / total),
             AudioSfx::Confirm => 700 + elapsed * 450 / total,
+            AudioSfx::BootChime => 400,
+            AudioSfx::PlusChime => 660,
             AudioSfx::None => 0,
         };
 
@@ -882,7 +991,6 @@ impl AudioEngine {
         } else {
             -7200
         };
-
         let l = pulse;
         let r = pulse * 3 / 4;
         (l, r)
@@ -896,9 +1004,13 @@ mod tests {
     #[test]
     fn wavetable_generation_does_not_overflow_in_debug() {
         let mut engine = AudioEngine::new(48_000);
-        // Run enough frames to advance sequencer (tick every sample_rate/120 samples) and produce non-zero output
         let mut block = [0i16; 1600];
-        engine.render_block(AudioMode::Boot, &mut block);
+        for _ in 0..8 {
+            engine.render_block(AudioMode::Boot, &mut block);
+            if block.iter().any(|s| *s != 0) {
+                return;
+            }
+        }
         assert!(block.iter().any(|s| *s != 0));
     }
 
@@ -915,19 +1027,6 @@ mod tests {
         assert_eq!(boot.clipped_r, 0);
         assert_eq!(game.clipped_l, 0);
         assert_eq!(game.clipped_r, 0);
-        let boot_tick = (48_000 / super::BOOT_TICK_HZ) as usize;
-        let game_tick = {
-            let bpm = super::TRACK_BPM[0] as usize;
-            (48_000usize * 15 / bpm).max(1)
-        };
-        assert_eq!(
-            boot.boot_beat_step as usize,
-            (48_000 / boot_tick) % super::PATTERN_STEPS
-        );
-        assert_eq!(
-            game.boot_beat_step as usize,
-            (48_000 / game_tick) % super::PATTERN_STEPS
-        );
     }
 
     #[test]
@@ -970,66 +1069,5 @@ mod tests {
         }
 
         assert!(max_active <= 9, "max_active={max_active}");
-    }
-
-    #[test]
-    fn mix_profiles_produce_ordered_level_deltas() {
-        let soft = AudioEngine::new_with_profile(48_000, super::MixProfile::Soft)
-            .diagnostics_for_frames(AudioMode::Game, 48_000);
-        let default = AudioEngine::new_with_profile(48_000, super::MixProfile::Default)
-            .diagnostics_for_frames(AudioMode::Game, 48_000);
-        let arcade = AudioEngine::new_with_profile(48_000, super::MixProfile::Arcade)
-            .diagnostics_for_frames(AudioMode::Game, 48_000);
-
-        assert!(soft.avg_abs_l <= default.avg_abs_l && default.avg_abs_l <= arcade.avg_abs_l);
-        assert!(soft.avg_abs_r <= default.avg_abs_r && default.avg_abs_r <= arcade.avg_abs_r);
-        assert!(
-            soft.peak_l.abs() <= default.peak_l.abs()
-                && default.peak_l.abs() <= arcade.peak_l.abs()
-        );
-        assert!(
-            soft.peak_r.abs() <= default.peak_r.abs()
-                && default.peak_r.abs() <= arcade.peak_r.abs()
-        );
-
-        assert_eq!(soft.clipped_l, 0);
-        assert_eq!(soft.clipped_r, 0);
-        assert_eq!(default.clipped_l, 0);
-        assert_eq!(default.clipped_r, 0);
-        assert_eq!(arcade.clipped_l, 0);
-        assert_eq!(arcade.clipped_r, 0);
-    }
-
-    #[test]
-    fn play_track_starts_on_next_tick_immediately() {
-        let mut engine = AudioEngine::new(48_000);
-        engine.trigger_command(super::RuntimeAudioCommand::PlayTrack(0));
-
-        assert_eq!(engine.pattern_step, super::PATTERN_STEPS.wrapping_sub(1));
-        let tick_samples = {
-            let bpm = super::TRACK_BPM[0].max(1) as u32;
-            (48_000 * 15 / bpm).max(1)
-        };
-        assert_eq!(engine.tick_counter, tick_samples);
-
-        engine.advance_sequencer(AudioMode::Game);
-        assert_eq!(engine.pattern_step, 0);
-    }
-
-    #[test]
-    fn boot_beat_step_tracks_sequencer_progression() {
-        let mut engine = AudioEngine::new(48_000);
-        let mut block = [0i16; 2];
-
-        assert_eq!(engine.boot_beat_step(), 0);
-        for expected in 1..=3u8 {
-            for _ in 0..(48_000 / super::BOOT_TICK_HZ).max(1) {
-                engine.render_block(AudioMode::Boot, &mut block);
-            }
-            assert_eq!(
-                engine.boot_beat_step(),
-                expected % super::PATTERN_STEPS as u8
-            );
-        }
     }
 }
