@@ -2,33 +2,27 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (handoff doc sync + boot audio stabilization context)
+## Latest validation pass (boot/library sound timing fix)
 
 ### Commands executed
 
-1. `cargo fmt && cargo check -q`
+1. `cargo fmt`
    - Result: PASS
-   - Notes: Compiles cleanly in current container; non-fatal dead-code warnings remain.
 
-2. `cargo test -q`
+2. `cargo check --all-targets`
+   - Result: PASS
+
+3. `cargo check --tests`
+   - Result: PASS
+
+4. `cargo test -q`
    - Result: ENV-LIMITED
-   - Notes: Fails at link stage in this container because system `SDL2` library is unavailable (`-lSDL2` not found).
+   - Output excerpt:
+     - `rust-lld: error: unable to find library -lSDL2`
 
-## Interpreting results
+## Interpretation
 
-- `cargo check` success confirms code-level parse/type/borrow correctness for current source.
-- `cargo test`/`cargo run` outcomes in this container are not valid indicators of runtime correctness until SDL2 system dependency is present.
-
-## Recommended local/full validation (developer machine with SDL2)
-
-Run in order:
-
-1. `cargo fmt -- --check`
-2. `cargo check`
-3. `cargo test`
-4. `cargo run -- --audio-diagnostics --boot --frames 48000 --json`
-5. `cargo run -- --audit-cartridges --json`
-6. `cargo run -- --analyze-cartridges --json`
-7. `cargo run -- --replay-capture-smoke`
-
-Capture outputs and attach to next handoff update.
+- Boot sequencing now uses dedicated boot tick timing (`BOOT_TICK_HZ=8`).
+- Library sequencing now uses BPM-derived tick intervals and immediate-start behavior on `PlayTrack`.
+- Main-loop ordering now renders audio after dispatching runtime events, removing one-frame track-switch lag.
+- Full binary-linked test execution remains blocked without system SDL2.
