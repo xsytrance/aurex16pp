@@ -483,9 +483,9 @@ impl AudioEngine {
     pub fn trigger_command(&mut self, cmd: RuntimeAudioCommand) {
         match cmd {
             RuntimeAudioCommand::PlayTrack(track_id) => {
-                self.track_id = track_id % 6;
+                self.track_id = track_id % TRACK_BPM.len() as u8;
                 self.pattern_step = PATTERN_STEPS.wrapping_sub(1);
-                let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
+                let bpm = TRACK_BPM[(self.track_id as usize) % TRACK_BPM.len()].max(1) as u32;
                 self.tick_counter = (self.sample_rate * 15 / bpm).max(1);
             }
             RuntimeAudioCommand::PlaySfx(sfx) => {
@@ -654,7 +654,7 @@ impl AudioEngine {
             return;
         }
 
-        let tid = (self.track_id as usize) % 6;
+        let tid = (self.track_id as usize) % TRACK_BPM.len();
         let inst = TRACK_INST[tid];
         let (melody, bass, arp) = match tid {
             0 => (&TRACK0_MELODY, &TRACK0_BASS, &TRACK0_ARP),
@@ -776,7 +776,7 @@ impl AudioEngine {
             (AudioMode::Game, 1) => 0b0010,
             (AudioMode::Game, _) => 0,
         };
-        v.fx = base_fx | TRACK_FX[(self.track_id as usize) % 6];
+        v.fx = base_fx | TRACK_FX[(self.track_id as usize) % TRACK_FX.len()];
     }
 
     fn sample_voice(&mut self, idx: usize) -> (i32, i32) {
