@@ -1392,3 +1392,70 @@ Continued planned hardening by adding profile-aware regression assertions to ver
 1. Add first minimal cartridge scaffold (`cartridges/<game_id>/manifest.txt`) and run analyze/audit gates end-to-end.
 2. Add a narrow JSON parser/shape assertion for diagnostics payloads beyond string-contains checks.
 3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 19:25:00Z — Fast follow: new boot cartridge scaffold (`chrome_duo_boot`)
+
+### Summary
+Added a brand-new cartridge scaffold inspired by French-touch robot-disco aesthetics for boot-era vibe testing and launch-pipeline validation.
+
+### Cartridge content
+- Added `cartridges/chrome_duo_boot/manifest.txt` with valid `game_id` and three uploads (`Palettes`, `BgTiles`, `Bg0Tilemap`).
+- Added deterministic binary assets:
+  - `palette.bin` (16 RGB555 entries)
+  - `bg_tiles.bin` (patterned tile payload)
+  - `bg0_map.bin` (64x64 tilemap payload)
+- Added a new library profile card (`CHROME DUO BOOT`) wired to `cartridge_id=chrome_duo_boot` so it can be selected and launched from title flow.
+
+### Validation/Tests
+- Added `includes_chrome_duo_boot_profile` unit test in `game/library`.
+- Verified compile and test-target compile remain green in this environment.
+
+### Progress report
+- We now have a concrete first-style cartridge artifact in-repo, closing part of the gap from tooling readiness to real generated-game launch exercises.
+
+### Next planned work
+1. Add a minimal cartridge runtime smoke assertion (non-linking path) for manifest+upload parse shape.
+2. Add one more cartridge with contrasting style to validate analyzer/audit multi-entry reporting ergonomics.
+3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 19:45:00Z — Fast follow: cartridge asset extension migration (`.bin` -> `.bin.md`)
+
+### Summary
+Migrated cartridge binary asset filenames from `.bin` to `.bin.md` for the `chrome_duo_boot` scaffold and updated manifest upload references accordingly.
+
+### Cartridge changes
+- Renamed asset files:
+  - `palette.bin` -> `palette.bin.md`
+  - `bg_tiles.bin` -> `bg_tiles.bin.md`
+  - `bg0_map.bin` -> `bg0_map.bin.md`
+- Updated `manifest.txt` `upload=` lines to point at the new `.bin.md` filenames.
+
+### Progress report
+- Cartridge loader remains extension-agnostic (reads bytes from manifest paths), so this migration keeps runtime behavior while aligning naming with the requested packaging convention.
+
+### Next planned work
+1. Add a cartridge analyzer regression asserting `.bin.md` assets load and report expected upload counts/bytes.
+2. Add a second content cartridge to exercise multi-cartridge audit/analyze JSON output in CI.
+3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 20:05:00Z — Fast follow: remove tracked binaries and publish recreation spec
+
+### Summary
+Removed all tracked binary files from the repository and replaced them with a single markdown recreation guide documenting location, purpose, and technical specs for each artifact.
+
+### Changes
+- Deleted tracked cartridge binary assets from `cartridges/chrome_duo_boot`.
+- Deleted root snapshot binaries with embedded NUL-byte encoding (`full_pub_snapshot.txt`, `symbol_snapshot.txt`).
+- Added `docs/binary_asset_recreation_guide.md` with per-file recreation details and manifest expectations.
+- Updated `cartridges/chrome_duo_boot/manifest.txt` to reference canonical recreated asset names (`*.bin`).
+
+### Progress report
+- Repository now contains no tracked binary blobs while preserving a clear specification for deterministic artifact regeneration.
+
+### Next planned work
+1. Add a script to regenerate `chrome_duo_boot` assets from the markdown spec.
+2. Add CI check to reject future tracked binary files unless explicitly allowed.
+3. Continue dead-code allowance cleanup in stabilized modules.

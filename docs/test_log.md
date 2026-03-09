@@ -2,25 +2,27 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (profile-aware diagnostics delta assertions)
+## Latest validation pass (binary removal + recreation spec)
 
 ### Commands executed
 
-1. `cargo check --all-targets`
+1. `python - <<'PY' ...` (tracked binary detector)
    - Result: PASS
-   - Notes: runtime and CLI compile clean after profile regression test additions.
+   - Output: `NO_BINARY_FILES_DETECTED`
 
-2. `cargo check --tests`
+2. `cargo check --all-targets`
    - Result: PASS
-   - Notes: test targets compile including new profile ordering assertions.
 
-3. `cargo test -q`
+3. `cargo check --tests`
+   - Result: PASS
+
+4. `cargo test -q`
    - Result: ENV-LIMITED
    - Output excerpt:
      - `rust-lld: error: unable to find library -lSDL2`
 
 ## Interpretation
 
-- Regression coverage now explicitly validates deterministic mix-profile loudness ordering (`soft <= default <= arcade`) for diagnostics outputs.
-- Deterministic baseline expectations still include zero clipping in this path.
+- All previously tracked binary files were removed from the repository.
+- Binary recreation details are now documented in markdown (`docs/binary_asset_recreation_guide.md`).
 - Full binary-linked test execution remains blocked without system SDL2.

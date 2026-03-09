@@ -34,7 +34,7 @@ struct TitleProfile {
     icon: IconKind,
 }
 
-const PROFILES: [TitleProfile; 6] = [
+const PROFILES: [TitleProfile; 7] = [
     TitleProfile {
         title: "NEON CIRCUIT",
         cartridge_id: "neon_circuit",
@@ -134,6 +134,23 @@ const PROFILES: [TitleProfile; 6] = [
             cover_r: 24,
             cover_g: 30,
             cover_b: 11,
+        },
+        icon: IconKind::Orbit,
+    },
+    TitleProfile {
+        title: "CHROME DUO BOOT",
+        cartridge_id: "chrome_duo_boot",
+        track_id: 0,
+        bpm: 126,
+        style: "FILTER DISCO DRIVE",
+        tag: "ROBOTIC NIGHT RUN",
+        theme: ColorTheme {
+            bg_r: 2,
+            bg_g: 2,
+            bg_b: 9,
+            cover_r: 27,
+            cover_g: 29,
+            cover_b: 12,
         },
         icon: IconKind::Orbit,
     },
@@ -640,6 +657,14 @@ mod tests {
             ..InputState::default()
         });
         assert!(second.launch_requested);
+    }
+
+
+    #[test]
+    fn includes_chrome_duo_boot_profile() {
+        assert!(PROFILES
+            .iter()
+            .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT"));
     }
 
     #[test]

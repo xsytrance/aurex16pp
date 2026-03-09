@@ -1,0 +1,5 @@
+name=CHROME DUO BOOT
+game_id=chrome_duo_boot
+upload=Palettes,0,palette.bin
+upload=BgTiles,0,bg_tiles.bin
+upload=Bg0Tilemap,0,bg0_map.bin
