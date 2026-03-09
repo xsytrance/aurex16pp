@@ -93,7 +93,12 @@ No implicit launch side paths are allowed.
 
 Any new runtime event type should include diagnostics impact analysis during handoff updates.
 
-## 11) Handoff discipline
+## 11) Deterministic baseline + docs-sync discipline
+
+- Audio diagnostics baseline artifact generation is required before runtime AV merges (`--generate-runtime-baseline`).
+- Preflight must include docs synchronization verification (`--docs-sync-check`) so architecture/canon stay aligned with runtime CLI and telemetry contract.
+
+## 12) Handoff discipline
 
 On every major runtime change, update at minimum:
 

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::aurex::game::{AudioCue, InputState};
 use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
 
@@ -33,7 +34,7 @@ struct TitleProfile {
     icon: IconKind,
 }
 
-const PROFILES: [TitleProfile; 6] = [
+const PROFILES: [TitleProfile; 7] = [
     TitleProfile {
         title: "NEON CIRCUIT",
         cartridge_id: "neon_circuit",
@@ -133,6 +134,23 @@ const PROFILES: [TitleProfile; 6] = [
             cover_r: 24,
             cover_g: 30,
             cover_b: 11,
+        },
+        icon: IconKind::Orbit,
+    },
+    TitleProfile {
+        title: "CHROME DUO BOOT",
+        cartridge_id: "chrome_duo_boot",
+        track_id: 0,
+        bpm: 126,
+        style: "FILTER DISCO DRIVE",
+        tag: "ROBOTIC NIGHT RUN",
+        theme: ColorTheme {
+            bg_r: 2,
+            bg_g: 2,
+            bg_b: 9,
+            cover_r: 27,
+            cover_g: 29,
+            cover_b: 12,
         },
         icon: IconKind::Orbit,
     },
@@ -586,6 +604,7 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
 mod tests {
     use super::{LibraryScreen, PROFILES};
     use crate::aurex::game::{AudioCue, InputState};
+    use crate::aurex::runtime::AUDIO_TRACK_COUNT;
 
     #[test]
     fn navigation_wraps_and_emits_track_cue() {
@@ -639,6 +658,25 @@ mod tests {
             ..InputState::default()
         });
         assert!(second.launch_requested);
+    }
+
+    #[test]
+    fn all_profiles_map_to_valid_runtime_track_ids() {
+        assert!(
+            PROFILES
+                .iter()
+                .all(|profile| (profile.track_id as usize) < AUDIO_TRACK_COUNT),
+            "library profile references out-of-range runtime track id"
+        );
+    }
+
+    #[test]
+    fn includes_chrome_duo_boot_profile() {
+        assert!(
+            PROFILES
+                .iter()
+                .any(|p| p.cartridge_id == "chrome_duo_boot" && p.title == "CHROME DUO BOOT")
+        );
     }
 
     #[test]
