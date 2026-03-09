@@ -2,13 +2,12 @@
 
 _Last updated: 2026-03-08._
 
-## Latest validation pass (binary removal + recreation spec)
+## Latest validation pass (boot/library sound timing fix)
 
 ### Commands executed
 
-1. `python - <<'PY' ...` (tracked binary detector)
+1. `cargo fmt`
    - Result: PASS
-   - Output: `NO_BINARY_FILES_DETECTED`
 
 2. `cargo check --all-targets`
    - Result: PASS
@@ -23,6 +22,7 @@ _Last updated: 2026-03-08._
 
 ## Interpretation
 
-- All previously tracked binary files were removed from the repository.
-- Binary recreation details are now documented in markdown (`docs/binary_asset_recreation_guide.md`).
+- Boot sequencing now uses dedicated boot tick timing (`BOOT_TICK_HZ=8`).
+- Library sequencing now uses BPM-derived tick intervals and immediate-start behavior on `PlayTrack`.
+- Main-loop ordering now renders audio after dispatching runtime events, removing one-frame track-switch lag.
 - Full binary-linked test execution remains blocked without system SDL2.

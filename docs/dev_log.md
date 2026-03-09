@@ -1459,3 +1459,33 @@ Removed all tracked binary files from the repository and replaced them with a si
 1. Add a script to regenerate `chrome_duo_boot` assets from the markdown spec.
 2. Add CI check to reject future tracked binary files unless explicitly allowed.
 3. Continue dead-code allowance cleanup in stabilized modules.
+
+
+## 2026-03-08 20:25:00Z — Sound fix: boot tempo, library BPM ticks, instant track switch, per-track FX
+
+### Summary
+Implemented the requested audio timing fix set so boot and library playback use correct musical timing, track changes start immediately, and library tracks have distinct timbral character.
+
+### Audio runtime changes
+- Added dedicated boot tick constant: `BOOT_TICK_HZ = 8`.
+- Added `TRACK_BPM` and mode-dependent tick scheduling via `tick_samples_for_mode(...)`.
+- Updated sequencer advance logic to use dynamic tick interval per mode (`Boot` vs `Game`).
+- Updated `PlayTrack` handling to force immediate next-step trigger by setting:
+  - `pattern_step = PATTERN_STEPS - 1`
+  - `tick_counter = tick_samples_for_mode(Game)`
+- Added `TRACK_FX` and applied `base_fx | track_fx` in `note_on(...)` for game tracks.
+
+### Main loop ordering
+- Moved audio block rendering to occur **after** `run_frame -> drain_events -> dispatch_runtime_events`, so track changes affect the same-frame queued block.
+
+### Validation/Tests
+- Added test `play_track_starts_on_next_tick_immediately` to guard immediate-start behavior.
+- Existing diagnostics/beat-step/profile tests remain compiling.
+
+### Progress report
+- Boot melody speed and library speed now map to intended timing conventions, and selection changes audibly respond without extra frame/tick lag.
+
+### Next planned work
+1. Add a tiny deterministic test for BPM-derived step-rate sanity across all tracks.
+2. Add an A/B diagnostics helper for profile+track timing telemetry snapshots.
+3. Continue dead-code allowance cleanup in stabilized modules.

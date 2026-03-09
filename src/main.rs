@@ -384,12 +384,6 @@ fn main() {
             FlowPhase::Game => AudioMode::Game,
         };
 
-        if queue.size() < 32_768 {
-            let mut block = [0i16; 4096];
-            synth.render_block(audio_mode, &mut block);
-            let _ = queue.queue_audio(&block);
-        }
-
         let input = polled.gameplay;
         let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
             Some(synth.boot_beat_step())
@@ -432,14 +426,18 @@ fn main() {
 
         dispatch_runtime_events(&mut synth, &runtime_events);
 
+        if queue.size() < 32_768 {
+            let mut block = [0i16; 4096];
+            synth.render_block(audio_mode, &mut block);
+            let _ = queue.queue_audio(&block);
+        }
+
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
 
         pacer.wait_next_frame();
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

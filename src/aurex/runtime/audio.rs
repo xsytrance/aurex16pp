@@ -61,7 +61,7 @@ const AUDIO_RAM_BYTES: usize = 512 * 1024;
 const VOICE_COUNT: usize = 16;
 const WAVE_SIZE: usize = 256;
 const MIX_SHIFT: i32 = 10;
-const TICK_HZ: u32 = 120;
+const BOOT_TICK_HZ: u32 = 8;
 const PATTERN_STEPS: usize = 16;
 const MASTER_LIMIT: i32 = 28_000;
 
@@ -209,6 +209,15 @@ const TRACK4: [u16; PATTERN_STEPS] = [
 const TRACK5: [u16; PATTERN_STEPS] = [
     220, 247, 262, 294, 330, 294, 262, 247, 196, 220, 247, 262, 294, 262, 247, 220,
 ];
+const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
+const TRACK_FX: [u8; 6] = [
+    0x01, // NEON: delay
+    0x02, // SKYLINE: drive
+    0x00, // PIXEL: clean
+    0x04, // VOID: low-pass
+    0x12, // MECHA: bitcrush + drive
+    0x03, // ORBITAL: delay + drive
+];
 
 const BOOT_LEAD: [u16; PATTERN_STEPS] = [
     262, 330, 392, 440, 392, 330, 294, 262, 330, 392, 440, 494, 440, 392, 330, 294,
@@ -279,7 +288,6 @@ impl AudioDiagnostics {
 pub struct AudioEngine {
     sample_clock: u64,
     sample_rate: u32,
-    tick_samples: u32,
     tick_counter: u32,
     pattern_step: usize,
     track_id: u8,
@@ -317,7 +325,6 @@ impl AudioEngine {
         Self {
             sample_clock: 0,
             sample_rate,
-            tick_samples: (sample_rate / TICK_HZ).max(1),
             tick_counter: 0,
             pattern_step: 0,
             track_id: 0,
@@ -370,8 +377,8 @@ impl AudioEngine {
         match cmd {
             RuntimeAudioCommand::PlayTrack(track_id) => {
                 self.track_id = track_id % 6;
-                self.pattern_step = 0;
-                self.tick_counter = 0;
+                self.pattern_step = PATTERN_STEPS.wrapping_sub(1);
+                self.tick_counter = self.tick_samples_for_mode(AudioMode::Game);
             }
             RuntimeAudioCommand::PlaySfx(sfx) => {
                 self.sfx_kind = sfx;
@@ -387,6 +394,15 @@ impl AudioEngine {
                     voice.envelope_state = EnvelopeState::Release;
                 }
             }
+        }
+    }
+
+    fn tick_samples_for_mode(&self, mode: AudioMode) -> u32 {
+        if matches!(mode, AudioMode::Boot) {
+            (self.sample_rate / BOOT_TICK_HZ).max(1)
+        } else {
+            let bpm = TRACK_BPM[(self.track_id as usize) % TRACK_BPM.len()].max(1) as u32;
+            (self.sample_rate * 15 / bpm).max(1)
         }
     }
 
@@ -489,8 +505,9 @@ impl AudioEngine {
     }
 
     fn advance_sequencer(&mut self, mode: AudioMode) {
+        let tick_samples = self.tick_samples_for_mode(mode);
         self.tick_counter = self.tick_counter.wrapping_add(1);
-        if self.tick_counter < self.tick_samples {
+        if self.tick_counter < tick_samples {
             return;
         }
         self.tick_counter = 0;
@@ -653,13 +670,19 @@ impl AudioEngine {
         v.pitch = hz;
         v.pan_l = ((VOICE_COUNT - idx) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.pan_r = ((idx + 1) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
-        v.fx = match (mode, idx % 4) {
+        let base_fx = match (mode, idx % 4) {
             (AudioMode::Boot, 0) => 0b0001,
             (AudioMode::Boot, _) => 0,
             (AudioMode::Game, 0) => 0b0001,
             (AudioMode::Game, 1) => 0b0010,
             (AudioMode::Game, _) => 0,
         };
+        let track_fx = if matches!(mode, AudioMode::Game) {
+            TRACK_FX[(self.track_id as usize) % TRACK_FX.len()]
+        } else {
+            0
+        };
+        v.fx = base_fx | track_fx;
     }
 
     fn sample_voice(&mut self, idx: usize) -> (i32, i32) {
@@ -886,8 +909,16 @@ mod tests {
         assert_eq!(boot.clipped_r, 0);
         assert_eq!(game.clipped_l, 0);
         assert_eq!(game.clipped_r, 0);
-        assert_eq!(boot.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
-        assert_eq!(game.boot_beat_step as usize, (48_000 / engine.tick_samples as usize) % super::PATTERN_STEPS);
+        let boot_tick = engine.tick_samples_for_mode(AudioMode::Boot) as usize;
+        let game_tick = engine.tick_samples_for_mode(AudioMode::Game) as usize;
+        assert_eq!(
+            boot.boot_beat_step as usize,
+            (48_000 / boot_tick) % super::PATTERN_STEPS
+        );
+        assert_eq!(
+            game.boot_beat_step as usize,
+            (48_000 / game_tick) % super::PATTERN_STEPS
+        );
     }
 
     #[test]
@@ -932,7 +963,6 @@ mod tests {
         assert!(max_active <= 9, "max_active={max_active}");
     }
 
-
     #[test]
     fn mix_profiles_produce_ordered_level_deltas() {
         let soft = AudioEngine::new_with_profile(48_000, super::MixProfile::Soft)
@@ -944,8 +974,14 @@ mod tests {
 
         assert!(soft.avg_abs_l <= default.avg_abs_l && default.avg_abs_l <= arcade.avg_abs_l);
         assert!(soft.avg_abs_r <= default.avg_abs_r && default.avg_abs_r <= arcade.avg_abs_r);
-        assert!(soft.peak_l.abs() <= default.peak_l.abs() && default.peak_l.abs() <= arcade.peak_l.abs());
-        assert!(soft.peak_r.abs() <= default.peak_r.abs() && default.peak_r.abs() <= arcade.peak_r.abs());
+        assert!(
+            soft.peak_l.abs() <= default.peak_l.abs()
+                && default.peak_l.abs() <= arcade.peak_l.abs()
+        );
+        assert!(
+            soft.peak_r.abs() <= default.peak_r.abs()
+                && default.peak_r.abs() <= arcade.peak_r.abs()
+        );
 
         assert_eq!(soft.clipped_l, 0);
         assert_eq!(soft.clipped_r, 0);
@@ -956,16 +992,32 @@ mod tests {
     }
 
     #[test]
+    fn play_track_starts_on_next_tick_immediately() {
+        let mut engine = AudioEngine::new(48_000);
+        engine.trigger_command(super::RuntimeAudioCommand::PlayTrack(0));
+
+        assert_eq!(engine.pattern_step, super::PATTERN_STEPS.wrapping_sub(1));
+        let tick_samples = engine.tick_samples_for_mode(AudioMode::Game);
+        assert_eq!(engine.tick_counter, tick_samples);
+
+        engine.advance_sequencer(AudioMode::Game);
+        assert_eq!(engine.pattern_step, 0);
+    }
+
+    #[test]
     fn boot_beat_step_tracks_sequencer_progression() {
         let mut engine = AudioEngine::new(48_000);
         let mut block = [0i16; 2];
 
         assert_eq!(engine.boot_beat_step(), 0);
         for expected in 1..=3u8 {
-            for _ in 0..engine.tick_samples {
+            for _ in 0..engine.tick_samples_for_mode(AudioMode::Boot) {
                 engine.render_block(AudioMode::Boot, &mut block);
             }
-            assert_eq!(engine.boot_beat_step(), expected % super::PATTERN_STEPS as u8);
+            assert_eq!(
+                engine.boot_beat_step(),
+                expected % super::PATTERN_STEPS as u8
+            );
         }
     }
 }
