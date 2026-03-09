@@ -378,7 +378,8 @@ impl AudioEngine {
             RuntimeAudioCommand::PlayTrack(track_id) => {
                 self.track_id = track_id % 6;
                 self.pattern_step = PATTERN_STEPS.wrapping_sub(1);
-                self.tick_counter = self.tick_samples_for_mode(AudioMode::Game);
+                let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
+                self.tick_counter = (self.sample_rate * 15 / bpm).max(1);
             }
             RuntimeAudioCommand::PlaySfx(sfx) => {
                 self.sfx_kind = sfx;
@@ -505,7 +506,12 @@ impl AudioEngine {
     }
 
     fn advance_sequencer(&mut self, mode: AudioMode) {
-        let tick_samples = self.tick_samples_for_mode(mode);
+        let tick_samples = if matches!(mode, AudioMode::Boot) {
+            (self.sample_rate / BOOT_TICK_HZ).max(1)
+        } else {
+            let bpm = TRACK_BPM[(self.track_id as usize) % 6].max(1) as u32;
+            (self.sample_rate * 15 / bpm).max(1)
+        };
         self.tick_counter = self.tick_counter.wrapping_add(1);
         if self.tick_counter < tick_samples {
             return;
@@ -909,8 +915,11 @@ mod tests {
         assert_eq!(boot.clipped_r, 0);
         assert_eq!(game.clipped_l, 0);
         assert_eq!(game.clipped_r, 0);
-        let boot_tick = engine.tick_samples_for_mode(AudioMode::Boot) as usize;
-        let game_tick = engine.tick_samples_for_mode(AudioMode::Game) as usize;
+        let boot_tick = (48_000 / super::BOOT_TICK_HZ) as usize;
+        let game_tick = {
+            let bpm = super::TRACK_BPM[0] as usize;
+            (48_000usize * 15 / bpm).max(1)
+        };
         assert_eq!(
             boot.boot_beat_step as usize,
             (48_000 / boot_tick) % super::PATTERN_STEPS
@@ -997,7 +1006,10 @@ mod tests {
         engine.trigger_command(super::RuntimeAudioCommand::PlayTrack(0));
 
         assert_eq!(engine.pattern_step, super::PATTERN_STEPS.wrapping_sub(1));
-        let tick_samples = engine.tick_samples_for_mode(AudioMode::Game);
+        let tick_samples = {
+            let bpm = super::TRACK_BPM[0].max(1) as u32;
+            (48_000 * 15 / bpm).max(1)
+        };
         assert_eq!(engine.tick_counter, tick_samples);
 
         engine.advance_sequencer(AudioMode::Game);
@@ -1011,7 +1023,7 @@ mod tests {
 
         assert_eq!(engine.boot_beat_step(), 0);
         for expected in 1..=3u8 {
-            for _ in 0..engine.tick_samples_for_mode(AudioMode::Boot) {
+            for _ in 0..(48_000 / super::BOOT_TICK_HZ).max(1) {
                 engine.render_block(AudioMode::Boot, &mut block);
             }
             assert_eq!(
