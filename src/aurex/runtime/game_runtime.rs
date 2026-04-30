@@ -50,9 +50,17 @@ pub trait GameRuntime: Send {
     fn render(&self, ppu: &mut Ppu, dma: &mut DmaController);
     
     /// Shutdown game and cleanup resources
-    /// 
+    ///
     /// Called when game is destroyed or cartridge is unloaded.
     fn shutdown(&mut self);
+
+    /// Generate bot input for automated gameplay (optional)
+    ///
+    /// Default implementation returns None (no bot).
+    /// Games can override to provide AI-assisted play for demos/replays.
+    fn bot_input(&self) -> Option<InputState> {
+        None
+    }
 }
 
 /// Marker trait for games that support pause/resume

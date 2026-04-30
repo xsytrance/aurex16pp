@@ -332,6 +332,14 @@ fn main() {
     let screenshot_frame = parse_usize_arg(&args, "--screenshot-frame", 0);
     let no_audio = args.iter().any(|a| a == "--no-audio");
     let exit_after_screenshot = args.iter().any(|a| a == "--exit-after-screenshot");
+    // Bot AI & video recording flags
+    let bot_play = args.iter().any(|a| a == "--bot-play");
+    let record_dir: Option<String> = parse_string_arg(&args, "--record-video");
+    if let Some(ref dir) = record_dir {
+        std::fs::create_dir_all(dir).expect("create record dir failed");
+    }
+    let duration_secs = parse_usize_arg(&args, "--duration", 10);
+    let max_frames = if duration_secs > 0 { Some(duration_secs as u64 * 60) } else { None };
     let profile = parse_mix_profile(&args);
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
@@ -428,12 +436,21 @@ fn main() {
             FlowPhase::Game => AudioMode::Game,
         };
 
-        let input = polled.gameplay;
+        let mut input = polled.gameplay;
         let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
             synth.as_ref().map(|s| s.boot_beat_step())
         } else {
             None
         };
+
+        // Bot AI override: replace input with bot decisions if enabled
+        if bot_play {
+            if let Some(game) = system.game_runtime_ref() {
+                if let Some(bot_input) = game.bot_input() {
+                    input = bot_input;
+                }
+            }
+        }
 
         system.run_frame(input, boot_beat_step);
         runtime_events.clear();
@@ -482,6 +499,20 @@ fn main() {
         if screenshot_frame > 0 && system.ui_frame == screenshot_frame as u64 {
             let _ = save_screenshot(system.framebuffer(), "artifacts/screenshot.png");
             if exit_after_screenshot {
+                break 'running;
+            }
+        }
+
+        // Continuous video recording: save every frame as PNG
+        if let Some(ref rec_dir) = record_dir {
+            let frame_path = format!("{}/frame_{:06}.png", rec_dir, system.ui_frame);
+            let _ = save_screenshot(system.framebuffer(), &frame_path);
+        }
+
+        // Duration limit: exit after requested number of frames
+        if let Some(max) = max_frames {
+            if system.ui_frame >= max {
+                println!("⏱️  Max duration ({} frames) reached, exiting.", max);
                 break 'running;
             }
         }

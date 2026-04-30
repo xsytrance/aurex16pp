@@ -291,4 +291,9 @@ impl Aurex {
     pub fn framebuffer(&self) -> &crate::aurex::ppu::framebuffer::Framebuffer {
         &self.fb
     }
+
+    /// Get a reference to the current game runtime (if a cartridge is loaded)
+    pub fn game_runtime_ref(&self) -> Option<&dyn GameRuntime> {
+        self.game_runtime.as_deref()
+    }
 }

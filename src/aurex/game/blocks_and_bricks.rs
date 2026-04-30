@@ -192,6 +192,20 @@ impl GameRuntime for BlocksAndBricks {
     fn shutdown(&mut self) {
         // Cleanup
     }
+
+    fn bot_input(&self) -> Option<InputState> {
+        // Simple AI: center paddle under the falling block
+        let target = self.falling_block_x as i16;
+        let player_center = self.player_x as i16 + (PLAYER_W as i16) / 2;
+        let mut input = InputState::default();
+        if target > player_center + 1 {
+            input.right = true;
+        } else if target < player_center - 1 {
+            input.left = true;
+        }
+        // Bot never presses up/down/accept/cancel
+        Some(input)
+    }
 }
 
 impl PauseableGame for BlocksAndBricks {
