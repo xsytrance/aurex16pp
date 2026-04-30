@@ -19,6 +19,8 @@ use crate::aurex::runtime::{
     LaunchStage, LaunchValidationError, RuntimeAudioCommand, RuntimeEvent, RuntimeEventQueue,
     SceneId,
 };
+use crate::aurex::runtime::game_runtime::NoopGame;
+use crate::aurex::game::blocks_and_bricks::BlocksAndBricks;
 use boot::prime_awakens::PrimeAwakens;
 use clock::Clock;
 use game::{library::LibraryScreen, AudioCue, InputState};
@@ -160,13 +162,17 @@ impl Aurex {
                             Ok(cartridge) => {
                                 self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
                                 
-                                // Phase 1: Agent Console - Wire up cartridge execution
-                                // For now, use NoopGame as placeholder until real games are implemented
-                                // TODO: Replace NoopGame with actual game runtime loader
-                                let noop = Box::new(runtime::game_runtime::NoopGame) as Box<dyn GameRuntime>;
+                                // Phase 2: Agent Console - Load BlocksAndBricks for blocks_and_bricks cartridge
+                                // TODO: Add generic game loader based on cartridge_id
+                                let game: Box<dyn GameRuntime> = if desc.cartridge_id == "blocks_and_bricks" {
+                                    Box::new(BlocksAndBricks::new())
+                                } else {
+                                    // Fallback to NoopGame for other cartridges
+                                    Box::new(NoopGame)
+                                };
                                 
                                 if self.game_runtime.is_none() {
-                                    self.game_runtime = Some(noop);
+                                    self.game_runtime = Some(game);
                                     self.current_cartridge_id = Some(desc.cartridge_id);
                                     self.events
                                         .push(RuntimeEvent::GameStarted(desc.cartridge_id));
