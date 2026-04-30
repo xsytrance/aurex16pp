@@ -7,6 +7,10 @@ _Last updated: 2026-03-08._
 1. `docs/ai_handoff_canon.md` — normative runtime/hardware handoff contract.
 2. `docs/structural_contract.md` — architectural governance and change discipline.
 
+## Agent Console
+
+1. `docs/aurex16pp_agent_console_plan.md` — 4-phase plan for converting to agent-native game console where agents design/play, humans watch.
+
 ## Core architecture
 
 1. `docs/architecture.md` — current runtime architecture, pipelines, and subsystem boundaries.
