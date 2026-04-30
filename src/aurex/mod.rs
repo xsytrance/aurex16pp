@@ -11,16 +11,17 @@ pub mod vm32;
 pub mod wram;
 
 use crate::aurex::cartridge::CartridgeRuntime;
+use crate::aurex::dma::controller::DmaController;
 use crate::aurex::ppu::ppu::PPU_STATUS;
 use crate::aurex::ppu::ppu::Ppu;
 use crate::aurex::runtime::{
-    AudioSfx, LaunchIntentController, LaunchStage, LaunchValidationError, RuntimeAudioCommand,
-    RuntimeEvent, RuntimeEventQueue, SceneId, validate_launch_descriptor,
+    validate_launch_descriptor, AudioSfx, GameOutcome, GameRuntime, LaunchIntentController,
+    LaunchStage, LaunchValidationError, RuntimeAudioCommand, RuntimeEvent, RuntimeEventQueue,
+    SceneId,
 };
 use boot::prime_awakens::PrimeAwakens;
 use clock::Clock;
-use dma::controller::DmaController;
-use game::{AudioCue, InputState, library::LibraryScreen};
+use game::{library::LibraryScreen, AudioCue, InputState};
 
 fn to_audio_command(cue: AudioCue) -> Option<RuntimeAudioCommand> {
     match cue {
@@ -56,6 +57,9 @@ pub struct Aurex {
     events: RuntimeEventQueue,
     launch: LaunchIntentController,
     ui_frame: u64,
+    // Phase 1: Agent Console - cartridge execution
+    game_runtime: Option<Box<dyn GameRuntime>>,
+    current_cartridge_id: Option<&'static str>,
 }
 
 impl Aurex {
@@ -78,6 +82,9 @@ impl Aurex {
             events: RuntimeEventQueue::with_capacity(8),
             launch: LaunchIntentController::new(),
             ui_frame: 0,
+            // Phase 1: Agent Console
+            game_runtime: None,
+            current_cartridge_id: None,
         }
     }
 
@@ -150,8 +157,23 @@ impl Aurex {
                     if let LaunchStage::Ready(desc) = stage {
                         self.events.push(RuntimeEvent::TitleLaunchReady(desc));
                         match CartridgeRuntime::from_cartridge_id(desc.cartridge_id) {
-                            Ok(_) => {
+                            Ok(cartridge) => {
                                 self.events.push(RuntimeEvent::TitleLaunchResolved(desc));
+                                
+                                // Phase 1: Agent Console - Wire up cartridge execution
+                                // For now, use NoopGame as placeholder until real games are implemented
+                                // TODO: Replace NoopGame with actual game runtime loader
+                                let noop = Box::new(runtime::game_runtime::NoopGame) as Box<dyn GameRuntime>;
+                                
+                                if self.game_runtime.is_none() {
+                                    self.game_runtime = Some(noop);
+                                    self.current_cartridge_id = Some(desc.cartridge_id);
+                                    self.events
+                                        .push(RuntimeEvent::GameStarted(desc.cartridge_id));
+                                    
+                                    // Initialize game runtime with cartridge
+                                    self.game_runtime.as_mut().unwrap().initialize(&cartridge);
+                                }
                             }
                             Err(
                                 crate::aurex::cartridge::CartridgeResolveError::MissingManifest,
@@ -179,6 +201,36 @@ impl Aurex {
                 }
 
                 self.library.set_launch_stage(self.launch.stage());
+                
+                // Phase 1: Agent Console - Execute game runtime if attached
+                if let Some(game) = self.game_runtime.as_mut() {
+                    let ops_budget = 200_000 - self.pdu.cpu_consumed();
+                    
+                    let outcome = game.update(input, ops_budget);
+                    
+                    // Handle game outcome
+                    match outcome {
+                        GameOutcome::Running => {
+                            // Check for CPU rejects
+                            let cpu_rejects = self.dma.rejects_this_frame();
+                            if cpu_rejects > 0 {
+                                self.events.push(RuntimeEvent::GameCpuRejects(cpu_rejects));
+                            }
+                        }
+                        GameOutcome::Paused => {
+                            self.events.push(RuntimeEvent::GamePaused);
+                        }
+                        GameOutcome::Completed { score } => {
+                            self.events.push(RuntimeEvent::GameCompleted(score));
+                        }
+                        GameOutcome::Failed { reason } => {
+                            self.events.push(RuntimeEvent::GameFailed(reason));
+                        }
+                    }
+                    
+                    // Render game frame
+                    game.render(&mut self.ppu, &mut self.dma);
+                }
             }
         }
 
@@ -186,7 +238,10 @@ impl Aurex {
 
         match self.mode {
             RunMode::Boot => self.boot.draw_overlay(&mut self.fb, boot_beat_step),
-            RunMode::Game => self.library.draw(&mut self.fb, self.ui_frame),
+            RunMode::Game => {
+                // Draw library chrome while game runtime renders directly to framebuffer
+                self.library.draw(&mut self.fb, self.ui_frame);
+            }
         }
 
         self.pdu.ingest_ppu(

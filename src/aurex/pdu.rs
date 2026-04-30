@@ -82,6 +82,12 @@ impl Pdu {
         true
     }
 
+    pub fn cpu_consumed(&self) -> u32 {
+        self.ops_used
+    }
+}
+
+impl Pdu {
     /// Called by Aurex core at end of frame to import DMA stats.
     /// Keeps DMA and PDU decoupled.
     pub fn ingest_dma(&mut self, commands: u32, vram_bytes: u32, audio_bytes: u32, rejects: u32) {

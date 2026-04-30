@@ -1,4 +1,4 @@
-use crate::aurex::DmaController;
+use crate::aurex::dma::controller::DmaController;
 use crate::aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer, rgb555};
 use crate::aurex::ppu::ppu::{PPU_BG0_ENABLE, PPU_BG1_ENABLE, PPU_SPRITE_ENABLE, Ppu};
 use crate::aurex::ppu::vram::Vram;

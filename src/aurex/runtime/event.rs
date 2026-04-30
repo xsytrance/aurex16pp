@@ -39,6 +39,13 @@ pub enum RuntimeEvent {
     TitleLaunchReady(LaunchDescriptor),
     TitleLaunchResolved(LaunchDescriptor),
     TitleLaunchRejected(LaunchValidationError),
+    // Game lifecycle events (Phase 1: Agent Console)
+    GameStarted(&'static str),
+    GamePaused,
+    GameResumed,
+    GameCompleted(u32),
+    GameFailed(&'static str),
+    GameCpuRejects(u32),
 }
 
 pub struct RuntimeEventQueue {
