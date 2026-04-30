@@ -317,9 +317,8 @@ impl Ppu {
     // ============================================================================
     // DEBUG ONLY: Direct OAM injection
     // Used for hardware validation (sprite overflow testing)
-    // Remove when DMA/OAM pipeline is implemented.
+    // Remove when DMA/OAM pipeline is fully implemented.
     // ============================================================================
-    #[cfg(debug_assertions)]
     pub fn debug_set_sprite(&mut self, index: usize, sprite: super::oam::Sprite) {
         if let Some(slot) = self.oam.sprite_mut(index) {
             *slot = sprite;
