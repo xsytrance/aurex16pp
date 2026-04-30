@@ -58,7 +58,7 @@ pub struct Aurex {
     mode: RunMode,
     events: RuntimeEventQueue,
     launch: LaunchIntentController,
-    ui_frame: u64,
+    pub ui_frame: u64,
     // Phase 1: Agent Console - cartridge execution
     game_runtime: Option<Box<dyn GameRuntime>>,
     current_cartridge_id: Option<&'static str>,

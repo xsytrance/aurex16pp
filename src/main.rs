@@ -166,8 +166,8 @@ fn save_screenshot(fb: &Framebuffer, path: &str) -> std::io::Result<()> {
     }
     let file = std::fs::File::create(path)?;
     let mut encoder = png::Encoder::new(&file, width, height);
-    encoder.set_color(png::ColorType::RGB);
-    encoder.set_depth(png::BitDepth::Bit8);
+    encoder.set_color(png::ColorType::Rgb);
+    encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header()?;
     let mut img_data = Vec::with_capacity((width * height * 3) as usize);
     for &pixel in fb.pixels() {
@@ -330,26 +330,35 @@ fn main() {
     }
 
     let screenshot_frame = parse_usize_arg(&args, "--screenshot-frame", 0);
+    let no_audio = args.iter().any(|a| a == "--no-audio");
+    let exit_after_screenshot = args.iter().any(|a| a == "--exit-after-screenshot");
+    let profile = parse_mix_profile(&args);
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
-    let audio = sdl.audio().expect("SDL audio init failed");
+    let audio = if no_audio {
+        None
+    } else {
+        Some(sdl.audio().expect("SDL audio init failed"))
+    };
     let game_controller = sdl
         .game_controller()
         .expect("SDL game controller init failed");
 
-    let desired = AudioSpecDesired {
-        freq: Some(48_000),
-        channels: Some(2),
-        samples: Some(1024),
+    let (mut queue, mut synth) = if let Some(audio) = audio {
+        let desired = AudioSpecDesired {
+            freq: Some(48_000),
+            channels: Some(2),
+            samples: Some(1024),
+        };
+        let queue = audio
+            .open_queue::<i16, _>(None, &desired)
+            .expect("audio queue open failed");
+        let sample_rate = queue.spec().freq as u32;
+        queue.resume();
+        (Some(queue), Some(AudioEngine::new_with_profile(sample_rate, profile)))
+    } else {
+        (None, None)
     };
-
-    let queue = audio
-        .open_queue::<i16, _>(None, &desired)
-        .expect("audio queue open failed");
-
-    let profile = parse_mix_profile(&args);
-    let mut synth = AudioEngine::new_with_profile(queue.spec().freq as u32, profile);
-    queue.resume();
 
     let scale: u32 = 3;
     let window = video
@@ -358,11 +367,18 @@ fn main() {
         .build()
         .expect("window build failed");
 
-    let mut canvas = window
-        .into_canvas()
-        .present_vsync()
-        .build()
-        .expect("canvas build failed");
+    let mut canvas = if std::env::var("SDL_VIDEODRIVER").map(|v| v == "dummy").unwrap_or(false) {
+        window
+            .into_canvas()
+            .build()
+            .expect("canvas build failed (dummy mode)")
+    } else {
+        window
+            .into_canvas()
+            .present_vsync()
+            .build()
+            .expect("canvas build failed (vsync)")
+    };
 
     let texture_creator = canvas.texture_creator();
     let mut texture = texture_creator
@@ -414,7 +430,7 @@ fn main() {
 
         let input = polled.gameplay;
         let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
-            Some(synth.boot_beat_step())
+            synth.as_ref().map(|s| s.boot_beat_step())
         } else {
             None
         };
@@ -452,18 +468,22 @@ fn main() {
             );
         }
 
-        dispatch_runtime_events(&mut synth, &runtime_events);
-
-        if queue.size() < 32_768 {
-            let mut block = [0i16; 4096];
-            synth.render_block(audio_mode, &mut block);
-            let _ = queue.queue_audio(&block);
+        if let (Some(queue), Some(synth)) = (queue.as_mut(), synth.as_mut()) {
+            dispatch_runtime_events(synth, &runtime_events);
+            if queue.size() < 32_768 {
+                let mut block = [0i16; 4096];
+                synth.render_block(audio_mode, &mut block);
+                let _ = queue.queue_audio(&block);
+            }
         }
 
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
         if screenshot_frame > 0 && system.ui_frame == screenshot_frame as u64 {
             let _ = save_screenshot(system.framebuffer(), "artifacts/screenshot.png");
+            if exit_after_screenshot {
+                break 'running;
+            }
         }
 
         pacer.wait_next_frame();

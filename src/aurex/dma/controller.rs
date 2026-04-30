@@ -98,7 +98,7 @@ impl DmaController {
 
             #[cfg(not(debug_assertions))]
             {
-                return;
+                return false;
             }
         }
 
@@ -120,7 +120,7 @@ impl DmaController {
 
                 #[cfg(not(debug_assertions))]
                 {
-                    return;
+                    return false;
                 }
             }
         }
@@ -143,7 +143,7 @@ impl DmaController {
 
                 #[cfg(not(debug_assertions))]
                 {
-                    return;
+                    return false;
                 }
             }
         }
