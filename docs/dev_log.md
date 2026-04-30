@@ -1,3 +1,26 @@
+## 2026-04-30 — Agent Console Plan Approved
+
+### Summary
+Approved comprehensive agent console plan for Aurex-16++. Plan converts the fantasy console into an agent-native game platform where AGENTS design/validate/play cartridges and HUMANS spectate replays.
+
+### Plan Created
+- `docs/aurex16pp_agent_console_plan.md` — 4-phase roadmap (7-9 weeks MVP)
+- Phase 1: Cartridge-to-Game Bridge (Weeks 1-2) — missing execution wiring
+- Phase 2: Agent Game Design Interface (Weeks 3-5) — HTTP API + asset generation
+- Phase 3: Agent Playback & Replay (Weeks 6-7) — input sequences + replays
+- Phase 4: Library + Human Interface (Weeks 8-9) — spectator mode + curator API
+
+### Key Insight
+Aurex-16++ already has 90% of plumbing: typed launch lifecycle, cartridge system, LLM SDK docs. Only need to wire cartridge execution after `TitleLaunchResolved` and expose agent-facing APIs.
+
+### Git Commit
+- `5ad5054` — Aurex-16++ Agent Console Plan: Convert to agent-native game console where agents design/play games, humans watch
+
+### Next Step
+Proceed to Phase 1 Implementation: Create `GameRuntime` trait and wire cartridge execution.
+
+---
+
 ## 2026-03-08 — AV Upgrade Execution (Phase 1–3)
 
 ### Summary
