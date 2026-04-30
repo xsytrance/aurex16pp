@@ -23,7 +23,7 @@ use crate::aurex::runtime::game_runtime::NoopGame;
 use crate::aurex::game::blocks_and_bricks::BlocksAndBricks;
 use boot::prime_awakens::PrimeAwakens;
 use clock::Clock;
-use game::{library::LibraryScreen, AudioCue, InputState};
+use game::{library::{LibraryScreen, LibraryUpdate}, AudioCue, InputState};
 
 fn to_audio_command(cue: AudioCue) -> Option<RuntimeAudioCommand> {
     match cue {
@@ -124,7 +124,7 @@ impl Aurex {
                     .update(&mut self.ppu, &mut self.dma, &mut self.wram, &self.vram);
             }
             RunMode::Game => {
-                let update = self.library.update(input);
+                let update = if self.game_runtime.is_none() { self.library.update(input) } else { LibraryUpdate { audio_cue: AudioCue::None, launch_requested: false, launch_canceled: false } };
                 if let Some(cmd) = to_audio_command(update.audio_cue) {
                     self.events.push(RuntimeEvent::Audio(cmd));
                 }
@@ -245,8 +245,11 @@ impl Aurex {
         match self.mode {
             RunMode::Boot => self.boot.draw_overlay(&mut self.fb, boot_beat_step),
             RunMode::Game => {
-                // Draw library chrome while game runtime renders directly to framebuffer
-                self.library.draw(&mut self.fb, self.ui_frame);
+                // Draw library UI only when no active game runtime is present.
+                // When a game is running, the library overlay is suppressed to avoid obscuring game graphics.
+                if self.game_runtime.is_none() {
+                    self.library.draw(&mut self.fb, self.ui_frame);
+                }
             }
         }
 

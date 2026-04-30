@@ -494,6 +494,10 @@ impl AudioEngine {
                 self.pattern_step = PATTERN_STEPS.wrapping_sub(1);
                 let bpm = TRACK_BPM[(self.track_id as usize) % TRACK_BPM.len()].max(1) as u32;
                 self.tick_counter = (self.sample_rate * 15 / bpm).max(1);
+                // Silence all active voices from previous track (e.g., boot audio) to prevent overlap
+                for voice in &mut self.voices {
+                    voice.envelope_state = EnvelopeState::Release;
+                }
             }
             RuntimeAudioCommand::PlaySfx(sfx) => {
                 self.sfx_kind = sfx;

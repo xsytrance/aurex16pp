@@ -1,6 +1,6 @@
 mod aurex;
 
-use aurex::ppu::framebuffer::{FB_H, FB_W};
+use aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
     LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
@@ -11,6 +11,7 @@ use sdl2::audio::AudioSpecDesired;
 use sdl2::controller::GameController;
 use std::fs;
 use std::time::Duration;
+use png;
 
 fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
     for id in 0..game_controller.num_joysticks().unwrap_or(0) {
@@ -152,6 +153,32 @@ fn docs_sync_check() -> Result<(), String> {
         );
     }
 
+    Ok(())
+}
+
+fn save_screenshot(fb: &Framebuffer, path: &str) -> std::io::Result<()> {
+    let width = FB_W as u32;
+    let height = FB_H as u32;
+    if let Some(parent) = std::path::Path::new(path).parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
+    let file = std::fs::File::create(path)?;
+    let mut encoder = png::Encoder::new(&file, width, height);
+    encoder.set_color(png::ColorType::RGB);
+    encoder.set_depth(png::BitDepth::Bit8);
+    let mut writer = encoder.write_header()?;
+    let mut img_data = Vec::with_capacity((width * height * 3) as usize);
+    for &pixel in fb.pixels() {
+        let r5 = ((pixel >> 10) & 0x1F) as u8;
+        let g5 = ((pixel >> 5) & 0x1F) as u8;
+        let b5 = (pixel & 0x1F) as u8;
+        img_data.push((r5 << 3) | (r5 >> 2));
+        img_data.push((g5 << 3) | (g5 >> 2));
+        img_data.push((b5 << 3) | (b5 >> 2));
+    }
+    writer.write_image_data(&img_data)?;
     Ok(())
 }
 
@@ -302,6 +329,7 @@ fn main() {
         std::process::exit(2);
     }
 
+    let screenshot_frame = parse_usize_arg(&args, "--screenshot-frame", 0);
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
     let audio = sdl.audio().expect("SDL audio init failed");
@@ -434,6 +462,9 @@ fn main() {
 
         let src = system.framebuffer().pixels();
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
+        if screenshot_frame > 0 && system.ui_frame == screenshot_frame as u64 {
+            let _ = save_screenshot(system.framebuffer(), "artifacts/screenshot.png");
+        }
 
         pacer.wait_next_frame();
     }
