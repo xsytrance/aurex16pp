@@ -177,8 +177,8 @@ impl Aurex {
                                     self.events
                                         .push(RuntimeEvent::GameStarted(desc.cartridge_id));
                                     
-                                    // Initialize game runtime with cartridge
-                                    self.game_runtime.as_mut().unwrap().initialize(&cartridge);
+                                    // Initialize game runtime with cartridge and VRAM
+                                    self.game_runtime.as_mut().unwrap().initialize(&cartridge, &mut self.vram);
                                 }
                             }
                             Err(

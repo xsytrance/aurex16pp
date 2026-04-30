@@ -34,7 +34,24 @@ struct TitleProfile {
     icon: IconKind,
 }
 
-const PROFILES: [TitleProfile; 7] = [
+const PROFILES: [TitleProfile; 8] = [
+    TitleProfile {
+        title: "BLOCKS & BRICKS",
+        cartridge_id: "blocks_and_bricks",
+        track_id: 0,
+        bpm: 120,
+        style: "BREAKOUT BEAT",
+        tag: "PADDLE CRUSH",
+        theme: ColorTheme {
+            bg_r: 8,
+            bg_g: 10,
+            bg_b: 12,
+            cover_r: 31,
+            cover_g: 18,
+            cover_b: 8,
+        },
+        icon: IconKind::Circuit,
+    },
     TitleProfile {
         title: "NEON CIRCUIT",
         cartridge_id: "neon_circuit",

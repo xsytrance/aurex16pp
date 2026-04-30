@@ -424,7 +424,12 @@ fn main() {
             break 'running;
         }
 
-        if flow.tick(polled.start_pressed) {
+        let start_pressed = if bot_play && flow.phase() == FlowPhase::AwaitStart {
+            true
+        } else {
+            polled.start_pressed
+        };
+        if flow.tick(start_pressed) {
             system.start_game();
             println!("Library ready");
         }
@@ -443,13 +448,24 @@ fn main() {
             None
         };
 
-        // Bot AI override: replace input with bot decisions if enabled
+        // Bot AI override: full system navigation + gameplay
         if bot_play {
+            let mut bot_input = aurex::game::InputState::default();
+            // Phase 1: During AwaitStart (boot complete), press START to enter library
+            if flow.phase() == FlowPhase::AwaitStart {
+                bot_input.accept = true;
+            }
+            // Phase 2: In library (Game mode but no cartridge loaded), press START to launch selected
+            if flow.phase() == FlowPhase::Game && system.game_runtime_ref().is_none() {
+                bot_input.accept = true;
+            }
+            // Phase 3: If a game cartridge is active, use its bot AI (overrides navigation inputs)
             if let Some(game) = system.game_runtime_ref() {
-                if let Some(bot_input) = game.bot_input() {
-                    input = bot_input;
+                if let Some(game_bot) = game.bot_input() {
+                    bot_input = game_bot;
                 }
             }
+            input = bot_input;
         }
 
         system.run_frame(input, boot_beat_step);

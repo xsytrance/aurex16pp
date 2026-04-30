@@ -8,6 +8,7 @@ use crate::aurex::cartridge::CartridgeRuntime;
 use crate::aurex::dma::controller::DmaController;
 use crate::aurex::game::InputState;
 use crate::aurex::ppu::ppu::Ppu;
+use crate::aurex::ppu::vram::Vram;
 
 /// Outcome of a game update cycle
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,10 +29,10 @@ pub enum GameOutcome {
 /// Trait for cartridge-backed game execution
 pub trait GameRuntime: Send {
     /// Initialize game with cartridge data
-    /// 
+    ///
     /// Called once after `TitleLaunchResolved` to set up game state,
-    /// queue VRAM/audio uploads, and prepare for the first update frame.
-    fn initialize(&mut self, cartridge: &CartridgeRuntime);
+    /// upload VRAM graphics, and prepare for the first update frame.
+    fn initialize(&mut self, cartridge: &CartridgeRuntime, vram: &mut Vram);
     
     /// Update game state for one frame
     /// 
@@ -82,7 +83,7 @@ pub trait AchievableGame: GameRuntime {
 pub struct NoopGame;
 
 impl GameRuntime for NoopGame {
-    fn initialize(&mut self, _cartridge: &CartridgeRuntime) {}
+    fn initialize(&mut self, _cartridge: &CartridgeRuntime, _vram: &mut Vram) {}
     
     fn update(&mut self, _input: InputState, _ops_budget: u32) -> GameOutcome {
         GameOutcome::Running

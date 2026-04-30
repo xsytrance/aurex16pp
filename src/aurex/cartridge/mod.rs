@@ -197,6 +197,18 @@ impl CartridgeAuditReport {
 
 impl CartridgeRuntime {
     pub fn from_cartridge_id(cartridge_id: &str) -> Result<Self, CartridgeResolveError> {
+        // Built-in games that don't require a cartridge file on disk
+        const BUILTIN_IDS: &[&str] = &["blocks_and_bricks"];
+        if BUILTIN_IDS.contains(&cartridge_id) {
+            return Ok(CartridgeRuntime {
+                name: match cartridge_id {
+                    "blocks_and_bricks" => "Blocks & Bricks".to_string(),
+                    _ => cartridge_id.to_string(),
+                },
+                uploads: Vec::new(),
+            });
+        }
+
         let manifest_path = Path::new("cartridges")
             .join(cartridge_id)
             .join("manifest.txt");
