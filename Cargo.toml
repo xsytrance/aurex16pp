@@ -5,5 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0"
-sdl2 = "0.36"
+sdl2 = { version = "0.36", optional = true }
 png = "0.17"
+
+[features]
+default = []
+sdl2 = ["dep:sdl2"]   # enables interactive mode (window, controller, audio playback)

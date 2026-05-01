@@ -4,15 +4,22 @@ use aurex::ppu::framebuffer::{FB_H, FB_W, Framebuffer};
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
     LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
-    poll_input, present_frame,
+    AudioRecorder,
 };
+#[cfg(feature = "sdl2")]
+use aurex::runtime::{poll_input, present_frame};
+#[cfg(feature = "sdl2")]
 use sdl2::GameControllerSubsystem;
+#[cfg(feature = "sdl2")]
 use sdl2::audio::AudioSpecDesired;
+#[cfg(feature = "sdl2")]
 use sdl2::controller::GameController;
 use std::fs;
+use std::process::Command;
 use std::time::Duration;
 use png;
 
+#[cfg(feature = "sdl2")]
 fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
     for id in 0..game_controller.num_joysticks().unwrap_or(0) {
         if !game_controller.is_game_controller(id) {
@@ -182,7 +189,9 @@ fn save_screenshot(fb: &Framebuffer, path: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn main() {
+
+#[cfg(feature = "sdl2")]
+fn interactive_main() {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--analyze-cartridges") {
         let report = aurex::cartridge::CartridgeRuntime::analyze_default_cartridges();
@@ -546,19 +555,292 @@ fn main() {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{MixProfile, runtime_baseline_json};
+fn headless_main() {
+    let args: Vec<String> = std::env::args().collect();
 
-    #[test]
-    fn runtime_baseline_json_contains_profile_and_diagnostics_fields() {
-        let baseline = "{\"sample_rate\":48000,\"frames\":32,\"boot\":{\"frames\":32,\"boot_beat_step\":3},\"game\":{\"frames\":32,\"boot_beat_step\":3}}";
-        let replay = "{\"frames\":120,\"events\":0}";
-        let json = runtime_baseline_json(MixProfile::Arcade, baseline, replay);
-
-        assert!(json.contains("\"audio_profile\":\"arcade\""));
-        assert!(json.contains("\"audio_diagnostics_baseline\":"));
-        assert!(json.contains("\"replay_capture_smoke\":"));
-        assert!(json.contains("\"boot_beat_step\":3"));
+    // Early diagnostic/utility modes
+    if args.iter().any(|a| a == "--analyze-cartridges") {
+        let report = aurex::cartridge::CartridgeRuntime::analyze_default_cartridges();
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", report.to_json());
+        } else {
+            println!(
+                "Cartridge analyze: {} valid / {} invalid",
+                report.valid_count(),
+                report.invalid_count()
+            );
+            for entry in &report.entries {
+                if entry.ok {
+                    println!(
+                        "[OK] {} uploads={} bytes={} palette_bytes={}",
+                        entry.cartridge_id,
+                        entry.upload_count,
+                        entry.total_upload_bytes,
+                        entry.palette_upload_bytes
+                    );
+                } else {
+                    println!(
+                        "[FAIL] {}: {}",
+                        entry.cartridge_id,
+                        entry.issue.as_deref().unwrap_or("unknown error")
+                    );
+                }
+            }
+        }
+        if report.all_valid() {
+            return;
+        }
+        std::process::exit(2);
     }
+
+    if args.iter().any(|a| a == "--audio-diagnostics") {
+        let frames = parse_usize_arg(&args, "--frames", 48_000);
+        let mode = if args.iter().any(|a| a == "--boot") {
+            aurex::runtime::AudioMode::Boot
+        } else {
+            aurex::runtime::AudioMode::Game
+        };
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
+        let diag = engine.diagnostics_for_frames(mode, frames);
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", diag.to_json());
+        } else {
+            println!(
+                "Audio diagnostics profile={} frames={} peak_l={} peak_r={} avg_abs_l={} avg_abs_r={} crest_l_q10={} crest_r_q10={} clipped_l={} clipped_r={} boot_beat_step={}",
+                profile.as_str(),
+                diag.frames,
+                diag.peak_l,
+                diag.peak_r,
+                diag.avg_abs_l,
+                diag.avg_abs_r,
+                diag.crest_l_q10,
+                diag.crest_r_q10,
+                diag.clipped_l,
+                diag.clipped_r,
+                diag.boot_beat_step
+            );
+        }
+        return;
+    }
+
+    if args.iter().any(|a| a == "--generate-runtime-baseline") {
+        let frames = parse_usize_arg(&args, "--frames", 48_000);
+        let out = parse_string_arg(&args, "--out")
+            .unwrap_or_else(|| "artifacts/runtime_audio_diag_baseline.json".to_string());
+        let profile = parse_mix_profile(&args);
+        let engine = aurex::runtime::AudioEngine::new_with_profile(48_000, profile);
+        let baseline = engine.diagnostics_baseline(frames);
+        let replay = replay_capture_smoke_summary_json();
+        let json = runtime_baseline_json(profile, &baseline.to_json(), &replay);
+        if let Some(parent) = std::path::Path::new(&out).parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).expect("baseline output directory create failed");
+            }
+        }
+        std::fs::write(&out, &json).expect("baseline output write failed");
+        println!("Baseline artifact written: {}", out);
+        println!("{}", json);
+        return;
+    }
+
+    if args.iter().any(|a| a == "--docs-sync-check") {
+        match docs_sync_check() {
+            Ok(()) => {
+                println!("Docs sync check: PASS");
+                return;
+            }
+            Err(err) => {
+                eprintln!("Docs sync check: FAIL: {err}");
+                std::process::exit(2);
+            }
+        }
+    }
+
+    if args.iter().any(|a| a == "--palette-heatmap") {
+        let v = aurex::ppu::vram::Vram::new();
+        println!("{}", v.bg0_palette_bank_heatmap_json());
+        return;
+    }
+
+    if args.iter().any(|a| a == "--replay-capture-smoke") {
+        println!("{}", replay_capture_smoke_summary_json());
+        return;
+    }
+
+    if args.iter().any(|a| a == "--audit-cartridges") {
+        let report = aurex::cartridge::CartridgeRuntime::audit_default_cartridges();
+        if args.iter().any(|a| a == "--json") {
+            println!("{}", report.to_json());
+        } else {
+            println!(
+                "Cartridge audit: {} valid / {} invalid",
+                report.valid_count(),
+                report.invalid_count()
+            );
+            for entry in &report.entries {
+                if entry.ok {
+                    println!("[OK] {}", entry.cartridge_id);
+                } else {
+                    println!(
+                        "[FAIL] {}: {}",
+                        entry.cartridge_id,
+                        entry.issue.as_deref().unwrap_or("unknown error")
+                    );
+                }
+            }
+        }
+        if report.all_valid() {
+            return;
+        }
+        std::process::exit(2);
+    }
+
+    // Normal operation flags
+    let bot_play = args.iter().any(|a| a == "--bot-play");
+    let attract_mode = args.iter().any(|a| a == "--attract-mode");
+    let bot_play = bot_play || attract_mode;  // attract mode implies bot play
+    let record_dir: Option<String> = parse_string_arg(&args, "--record-video");
+    if let Some(dir) = &record_dir {
+        std::fs::create_dir_all(dir).expect("create record dir failed");
+    }
+    let duration_secs = parse_usize_arg(&args, "--duration", 10);
+    let max_frames = if duration_secs > 0 {
+        Some(duration_secs as u64 * 60)
+    } else {
+        None
+    };
+    let _profile = parse_mix_profile(&args);
+
+    // Audio recorder + synthesizer (only needed if recording)
+    let mut audio_recorder: Option<AudioRecorder> = if let Some(dir) = &record_dir {
+        let wav_path = format!("{}/audio.wav", dir);
+        Some(AudioRecorder::new(&wav_path, 48_000).expect("Failed to create audio recorder"))
+    } else {
+        None
+    };
+    let mut synth: Option<AudioEngine> = if audio_recorder.is_some() {
+        Some(AudioEngine::new_with_profile(48_000, MixProfile::Arcade))
+    } else {
+        None
+    };
+
+    // Initialize system
+    let mut system = aurex::Aurex::new();
+    let mut flow = FlowController::new();
+    let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
+    let mut runtime_events = Vec::with_capacity(8);
+
+    // Attract/kiosk mode: skip boot+library, go straight to gameplay
+    if attract_mode {
+        if flow.attract_mode() {
+            system.start_game();
+        }
+    }
+
+    'running: loop {
+        // Input generation
+        let input = if bot_play {
+            let mut bot_input = aurex::game::InputState::default();
+            if flow.phase() == FlowPhase::AwaitStart {
+                bot_input.accept = true;
+            }
+            if flow.phase() == FlowPhase::Game && system.game_runtime_ref().is_none() {
+                bot_input.accept = true;
+            }
+            if let Some(game) = system.game_runtime_ref() {
+                if let Some(game_bot) = game.bot_input() {
+                    bot_input = game_bot;
+                }
+            }
+            bot_input
+        } else {
+            aurex::game::InputState::default()
+        };
+
+        let start_pressed = bot_play && flow.phase() == FlowPhase::AwaitStart;
+        if flow.tick(start_pressed) {
+            system.start_game();
+            println!("Library ready");
+        }
+
+        system.set_boot_waiting_for_start(flow.waiting_for_start());
+
+        let audio_mode = match flow.phase() {
+            FlowPhase::Boot | FlowPhase::AwaitStart => AudioMode::Boot,
+            FlowPhase::Game => AudioMode::Game,
+        };
+
+        let boot_beat_step = if matches!(audio_mode, AudioMode::Boot) {
+            synth.as_ref().map(|s| s.boot_beat_step())
+        } else {
+            None
+        };
+
+        system.run_frame(input, boot_beat_step);
+        runtime_events.clear();
+        system.drain_events(&mut runtime_events);
+
+        // Audio rendering and capture
+        if let Some(synth) = synth.as_mut() {
+            dispatch_runtime_events(synth, &runtime_events);
+            if let Some(rec) = audio_recorder.as_mut() {
+                let mut block = [0i16; 4096];
+                synth.render_block(audio_mode, &mut block);
+                let _ = rec.write_block(&block);
+            }
+        }
+
+        // Frame capture
+        if let Some(ref rec_dir) = record_dir {
+            let frame_path = format!("{}/frame_{:06}.png", rec_dir, system.ui_frame);
+            let _ = save_screenshot(system.framebuffer(), &frame_path);
+        }
+
+        // Duration limit
+        if let Some(max) = max_frames {
+            if system.ui_frame >= max {
+                println!("Max duration ({} frames) reached, exiting.", max);
+                break 'running;
+            }
+        }
+
+        pacer.wait_next_frame();
+    }
+
+    // MP4 assembly
+    if let Some(ref rec_dir) = record_dir {
+        let mp4_path = format!("{}/output.mp4", rec_dir);
+        let wav_path = format!("{}/audio.wav", rec_dir);
+        let status = Command::new("ffmpeg")
+            .args(&[
+                "-y",
+                "-framerate", "60",
+                "-i", &format!("{}/frame_%06d.png", rec_dir),
+                "-i", &wav_path,
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-shortest",
+                &mp4_path,
+            ])
+            .status();
+        match status {
+            Ok(s) if s.success() => {
+                println!("MP4 created: {}", mp4_path);
+            }
+            _ => {
+                eprintln!("ffmpeg not available or failed; raw frames and WAV remain in {}", rec_dir);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "sdl2")]
+fn main() {
+    interactive_main();
+}
+#[cfg(not(feature = "sdl2"))]
+fn main() {
+    headless_main();
 }

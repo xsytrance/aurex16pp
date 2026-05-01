@@ -3,19 +3,23 @@ mod event;
 mod flow;
 mod frame_pacer;
 pub mod game_runtime;
+#[cfg(feature = "sdl2")]
 mod input;
 mod launch;
+#[cfg(feature = "sdl2")]
 mod render;
 mod replay;
 
-pub use audio::{AudioEngine, AudioMode, MixProfile};
+pub use audio::{AudioEngine, AudioMode, AudioRecorder, MixProfile};
 pub use flow::{FlowController, FlowPhase};
 
 pub const AUDIO_TRACK_COUNT: usize = audio::TRACK_COUNT;
 
 pub use game_runtime::{GameOutcome, GameRuntime};
 
+#[cfg(feature = "sdl2")]
 pub use input::poll_input;
+#[cfg(feature = "sdl2")]
 pub use render::present_frame;
 pub use frame_pacer::FramePacer;
 pub use replay::ReplayCapture;

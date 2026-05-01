@@ -1,4 +1,5 @@
 use super::event::{AudioSfx, RuntimeAudioCommand};
+use std::io::Write;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum AudioMode {
@@ -992,6 +993,81 @@ impl AudioEngine {
         (l, r)
     }
 }
+
+
+/// Records interleaved stereo 16-bit PCM samples to a WAV file.
+/// WAV header size fields are patched on drop.
+pub struct AudioRecorder {
+    file: Option<std::io::BufWriter<std::fs::File>>,
+    samples_written: u32,
+    sample_rate: u32,
+}
+
+impl AudioRecorder {
+    /// Create a new recorder. Writes a placeholder WAV header; finalizes on drop.
+    pub fn new<P: AsRef<std::path::Path>>(
+        path: P,
+        sample_rate: u32,
+    ) -> std::io::Result<Self> {
+        use std::fs;
+        use std::io::{BufWriter, Seek, SeekFrom, Write};
+        if let Some(parent) = path.as_ref().parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        let mut file = BufWriter::new(fs::File::create(path)?);
+        // WAV header (44 bytes)
+        file.write_all(b"RIFF")?;          // ChunkID
+        file.write_all(&[0; 4])?;          // ChunkSize (patch later)
+        file.write_all(b"WAVE")?;          // Format
+        file.write_all(b"fmt ")?;          // Subchunk1ID
+        file.write_all(&16u32.to_le_bytes())?; // Subchunk1Size (PCM)
+        file.write_all(&1u16.to_le_bytes())?;  // AudioFormat = 1 (PCM)
+        file.write_all(&2u16.to_le_bytes())?;  // NumChannels = 2 (stereo)
+        file.write_all(&sample_rate.to_le_bytes())?; // SampleRate
+        let byte_rate = sample_rate * 2 * 2; // SampleRate * NumChannels * BitsPerSample/8
+        file.write_all(&(byte_rate as u32).to_le_bytes())?;
+        let block_align = 2 * 2; // NumChannels * BitsPerSample/8
+        file.write_all(&(block_align as u16).to_le_bytes())?;
+        file.write_all(&16u16.to_le_bytes())?;  // BitsPerSample
+        file.write_all(b"data")?;               // Subchunk2ID
+        file.write_all(&[0; 4])?;               // Subchunk2Size (patch later)
+        Ok(Self {
+            file: Some(file),
+            samples_written: 0,
+            sample_rate,
+        })
+    }
+
+    /// Write a block of interleaved stereo samples (i16). Block length may be any multiple of 2.
+    pub fn write_block(&mut self, block: &[i16]) -> std::io::Result<()> {
+        if let Some(ref mut f) = self.file {
+            for &sample in block {
+                f.write_all(&sample.to_le_bytes())?;
+            }
+            self.samples_written += block.len() as u32;
+        }
+        Ok(())
+    }
+}
+
+impl Drop for AudioRecorder {
+    fn drop(&mut self) {
+        if let Some(mut f) = self.file.take() {
+            let data_bytes = self.samples_written as u32 * 2; // 2 bytes per i16
+            let riff_size = 36 + data_bytes;
+            use std::io::{Seek, SeekFrom};
+            let f_mut = f.get_mut();
+            let _ = f_mut.seek(SeekFrom::Start(4));
+            let _ = f_mut.write_all(&(riff_size).to_le_bytes());
+            let _ = f_mut.seek(SeekFrom::Start(40));
+            let _ = f_mut.write_all(&(data_bytes).to_le_bytes());
+            let _ = f_mut.flush();
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
