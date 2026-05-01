@@ -32,6 +32,19 @@ impl FlowController {
         self.phase == FlowPhase::AwaitStart
     }
 
+    /// Attract/kiosk mode: skip boot and library, go straight to gameplay.
+    /// Forces boot frames elapsed and simulates START press to enter library,
+    /// then returns true to trigger game start.
+    pub fn attract_mode(&mut self) -> bool {
+        // Skip boot countdown
+        self.boot_frames_left = 0;
+        if self.phase == FlowPhase::Boot {
+            self.phase = FlowPhase::AwaitStart;
+        }
+        // Simulate START press to transition to Game
+        self.tick(true)
+    }
+
     pub fn tick(&mut self, start_pressed: bool) -> bool {
         match self.phase {
             FlowPhase::Boot => {

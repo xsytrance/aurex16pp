@@ -2,7 +2,7 @@ use crate::aurex::cartridge::CartridgeRuntime;
 use crate::aurex::dma::controller::DmaController;
 use crate::aurex::game::InputState;
 use crate::aurex::ppu::oam::{Sprite, MAX_SPRITES};
-use crate::aurex::ppu::ppu::Ppu;
+use crate::aurex::ppu::ppu::{Ppu, PPU_SPRITE_ENABLE};
 use crate::aurex::ppu::vram::Vram;
 use crate::aurex::runtime::game_runtime::{GameOutcome, GameRuntime, PauseableGame};
 
@@ -77,59 +77,47 @@ impl BlocksAndBricks {
 }
 
 impl GameRuntime for BlocksAndBricks {
-    fn initialize(&mut self, _cartridge: &CartridgeRuntime, vram: &mut Vram) {
-        println!("[DEBUG] BlocksAndBricks::initialize called");        // Upload essential graphics to VRAM so gameplay is visible
+    fn initialize(&mut self, _cartridge: &CartridgeRuntime, vram: &mut Vram, ppu: &mut Ppu)  {
+        println!("[DEBUG] BlocksAndBricks::initialize called");
 
-        // Helper: write RGB555 palette entry (little-endian u16)
-        fn write_palette(vram: &mut Vram, index: usize, value: u16) {
-            let offset = index * 2;
-            vram.palettes[offset] = (value & 0xFF) as u8;
-            vram.palettes[offset + 1] = (value >> 8) as u8;
+        // Palette helper: write RGB555 (little-endian) to VRAM
+        fn write_palette(vram: &mut Vram, idx: usize, color: u16) {
+            let off = idx * 2;
+            vram.palettes[off] = color as u8;
+            vram.palettes[off + 1] = (color >> 8) as u8;
         }
 
-        // Sprite palette banks: effective_index = bank * 16 + pixel_index (0-15)
-        // All tile pixels use color index 1.
-        // Block sprite (levels 1-4): bank = level (1..4) -> indices 17, 33, 49, 65
-        // Paddle & UI: bank = 15 -> index 241
+        // Sprite palette mapping: effective index = bank * 16 + pixel_value(1)
         write_palette(vram, 0,   0x0000); // transparent
-        write_palette(vram, 17,  0x001F); // blue   (L1)
-        write_palette(vram, 33,  0x03E0); // green  (L2)
-        write_palette(vram, 49,  0x7FE0); // yellow (L3)
-        write_palette(vram, 65,  0x7C00); // red    (L4)
-        write_palette(vram, 241, 0x7FFF); // white  (paddle + UI)
+        write_palette(vram, 17,  0x001F); // blue   (bank 1)
+        write_palette(vram, 33,  0x03E0); // green  (bank 2)
+        write_palette(vram, 49,  0x7FE0); // yellow (bank 3)
+        write_palette(vram, 65,  0x7C00); // red    (bank 4)
+        write_palette(vram, 241, 0x7FFF); // white  (paddle, bank 0x0F)
 
-        // Sprite tile data (8x8 pixels, 4bpp => 32 bytes)
-        // Tile 0: falling block (4x4 square, pixel value = 1)
+        // Sprite tiles (8x8, 4bpp = 32 bytes each)
         let tile0: [u8; 32] = [
-            0,0,0,0,
-            0,0,0,0,
-            0x00,0x11,0x11,0x00,
-            0x00,0x11,0x11,0x00,
-            0x00,0x11,0x11,0x00,
-            0x00,0x11,0x11,0x00,
-            0,0,0,0,
-            0,0,0,0,
+            0,0,0,0, 0,0,0,0,
+            0,0,1,1, 0,0,1,1,
+            0,0,1,1, 0,0,1,1,
+            0,0,0,0, 0,0,0,0,
         ];
-        // Tile 1: paddle (6x2 horizontal bar, pixel value = 1)
         let tile1: [u8; 32] = [
-            0,0,0,0,
-            0,0,0,0,
-            0,0,0,0,
-            0x01,0x11,0x11,0x10,
-            0x01,0x11,0x11,0x10,
-            0,0,0,0,
-            0,0,0,0,
-            0,0,0,0,
+            0,0,0,0, 0,0,0,0,
+            0,0,0,0, 0,17,17,0,
+            0,17,17,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0,
         ];
-        // Tile 2: HUD placeholder (transparent)
         let tile2: [u8; 32] = [0; 32];
 
-        // Copy tiles into VRAM sprite tile region (offset 0 within sprite_tiles)
         vram.sprite_tiles[0..32].copy_from_slice(&tile0);
         vram.sprite_tiles[32..64].copy_from_slice(&tile1);
         vram.sprite_tiles[64..96].copy_from_slice(&tile2);
 
         self.spawn_new_block();
+
+        // Re-enable sprites (boot ROM disables them)
+        ppu.write_addr(PPU_SPRITE_ENABLE, 1);
     }
 
     fn update(&mut self, input: InputState, ops_budget: u32) -> GameOutcome {
@@ -195,7 +183,7 @@ impl GameRuntime for BlocksAndBricks {
     }
 
     fn render(&self, ppu: &mut Ppu, _dma: &mut DmaController) {
-        println!("[DEBUG-render] block_y={} player_x={}", self.falling_block_y, self.player_x);
+        println!("[DEBUG-render]");
         // Clear all sprites first
         for i in 0..MAX_SPRITES {
             ppu.debug_set_sprite(i, Sprite::default());

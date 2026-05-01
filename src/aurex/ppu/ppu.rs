@@ -821,7 +821,7 @@ impl Ppu {
                             continue;
                         }
 
-                        let palette_index = sprite.palette as usize + color_index as usize;
+                        let palette_index = (sprite.palette as usize) * 16 + color_index as usize;
 
                         if palette_index >= MAX_PALETTE_ENTRIES {
                             debug_assert!(

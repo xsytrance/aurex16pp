@@ -334,6 +334,8 @@ fn main() {
     let exit_after_screenshot = args.iter().any(|a| a == "--exit-after-screenshot");
     // Bot AI & video recording flags
     let bot_play = args.iter().any(|a| a == "--bot-play");
+    let attract_mode = args.iter().any(|a| a == "--attract-mode");
+    let bot_play = bot_play || attract_mode;  // attract mode implies bot play
     let record_dir: Option<String> = parse_string_arg(&args, "--record-video");
     if let Some(ref dir) = record_dir {
         std::fs::create_dir_all(dir).expect("create record dir failed");
@@ -402,6 +404,13 @@ fn main() {
 
     let mut system = aurex::Aurex::new();
     let mut flow = FlowController::new();
+
+    // Attract/kiosk mode: skip boot+library, go straight to game
+    if attract_mode {
+        if flow.attract_mode() {
+            system.start_game();
+        }
+    }
 
     let mut pacer = FramePacer::new(Duration::from_nanos(16_666_667));
     let mut runtime_events = Vec::with_capacity(8);

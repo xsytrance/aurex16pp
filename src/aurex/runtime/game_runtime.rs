@@ -31,8 +31,8 @@ pub trait GameRuntime: Send {
     /// Initialize game with cartridge data
     ///
     /// Called once after `TitleLaunchResolved` to set up game state,
-    /// upload VRAM graphics, and prepare for the first update frame.
-    fn initialize(&mut self, cartridge: &CartridgeRuntime, vram: &mut Vram);
+    /// upload VRAM graphics, configure PPU, and prepare for the first update frame.
+    fn initialize(&mut self, cartridge: &CartridgeRuntime, vram: &mut Vram, ppu: &mut Ppu);
     
     /// Update game state for one frame
     /// 
@@ -83,7 +83,7 @@ pub trait AchievableGame: GameRuntime {
 pub struct NoopGame;
 
 impl GameRuntime for NoopGame {
-    fn initialize(&mut self, _cartridge: &CartridgeRuntime, _vram: &mut Vram) {}
+    fn initialize(&mut self, _cartridge: &CartridgeRuntime, _vram: &mut Vram, _ppu: &mut Ppu) {}
     
     fn update(&mut self, _input: InputState, _ops_budget: u32) -> GameOutcome {
         GameOutcome::Running
