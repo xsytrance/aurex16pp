@@ -1,5 +1,6 @@
 pub mod library;
 pub mod blocks_and_bricks;
+pub mod tech_demo;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct InputState {

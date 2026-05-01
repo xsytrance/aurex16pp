@@ -271,11 +271,11 @@ impl TechDemo {
 
         if input.up && !self.prev_up {
             self.music_track = (self.music_track + 1) % 3;
-            cue = AudioCue::TrackNext;
+            cue = AudioCue::SelectTrack(self.music_track);
         }
         if input.down && !self.prev_down {
             self.music_track = (self.music_track + 2) % 3;
-            cue = AudioCue::TrackPrev;
+            cue = AudioCue::SelectTrack(self.music_track);
         }
         if input.left && !self.prev_left {
             self.bg_theme = (self.bg_theme + 1) % 4;

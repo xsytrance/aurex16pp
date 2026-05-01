@@ -168,7 +168,7 @@ impl Aurex {
                                     Box::new(BlocksAndBricks::new())
                                 } else {
                                     // Fallback to NoopGame for other cartridges
-                                    Box::new(NoopGame)
+                                    Box::new(NoopGame::new())
                                 };
                                 
                                 if self.game_runtime.is_none() {
