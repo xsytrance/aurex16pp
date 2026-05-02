@@ -4,258 +4,200 @@ use crate::aurex::game::InputState;
 use crate::aurex::ppu::oam::{Sprite, MAX_SPRITES};
 use crate::aurex::ppu::ppu::{Ppu, PPU_SPRITE_ENABLE};
 use crate::aurex::ppu::vram::Vram;
-use crate::aurex::runtime::game_runtime::{GameOutcome, GameRuntime, PauseableGame};
+use crate::aurex::runtime::game_runtime::{GameOutcome, GameRuntime};
 
-const PLAYER_Y: u16 = 22;
-const PLAYER_W: u16 = 6;
-const PLAYER_H: u16 = 2;
-const BLOCK_SIZE: u16 = 4;
-const PLAYFIELD_Y_START: u16 = 2;
+// Peg Solitaire (replaces Blocks & Bricks cartridge)
+// Standard English board: 7x7 cross shape, 32 pegs, one empty center.
+// Controls: D-pad to move cursor, A to select/deselect/jump. Jump by moving to an empty hole two steps away with a peg in between.
 
 pub struct BlocksAndBricks {
-    player_x: u16,
-    falling_block_x: i16,
-    falling_block_y: u16,
-    block_state: BlockState,
-    pause: bool,
-    score: u32,
-    level: u8,
-    spawn_timer: u16,
-    last_score: u32,
-    game_over: bool,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-enum BlockState {
-    Falling,
-    Landed,
-}
-
-impl Default for BlocksAndBricks {
-    fn default() -> Self {
-        Self::new()
-    }
+    board: [[bool; 7]; 7],          // true = peg present
+    selected: Option<(usize, usize)>, // currently selected peg grid position
+    cursor: (usize, usize),          // cursor grid position
+    won: bool,
 }
 
 impl BlocksAndBricks {
     pub fn new() -> Self {
+        // Build full cross board: valid positions occupied; center removed.
+        let mut board = [[false; 7]; 7];
+        for r in 0..7 {
+            for c in 0..7 {
+                board[r][c] = Self::is_valid_hole(r, c);
+            }
+        }
+        board[3][3] = false; // empty start
+
+        let cursor = (3, 2); // default start at first row leftmost (0,2) or (3,2) - both occupied
         Self {
-            player_x: 13,
-            falling_block_x: 15,
-            falling_block_y: 2,
-            block_state: BlockState::Falling,
-            pause: false,
-            score: 0,
-            level: 1,
-            spawn_timer: 0,
-            last_score: 0,
-            game_over: false,
+            board,
+            selected: None,
+            cursor,
+            won: false,
         }
     }
 
-    fn spawn_new_block(&mut self) {
-        self.falling_block_x = (15 + (self.level as i16) - (self.level as i16) / 2)
-            .max(0)
-            .min(27);
-        self.falling_block_y = PLAYFIELD_Y_START;
-        self.block_state = BlockState::Falling;
-        self.spawn_timer = if self.level <= 3 { 90 } else { 60 } as u16;
+    const fn is_valid_hole(r: usize, c: usize) -> bool {
+        // Cross pattern: rows 0,1,5,6 have cols 2-4; rows 2,3,4 all cols (0-6)
+        match r {
+            0 | 1 | 5 | 6 => c >= 2 && c <= 4,
+            _ => c < 7,
+        }
     }
 
-    fn set_sprite(ppu: &mut Ppu, index: usize, x: u16, y: u16, tile_idx: u16, palette: u16) {
-        if index < MAX_SPRITES {
-            let mut sprite = Sprite::default();
-            sprite.x = x;
-            sprite.y = y;
-            sprite.tile_index = tile_idx;
-            sprite.palette = palette;
-            sprite.visible = true;
-            sprite.priority = 1; // Game sprites over background
-            ppu.debug_set_sprite(index, sprite);
+    fn pos_to_screen(r: usize, c: usize) -> (i32, i32) {
+        const CELL_SIZE: i32 = 16;
+        const BOARD_DIM: i32 = 7 * CELL_SIZE; // 112
+        const START_X: i32 = (426 - BOARD_DIM) / 2;
+        const START_Y: i32 = (240 - BOARD_DIM) / 2;
+        let x = START_X + c as i32 * CELL_SIZE;
+        let y = START_Y + r as i32 * CELL_SIZE;
+        (x, y)
+    }
+
+    fn upload_sprite_tile(vram: &mut Vram) {
+        // Upload solid 8x8 tile (color index 1) to tile index 0
+        // 4bpp format: each of 8 rows = 4 bytes; each byte = 0x11 (all pixels = color 1)
+        let packed: u8 = 0x11;
+        for row in 0..8 {
+            let base = row * 4;
+            vram.sprite_tiles[base] = packed;
+            vram.sprite_tiles[base + 1] = packed;
+            vram.sprite_tiles[base + 2] = packed;
+            vram.sprite_tiles[base + 3] = packed;
+        }
+    }
+
+    fn set_sprite(ppu: &mut Ppu, idx: usize, x: u16, y: u16, palette: u16) {
+        if idx >= MAX_SPRITES { return; }
+        let mut s = Sprite::default();
+        s.x = x;
+        s.y = y;
+        s.tile_index = 0;
+        s.palette = palette;
+        s.visible = true;
+        s.priority = 1;
+        ppu.debug_set_sprite(idx, s);
+    }
+
+    fn attempt_jump(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
+        let (fr, fc) = from;
+        let (tr, tc) = to;
+        let dr = (fr as i32 - tr as i32).abs() as usize;
+        let dc = (fc as i32 - tc as i32).abs() as usize;
+        if (dr == 2 && dc == 0) || (dr == 0 && dc == 2) {
+            let mid_r = (fr + tr) / 2;
+            let mid_c = (fc + tc) / 2;
+            if self.board[mid_r][mid_c] {
+                self.board[mid_r][mid_c] = false;
+                self.board[tr][tc] = true;
+                self.board[fr][fc] = false;
+                self.check_win();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn check_win(&mut self) {
+        let count = self.board.iter().flatten().filter(|&&occ| occ).count();
+        if count == 1 {
+            self.won = true;
         }
     }
 }
 
 impl GameRuntime for BlocksAndBricks {
-    fn initialize(&mut self, _cartridge: &CartridgeRuntime, vram: &mut Vram, ppu: &mut Ppu)  {
-        println!("[DEBUG] BlocksAndBricks::initialize called");
+    fn initialize(&mut self, _cartridge: &CartridgeRuntime, vram: &mut Vram, ppu: &mut Ppu) {
+        // Upload solid tile (uses color index 1 in VRAM)
+        Self::upload_sprite_tile(vram);
 
-        // Palette helper: write RGB555 (little-endian) to VRAM
-        fn write_palette(vram: &mut Vram, idx: usize, color: u16) {
-            let off = idx * 2;
-            vram.palettes[off] = color as u8;
-            vram.palettes[off + 1] = (color >> 8) as u8;
-        }
+        // Set palette entry 1 (normal peg) to red
+        let idx = 1;
+        let color = 0x7C00; // red (RGB555)
+        let off = idx * 2;
+        vram.palettes[off] = (color & 0xFF) as u8;
+        vram.palettes[off + 1] = (color >> 8) as u8;
 
-        // Sprite palette mapping: effective index = bank * 16 + pixel_value(1)
-        write_palette(vram, 0,   0x0000); // transparent
-        write_palette(vram, 17,  0x001F); // blue   (bank 1)
-        write_palette(vram, 33,  0x03E0); // green  (bank 2)
-        write_palette(vram, 49,  0x7FE0); // yellow (bank 3)
-        write_palette(vram, 65,  0x7C00); // red    (bank 4)
-        write_palette(vram, 241, 0x7FFF); // white  (paddle, bank 0x0F)
+        // Set palette entry 2 (selected) to green
+        let idx2 = 2;
+        let color2 = 0x03E0; // green
+        let off2 = idx2 * 2;
+        vram.palettes[off2] = (color2 & 0xFF) as u8;
+        vram.palettes[off2 + 1] = (color2 >> 8) as u8;
 
-        // Sprite tiles (8x8, 4bpp = 32 bytes each)
-        let tile0: [u8; 32] = [
-            0,0,0,0, 0,0,0,0,
-            0,0,1,1, 0,0,1,1,
-            0,0,1,1, 0,0,1,1,
-            0,0,0,0, 0,0,0,0,
-        ];
-        let tile1: [u8; 32] = [
-            0,0,0,0, 0,0,0,0,
-            0,0,0,0, 0,17,17,0,
-            0,17,17,0, 0,0,0,0,
-            0,0,0,0, 0,0,0,0,
-        ];
-        let tile2: [u8; 32] = [0; 32];
-
-        vram.sprite_tiles[0..32].copy_from_slice(&tile0);
-        vram.sprite_tiles[32..64].copy_from_slice(&tile1);
-        vram.sprite_tiles[64..96].copy_from_slice(&tile2);
-
-        self.spawn_new_block();
-
-        // Re-enable sprites (boot ROM disables them)
+        // Enable sprites rendering
         ppu.write_addr(PPU_SPRITE_ENABLE, 1);
     }
 
-    fn update(&mut self, input: InputState, ops_budget: u32) -> GameOutcome {
-        if self.pause {
-            return GameOutcome::Paused;
-        }
-
-        if self.game_over {
-            // Check for restart
-            if input.accept {
-                // Restart game
-                *self = Self::new();
-            }
+    fn update(&mut self, input: InputState, _ops_budget: u32) -> GameOutcome {
+        if self.won {
             return GameOutcome::Running;
         }
 
-        if ops_budget == 0 {
-            return GameOutcome::Failed {
-                reason: "cpu_overload",
-            };
+        // Move cursor
+        let (mut r, mut c) = self.cursor;
+        let mut moved = false;
+        if input.left && c > 0 {
+            c -= 1; moved = true;
+        }
+        if input.right && c < 6 {
+            c += 1; moved = true;
+        }
+        if input.up && r > 0 {
+            r -= 1; moved = true;
+        }
+        if input.down && r < 6 {
+            r += 1; moved = true;
+        }
+        if moved && Self::is_valid_hole(r, c) {
+            self.cursor = (r, c);
         }
 
-        // Player movement
-        let move_amt = 1u16;
-        if input.left {
-            self.player_x = self.player_x.saturating_sub(move_amt);
-        }
-        if input.right {
-            self.player_x = self.player_x.saturating_add(move_amt);
-        }
-        // Clamp to playfield
-        self.player_x = self.player_x.clamp(0, 31 - PLAYER_W);
-
-        // Update falling block
-        self.falling_block_y += 1;
-
-        if self.falling_block_y >= PLAYER_Y {
-            self.falling_block_y = PLAYER_Y;
-            self.block_state = BlockState::Landed;
-
-            let player_center = self.player_x + (PLAYER_W / 2);
-            let _block_center = (self.falling_block_x as u16) + (BLOCK_SIZE / 2);
-            if (player_center as i16 - self.falling_block_x as i16).abs() <= 2 {
-                // Caught!
-                self.score += self.level as u32 * 10;
-                self.spawn_new_block();
-                self.level = ((self.level as u32 + 1) % 5 + 1) as u8;
-            } else {
-                // Missed!
-                self.game_over = true;
-                return GameOutcome::Failed {
-                    reason: "missed_block",
-                };
+        // Accept: select peg or jump
+        if input.accept {
+            match self.selected {
+                None => {
+                    if self.board[self.cursor.0][self.cursor.1] {
+                        self.selected = Some(self.cursor);
+                    }
+                }
+                Some(sel) => {
+                    if sel == self.cursor {
+                        self.selected = None;
+                    } else if !self.board[self.cursor.0][self.cursor.1] {
+                        let _ = self.attempt_jump(sel, self.cursor);
+                        self.selected = None;
+                    } else {
+                        self.selected = Some(self.cursor);
+                    }
+                }
             }
-        }
-
-        // Spawn timer
-        if self.spawn_timer > 0 {
-            self.spawn_timer -= 1;
         }
 
         GameOutcome::Running
     }
 
     fn render(&self, ppu: &mut Ppu, _dma: &mut DmaController) {
-        println!("[DEBUG-render]");
-        // Clear all sprites first
+        // Clear all sprites
         for i in 0..MAX_SPRITES {
             ppu.debug_set_sprite(i, Sprite::default());
         }
 
-        // Draw falling block (sprite 0)
-        let block_color = match self.level {
-            1 => 0x01, // Blue
-            2 => 0x02, // Green
-            3 => 0x03, // Yellow
-            4 => 0x04, // Red
-            _ => 0x01,
-        };
-        
-        Self::set_sprite(ppu, 0, 
-            self.falling_block_x as u16, 
-            self.falling_block_y, 
-            0, // tile_index (would be animated in production)
-            block_color as u16
-        );
-
-        // Draw player paddle (sprite 1)
-        Self::set_sprite(ppu, 1, 
-            self.player_x, 
-            PLAYER_Y, 
-            1, // different tile for player
-            0x0F // white/high contrast
-        );
-
-        // Draw score display (sprite 2 - could use for HUD)
-        // For now, just mark it for future text rendering
-        Self::set_sprite(ppu, 2, 
-            24, // top-right
-            0, 
-            2, // score tile
-            0x0F
-        );
-
-        // Draw overlays
-        if self.pause {
-            Self::set_sprite(ppu, 3, 12, 11, 3, 0x0F); // "PAUSED" indicator
-        } else if self.game_over {
-            Self::set_sprite(ppu, 3, 10, 10, 4, 0x0F); // "GAME OVER" indicator
+        // Draw all pegs (sprites)
+        let mut sprite_idx = 0;
+        for r in 0..7 {
+            for c in 0..7 {
+                if !Self::is_valid_hole(r, c) { continue; }
+                if self.board[r][c] {
+                    let (x, y) = Self::pos_to_screen(r, c);
+                    let palette = if self.selected == Some((r, c)) { 2 } else { 1 };
+                    Self::set_sprite(ppu, sprite_idx, x as u16, y as u16, palette);
+                }
+                sprite_idx += 1;
+            }
         }
     }
 
-    fn shutdown(&mut self) {
-        // Cleanup
-    }
-
-    fn bot_input(&self) -> Option<InputState> {
-        // Simple AI: center paddle under the falling block
-        let target = self.falling_block_x as i16;
-        let player_center = self.player_x as i16 + (PLAYER_W as i16) / 2;
-        let mut input = InputState::default();
-        if target > player_center + 1 {
-            input.right = true;
-        } else if target < player_center - 1 {
-            input.left = true;
-        }
-        // Bot never presses up/down/accept/cancel
-        Some(input)
-    }
-}
-
-impl PauseableGame for BlocksAndBricks {
-    fn toggle_pause(&mut self) -> bool {
-        self.pause = !self.pause;
-        self.pause
-    }
-
-    fn is_paused(&self) -> bool {
-        self.pause
-    }
+    fn shutdown(&mut self) {}
 }
