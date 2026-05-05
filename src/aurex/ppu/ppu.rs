@@ -821,7 +821,9 @@ impl Ppu {
                             continue;
                         }
 
-                        let palette_index = (sprite.palette as usize) * 16 + color_index as usize;
+                        // Sprite palette field is a direct base index into palette entries.
+                        // color_index 0 remains transparent; non-zero indices offset from base.
+                        let palette_index = (sprite.palette as usize) + color_index as usize;
 
                         if palette_index >= MAX_PALETTE_ENTRIES {
                             debug_assert!(

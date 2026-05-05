@@ -1071,19 +1071,30 @@ impl Drop for AudioRecorder {
 
 #[cfg(test)]
 mod tests {
-    use super::{AudioEngine, AudioMode};
+    use super::{AudioEngine, AudioMode, BOOT_TICK_HZ};
 
     #[test]
     fn wavetable_generation_does_not_overflow_in_debug() {
         let mut engine = AudioEngine::new(48_000);
         let mut block = [0i16; 1600];
-        for _ in 0..8 {
+
+        // Boot sequencer advances at BOOT_TICK_HZ; render enough samples to cross
+        // at least one sequencer tick so non-zero audio is expected.
+        let tick_samples = (48_000u32 / BOOT_TICK_HZ).max(1) as usize;
+        let frames_per_block = block.len() / 2;
+        let blocks_needed = (tick_samples / frames_per_block) + 2;
+
+        for _ in 0..blocks_needed {
             engine.render_block(AudioMode::Boot, &mut block);
             if block.iter().any(|s| *s != 0) {
                 return;
             }
         }
-        assert!(block.iter().any(|s| *s != 0));
+
+        assert!(
+            block.iter().any(|s| *s != 0),
+            "expected non-zero boot audio after crossing sequencer tick"
+        );
     }
 
     #[test]
