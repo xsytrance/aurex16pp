@@ -2,19 +2,25 @@ mod audio;
 mod event;
 mod flow;
 mod frame_pacer;
-mod input;
 mod launch;
-mod render;
 mod replay;
+
+#[cfg(feature = "interactive")]
+mod input;
+#[cfg(feature = "interactive")]
+mod render;
 
 pub use flow::{FlowController, FlowPhase};
 
 pub use audio::{AudioEngine, AudioMode, MixProfile};
 
+#[cfg(feature = "interactive")]
 pub use input::poll_input;
 
+#[cfg(feature = "interactive")]
 pub use render::present_frame;
 
+#[cfg(feature = "interactive")]
 pub use frame_pacer::FramePacer;
 
 pub use replay::ReplayCapture;

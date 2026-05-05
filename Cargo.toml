@@ -5,4 +5,21 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0"
-sdl2 = "0.36"
+sdl2 = { version = "0.36", optional = true }
+rand = { version = "0.8", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+chrono = { version = "0.4", features = ["serde"], optional = true }
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tokio-util = { version = "0.7", features = ["io"], optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["fs", "cors"], optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+
+[features]
+default = ["interactive"]
+interactive = ["sdl2"]
+agent = ["rand"]
+server = ["axum", "tokio", "tokio-util", "tower", "tower-http", "serde", "serde_json", "chrono", "agent"]
+full = ["interactive", "agent", "server"]

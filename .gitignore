@@ -1,12 +1,9 @@
 /target
-
-# Local/native binary artifacts
-*.dll
-*.lib
-
-# Cartridge generated payloads
-cartridges/default/*.bin
-
-# Binary artifacts
-*.bin
-target/
+/Cargo.lock
+*.mp4
+/recordings/
+/tmp/
+*.log
+.DS_Store
+node_modules/
+dist/

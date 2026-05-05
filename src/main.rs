@@ -1,17 +1,37 @@
 mod aurex;
 
+#[cfg(any(feature = "agent", feature = "server"))]
+mod headless;
+#[cfg(any(feature = "agent", feature = "server"))]
+mod recorder;
+#[cfg(any(feature = "agent", feature = "server"))]
+mod agent_session;
+
+#[cfg(feature = "server")]
+mod server;
+
+#[cfg(feature = "interactive")]
 use aurex::ppu::framebuffer::{FB_H, FB_W};
+#[cfg(feature = "interactive")]
 use aurex::runtime::{
     AudioEngine, AudioMode, FlowController, FlowPhase, FramePacer, LaunchStage,
     LaunchValidationError, MixProfile, collect_runtime_diagnostics, dispatch_runtime_events,
-    poll_input, present_frame,
 };
+#[cfg(not(feature = "interactive"))]
+use aurex::runtime::{MixProfile};
+#[cfg(feature = "interactive")]
+use aurex::runtime::{poll_input, present_frame};
+#[cfg(feature = "interactive")]
 use sdl2::GameControllerSubsystem;
+#[cfg(feature = "interactive")]
 use sdl2::audio::AudioSpecDesired;
+#[cfg(feature = "interactive")]
 use sdl2::controller::GameController;
 use std::fs;
+#[cfg(feature = "interactive")]
 use std::time::Duration;
 
+#[cfg(feature = "interactive")]
 fn open_first_controller(game_controller: &GameControllerSubsystem) -> Option<GameController> {
     for id in 0..game_controller.num_joysticks().unwrap_or(0) {
         if !game_controller.is_game_controller(id) {
@@ -30,6 +50,18 @@ fn parse_usize_arg(args: &[String], flag: &str, default: usize) -> usize {
     for i in 0..args.len().saturating_sub(1) {
         if args[i] == flag {
             if let Ok(v) = args[i + 1].parse::<usize>() {
+                return v.max(1);
+            }
+        }
+    }
+    default
+}
+
+#[cfg(feature = "agent")]
+fn parse_u64_arg(args: &[String], flag: &str, default: u64) -> u64 {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] == flag {
+            if let Ok(v) = args[i + 1].parse::<u64>() {
                 return v.max(1);
             }
         }
@@ -90,6 +122,7 @@ fn replay_capture_smoke_summary_json() -> String {
     cap.summary_json()
 }
 
+#[cfg(feature = "interactive")]
 fn format_launch_stage(stage: LaunchStage) -> String {
     match stage {
         LaunchStage::Idle => "idle".to_string(),
@@ -114,6 +147,7 @@ fn format_launch_stage(stage: LaunchStage) -> String {
     }
 }
 
+#[cfg(feature = "interactive")]
 fn format_launch_validation_error(reason: LaunchValidationError) -> &'static str {
     match reason {
         LaunchValidationError::EmptyCartridgeId => "empty_cartridge_id",
@@ -302,6 +336,56 @@ fn main() {
         std::process::exit(2);
     }
 
+    if args.iter().any(|a| a == "--server") {
+        #[cfg(feature = "server")]
+        {
+            let port = parse_usize_arg(&args, "--port", 8080) as u16;
+            let recordings_dir = parse_string_arg(&args, "--recordings-dir")
+                .unwrap_or_else(|| "./recordings".to_string());
+            
+            let rt = tokio::runtime::Runtime::new().expect("tokio runtime failed");
+            rt.block_on(async {
+                if let Err(e) = server::run_server(port, recordings_dir).await {
+                    eprintln!("Server error: {}", e);
+                    std::process::exit(1);
+                }
+            });
+            return;
+        }
+        #[cfg(not(feature = "server"))]
+        {
+            eprintln!("Server feature not enabled. Build with --features server");
+            std::process::exit(1);
+        }
+    }
+
+    // Mode routing after all CLI-only flags are handled
+    let mode = if args.iter().any(|a| a == "--agent") {
+        "agent"
+    } else if args.iter().any(|a| a == "--headless") {
+        "headless"
+    } else {
+        "interactive"
+    };
+
+    match mode {
+        #[cfg(feature = "interactive")]
+        "interactive" => run_interactive(&args),
+        #[cfg(feature = "agent")]
+        "headless" => run_headless(&args),
+        #[cfg(feature = "agent")]
+        "agent" => run_agent(&args),
+        _ => {
+            eprintln!("Mode '{}' not available. Build with appropriate features.", mode);
+            eprintln!("  --interactive (default): requires 'interactive' feature (sdl2)");
+            eprintln!("  --headless / --agent: requires 'agent' feature");
+            std::process::exit(1);
+        }
+    }
+}
+
+#[cfg(feature = "interactive")]
+fn run_interactive(args: &[String]) {
     let sdl = sdl2::init().expect("SDL init failed");
     let video = sdl.video().expect("SDL video init failed");
     let audio = sdl.audio().expect("SDL audio init failed");
@@ -319,7 +403,7 @@ fn main() {
         .open_queue::<i16, _>(None, &desired)
         .expect("audio queue open failed");
 
-    let profile = parse_mix_profile(&args);
+    let profile = parse_mix_profile(args);
     let mut synth = AudioEngine::new_with_profile(queue.spec().freq as u32, profile);
     queue.resume();
 
@@ -436,6 +520,73 @@ fn main() {
         present_frame(&mut canvas, &mut texture, src).expect("present frame failed");
 
         pacer.wait_next_frame();
+    }
+}
+
+#[cfg(feature = "agent")]
+fn run_headless(args: &[String]) {
+    use crate::headless::HeadlessAurex;
+    use crate::agent_session::strategy_by_name;
+
+    let frames = parse_u64_arg(args, "--frames", 60);
+    let strategy_name = parse_string_arg(args, "--strategy").unwrap_or_else(|| "passive".to_string());
+    let mut strategy = strategy_by_name(&strategy_name);
+
+    let mut runtime = HeadlessAurex::new(parse_mix_profile(args));
+
+    for frame in 0..frames {
+        let input = strategy.decide_input(frame, &[]);
+        let output = runtime.run_frame(input);
+        if frame % 60 == 0 {
+            println!(
+                "Headless frame {} phase={:?} scene={:?}",
+                output.frame_number,
+                output.phase,
+                runtime.current_scene()
+            );
+        }
+    }
+
+    println!("Headless run complete: {} frames", frames);
+}
+
+#[cfg(feature = "agent")]
+fn run_agent(args: &[String]) {
+    use crate::agent_session::{AgentSession, strategy_by_name};
+
+    let max_frames = parse_u64_arg(args, "--max-frames", 60);
+    let strategy_name = parse_string_arg(args, "--strategy").unwrap_or_else(|| "explorer".to_string());
+    let output_dir = parse_string_arg(args, "--output-dir").unwrap_or_else(|| "/tmp/recordings".to_string());
+    let game_id = parse_string_arg(args, "--game").unwrap_or_else(|| "default".to_string());
+
+    let strategy = strategy_by_name(&strategy_name);
+
+    let mut session = AgentSession::new(&game_id, strategy, true, &output_dir)
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to create agent session: {}", e);
+            std::process::exit(1);
+        });
+
+    println!(
+        "Agent session started: game={} strategy={} frames={} output_dir={}",
+        game_id, strategy_name, max_frames, output_dir
+    );
+
+    match session.run_for_frames(max_frames) {
+        Ok(result) => {
+            println!(
+                "Agent session complete: frames={} strategy={}",
+                result.frames_played,
+                result.strategy_name
+            );
+            if let Some(path) = result.recording_path {
+                println!("Recording saved to: {}", path);
+            }
+        }
+        Err(e) => {
+            eprintln!("Agent session failed: {}", e);
+            std::process::exit(1);
+        }
     }
 }
 
