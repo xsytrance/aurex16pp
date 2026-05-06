@@ -71,7 +71,7 @@ const PCM_SLOT_BYTES: usize = 8192;
 const WAVETABLE_BYTES: usize = 5 * WAVE_SIZE * 2;
 const MIX_SHIFT: i32 = 10;
 const PATTERN_STEPS: usize = 16;
-const TRACK_BPM: [u16; 6] = [140, 130, 120, 100, 122, 136];
+const TRACK_BPM: [u16; 6] = [96, 132, 124, 102, 124, 138];
 const MASTER_LIMIT: i32 = 27_000;
 
 const WAVE_SINE: usize = 0;
@@ -470,7 +470,7 @@ impl AudioEngine {
             } else if i < 16 {
                 self.note_on(i, arp[(step + (i - 8) * 2) % PATTERN_STEPS], Self::track_instruments(tid).2, AudioMode::Game);
             } else if i < 20 {
-                let ghost = arp[(step + i) % PATTERN_STEPS] / 2;
+                let ghost = arp[(step + i) % PATTERN_STEPS] / 3;
                 self.note_on(i, ghost, 6, AudioMode::Game);
             } else {
                 let hit = Self::perc_for_track(tid, i - 20, step);
@@ -521,8 +521,29 @@ impl AudioEngine {
 
         v.pan_l_q10 = ((VOICE_COUNT - idx) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
         v.pan_r_q10 = ((idx + 1) as u16 * 1024 / VOICE_COUNT as u16).clamp(128, 1024);
-        let fx_lane = match idx % 4 { 0 => 0b0001, 1 => 0b0010, 2 => 0b0100, _ => 0 };
-        v.fx = if matches!(mode, AudioMode::Boot) { 0 } else { fx_lane | (((self.track_id as usize + idx) as u8) & 0b1_0000) };
+        let fx_lane = if idx < 8 {
+            // melody+bass can keep richer FX
+            match idx % 4 { 0 => 0b0001, 1 => 0b0010, 2 => 0b0100, _ => 0 }
+        } else if idx < 16 {
+            // arp: keep only smoothing filter, avoid overdrive/echo harshness
+            0b0100
+        } else if idx < 20 {
+            // ghost layer: dry
+            0
+        } else {
+            // percussion lanes: dry/noise only
+            0
+        };
+        if matches!(mode, AudioMode::Boot) {
+            v.fx = 0;
+        } else {
+            let mut fx = fx_lane;
+            let allow_bitstep = idx < 8; // melody+bass only
+            if allow_bitstep && ((self.track_id as usize + idx) & 1 == 1) {
+                fx |= 0b1_0000;
+            }
+            v.fx = fx;
+        }
         v.phase_inc = phase_inc;
 
         if inst.vibrato_hz_x10 == 0 { v.vib_phase = 0; }
@@ -725,7 +746,7 @@ impl AudioEngine {
 
     fn track_instruments(track: usize) -> (u8, u8, u8) {
         match track {
-            0 => (0, 1, 2),
+            0 => (7, 2, 6),
             1 => (1, 6, 2),
             2 => (0, 2, 3),
             3 => (3, 6, 0),
@@ -735,9 +756,24 @@ impl AudioEngine {
     }
 
     fn track_patterns(track: usize) -> (&'static [u16; PATTERN_STEPS], &'static [u16; PATTERN_STEPS], &'static [u16; PATTERN_STEPS]) {
-        const M0: [u16; PATTERN_STEPS] = [494, 370, 330, 247, 494, 370, 330, 247, 494, 370, 494, 370, 330, 247, 330, 247];
-        const B0: [u16; PATTERN_STEPS] = [123, 92, 82, 62, 123, 92, 82, 62, 123, 92, 123, 92, 82, 62, 82, 62];
-        const A0: [u16; PATTERN_STEPS] = [494, 370, 330, 247, 370, 494, 370, 247, 330, 247, 494, 370, 330, 247, 494, 370];
+        const M0: [u16; PATTERN_STEPS] = [
+            262, 294, 330, 392,
+            330, 294, 262, 220,
+            247, 294, 330, 392,
+            349, 330, 294, 262,
+        ];
+        const B0: [u16; PATTERN_STEPS] = [
+            65, 65, 65, 65,
+            55, 55, 55, 55,
+            49, 49, 49, 49,
+            55, 55, 62, 65,
+        ];
+        const A0: [u16; PATTERN_STEPS] = [
+            392, 440, 392, 494,
+            392, 494, 392, 523,
+            349, 392, 349, 440,
+            349, 440, 349, 494,
+        ];
 
         const M1: [u16; PATTERN_STEPS] = [233, 311, 349, 466, 233, 311, 349, 466, 349, 311, 233, 0, 466, 349, 311, 233];
         const B1: [u16; PATTERN_STEPS] = [116, 155, 175, 233, 116, 155, 175, 233, 175, 155, 116, 0, 233, 175, 155, 116];
@@ -772,9 +808,16 @@ impl AudioEngine {
     fn perc_for_track(track: usize, lane: usize, step: usize) -> u16 {
         const K: [u16; PATTERN_STEPS] = [82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0, 82, 0];
         const S: [u16; PATTERN_STEPS] = [0, 0, 0, 0, 350, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0, 0];
-        const H: [u16; PATTERN_STEPS] = [4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0, 4000, 0];
-        const O: [u16; PATTERN_STEPS] = [0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000, 0, 3000];
-        if track == 4 {
+        const H: [u16; PATTERN_STEPS] = [1400, 0, 1200, 0, 1400, 0, 1200, 0, 1400, 0, 1200, 0, 1400, 0, 1200, 0];
+        const O: [u16; PATTERN_STEPS] = [0, 900, 0, 1100, 0, 900, 0, 1100, 0, 900, 0, 1100, 0, 900, 0, 1200];
+        if track == 0 {
+            match lane {
+                0 => [65, 0, 0, 0, 65, 0, 0, 0, 65, 0, 0, 0, 65, 0, 0, 0][step],
+                1 => [0, 0, 220, 0, 0, 0, 0, 0, 0, 0, 220, 0, 0, 0, 0, 0][step],
+                2 => [0, 700, 0, 700, 0, 700, 0, 700, 0, 700, 0, 700, 0, 700, 0, 700][step],
+                _ => [0, 0, 0, 0, 0, 850, 0, 0, 0, 0, 0, 0, 0, 900, 0, 0][step],
+            }
+        } else if track == 4 {
             match lane {
                 0 => [82, 82, 0, 82, 0, 82, 82, 0, 82, 0, 82, 82, 0, 82, 0, 82][step],
                 1 => [0, 0, 350, 0, 0, 0, 0, 350, 0, 0, 350, 0, 0, 0, 0, 350][step],
