@@ -52,11 +52,35 @@ impl InputStrategy for AggressiveStrategy {
     fn name(&self) -> &'static str { "aggressive" }
 }
 
+pub struct PrimePilotStrategy;
+impl InputStrategy for PrimePilotStrategy {
+    fn decide_input(&mut self, frame: u64, _fb: &[u16]) -> InputState {
+        // "Manual-style" authored input macro: strafe, micro-adjust, and burst-fire cadence.
+        let phase = frame % 120;
+        let left = (phase >= 8 && phase < 24) || (phase >= 72 && phase < 84);
+        let right = (phase >= 36 && phase < 56) || (phase >= 92 && phase < 110);
+        let up = phase % 30 < 3; // tiny lift taps
+        let down = phase % 40 >= 28 && phase % 40 < 31; // rare corrective dips
+        let accept = frame % 3 == 0 || (phase >= 56 && phase < 64); // sustained fire window
+
+        InputState {
+            left,
+            right,
+            up,
+            down,
+            accept,
+            cancel: false,
+        }
+    }
+    fn name(&self) -> &'static str { "prime" }
+}
+
 pub fn strategy_by_name(name: &str) -> Box<dyn InputStrategy> {
     match name {
         "explorer" => Box::new(ExplorerStrategy { rng_seed: 0xDEADBEEF }),
         "passive" => Box::new(PassiveStrategy),
         "aggressive" => Box::new(AggressiveStrategy),
+        "prime" => Box::new(PrimePilotStrategy),
         _ => Box::new(ExplorerStrategy { rng_seed: 0xDEADBEEF }),
     }
 }
@@ -80,6 +104,7 @@ impl AgentSession {
         strategy: Box<dyn InputStrategy>,
         record: bool,
         output_dir: &str,
+        audio_profile: MixProfile,
     ) -> Result<Self, String> {
         let recorder = if record {
             let timestamp = std::time::SystemTime::now()
@@ -103,7 +128,7 @@ impl AgentSession {
         };
 
         Ok(Self {
-            runtime: HeadlessAurex::new(MixProfile::Default),
+            runtime: HeadlessAurex::new(audio_profile),
             recorder,
             strategy,
             recording_path: None,

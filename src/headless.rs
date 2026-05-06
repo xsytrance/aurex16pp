@@ -67,12 +67,13 @@ impl HeadlessAurex {
         self.runtime_events.clear();
         self.system.drain_events(&mut self.runtime_events);
 
+        // Dispatch audio commands from this frame BEFORE rendering audio,
+        // so cues are sample-aligned with visual events (no 1-frame lag).
+        dispatch_runtime_events(&mut self.audio, &self.runtime_events);
+
         // Audio: render 800 stereo samples
         let mut audio_block = [0i16; SAMPLES_PER_FRAME * 2];
         self.audio.render_block(audio_mode, &mut audio_block);
-
-        // Dispatch audio commands from events
-        dispatch_runtime_events(&mut self.audio, &self.runtime_events);
 
         let fb = self.system.framebuffer().pixels().to_vec();
 

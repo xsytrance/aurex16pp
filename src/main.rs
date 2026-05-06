@@ -561,7 +561,8 @@ fn run_agent(args: &[String]) {
 
     let strategy = strategy_by_name(&strategy_name);
 
-    let mut session = AgentSession::new(&game_id, strategy, true, &output_dir)
+    let profile = parse_mix_profile(args);
+    let mut session = AgentSession::new(&game_id, strategy, true, &output_dir, profile)
         .unwrap_or_else(|e| {
             eprintln!("Failed to create agent session: {}", e);
             std::process::exit(1);
