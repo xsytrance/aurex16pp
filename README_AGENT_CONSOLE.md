@@ -1,14 +1,17 @@
 # Aurex-16++ Agent Console
 
-A fully agent-operated game console. Humans request games through a web dashboard. AI agents autonomously play them. Every session is screen+audio recorded to MP4 for humans to watch on demand.
+A fully agent-operated game console. Humans request games through a web dashboard. AI agents autonomously play them — **live-streamed to the browser while they play** — and every session is screen+audio recorded to MP4 for on-demand viewing.
 
 ## Architecture
 
 ```
-Human -> Web Dashboard (React) -> Axum API -> Agent Session -> Headless Aurex -> FFmpeg -> MP4
-                                                          |
-                                                          v
-                                                    SDL2 Window (optional)
+Human -> Web Dashboard (vanilla SPA) -> Axum API -> Agent Session -> Headless Aurex -> FFmpeg -> MP4
+                                           |               |
+                                           v               v
+                                     Live frame map   (real-time paced, 60 FPS)
+                                           |
+                                           v
+                                  Canvas live view (~20 FPS RGBA polling)
 ```
 
 ## Quick Start
@@ -16,19 +19,18 @@ Human -> Web Dashboard (React) -> Axum API -> Agent Session -> Headless Aurex ->
 ### 1. Start the Dashboard Server
 
 ```bash
-cd /mnt/agents/aurex16pp
 ./scripts/start-dashboard.sh
 ```
 
-The dashboard will be available at `http://localhost:8080`.
+The dashboard will be available at `http://localhost:8080` (and on your LAN IP).
 
 ### 2. Use the Dashboard
 
 - **Create** a game: Enter title, genre, description → "Create Game"
-- **Library**: See all games with status badges and recording counts
-- **Play Agent**: Click "Play Agent" on any game, choose a strategy (explorer/passive/aggressive)
-- **Watch**: Click "Watch" to view the MP4 recording with full video player
-- **Recordings**: Browse all recordings, filter, sort, watch any time
+- **Library**: See all games with status badges, LIVE indicators, and recording counts
+- **Play Agent**: Choose a strategy (explorer/passive/aggressive/prime), duration, and audio profile — then **watch the agent play live** on a canvas stream
+- **Watch**: MP4 playback with HTTP range/seek support; if the browser cannot decode video (VMs, automation builds), the page automatically falls back to a server-decoded **canvas replay**
+- **Recordings**: Browse all recordings, watch any time; the library persists across restarts (`recordings/aurex.db.json`)
 
 ### 3. CLI Modes (for developers)
 
@@ -68,12 +70,12 @@ cargo run --features server -- --server --port 8080 --recordings-dir ./recording
   - **Aggressive**: Rapid alternating inputs
 - `SessionResult` with recording path, frame count, strategy name
 
-### Stage 4: Web Dashboard (`webapp/`)
-- **React + TypeScript + Tailwind + shadcn/ui**
-- Dark gaming console aesthetic
-- Pages: Create Game, Library, Game Detail, Recordings, Player
-- Real-time API integration with loading states
-- HTML5 `<video>` player for MP4 playback
+### Stage 4: Web Dashboard (`webapp/dist/index.html`)
+- Single-file vanilla-JS SPA — no build step, served directly by the server
+- Dark gaming console aesthetic (scanlines, neon accents)
+- Pages: Library (+create game), Live view, Recordings, Player
+- **Live view**: polls the live-frame endpoint and paints a pixel-perfect canvas at ~20 FPS with progress bar and LIVE indicators
+- HTML5 `<video>` player for MP4 playback, with automatic canvas-replay fallback when the browser has no media pipeline
 
 ### Stage 5: API Server (`src/server/`)
 - **Axum** async web server with CORS
@@ -90,11 +92,14 @@ cargo run --features server -- --server --port 8080 --recordings-dir ./recording
 | `/api/games/create` | POST | Create new game |
 | `/api/games` | GET | List all games |
 | `/api/games/:id` | GET | Game detail + recordings |
-| `/api/games/:id/play` | POST | Trigger agent play session |
+| `/api/games/:id/play` | POST | Start live agent session (`{strategy, max_frames, audio_profile?}`) |
+| `/api/live` | GET | List in-flight sessions (agent play + canvas replays) |
+| `/api/live/:session_id/frame` | GET | Latest 426x240 RGBA frame (raw bytes; `x-frame-number`, `x-max-frames` headers) |
 | `/api/recordings` | GET | List all recordings |
-| `/api/recordings/:id` | GET | Stream MP4 video |
+| `/api/recordings/:id` | GET | Stream MP4 video (HTTP Range supported) |
 | `/api/recordings/:id/info` | GET | Recording metadata |
-| `/api/strategies` | GET | Available strategies |
+| `/api/recordings/:id/replay` | POST | Server-decoded canvas replay of a recording (for browsers without video decode) |
+| `/api/strategies` | GET | Available strategies (explorer, passive, aggressive, prime) |
 
 ## Build Features
 

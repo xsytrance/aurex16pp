@@ -11,21 +11,18 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_DIR"
 
-# Environment setup
-. "$HOME/.cargo/env"
-export CARGO_TARGET_DIR=/tmp/aurex-target
-export RUSTFLAGS="-C linker=gcc -L /tmp/sdl2-link"
-
-# Ensure SDL2 symlink exists for full builds
-mkdir -p /tmp/sdl2-link
-ln -sf /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 /tmp/sdl2-link/libSDL2.so 2>/dev/null || true
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # Ensure recordings directory exists
 mkdir -p "$RECORDINGS_DIR"
 
-# Ensure webapp dist exists
+# Sanity checks
 if [ ! -f "webapp/dist/index.html" ]; then
-    echo "ERROR: Frontend not built. Build the webapp first."
+    echo "ERROR: webapp/dist/index.html missing — the dashboard frontend is not present."
+    exit 1
+fi
+if ! command -v ffmpeg >/dev/null; then
+    echo "ERROR: ffmpeg not found — required for session recording."
     exit 1
 fi
 
@@ -39,13 +36,12 @@ echo "  API:          http://localhost:$PORT/api"
 echo "========================================"
 echo ""
 
-# Build if needed
+# Server build needs no SDL2 — headless + web only
 echo "Building server (if needed)..."
-cargo build --features server 2>&1 | tail -5
+cargo build --no-default-features --features server 2>&1 | tail -3
 
 echo ""
 echo "Starting server..."
 echo ""
 
-# Run server
-cargo run --features server -- --server --port "$PORT" --recordings-dir "$RECORDINGS_DIR"
+exec cargo run --no-default-features --features server -- --server --port "$PORT" --recordings-dir "$RECORDINGS_DIR"

@@ -85,6 +85,8 @@ pub fn strategy_by_name(name: &str) -> Box<dyn InputStrategy> {
     }
 }
 
+pub type FrameObserver = Box<dyn FnMut(u64, &[u16]) + Send>;
+
 pub struct SessionResult {
     pub recording_path: Option<String>,
     pub frames_played: u64,
@@ -136,13 +138,40 @@ impl AgentSession {
     }
 
     pub fn run_for_frames(&mut self, max_frames: u64) -> Result<SessionResult, String> {
+        self.run_session(max_frames, false, None)
+    }
+
+    /// Run a session with optional real-time pacing (60 FPS wall clock) and an
+    /// optional per-frame observer that receives the RGB555 framebuffer —
+    /// used by the server to publish live frames while the agent plays.
+    pub fn run_session(
+        &mut self,
+        max_frames: u64,
+        realtime: bool,
+        mut observer: Option<FrameObserver>,
+    ) -> Result<SessionResult, String> {
+        let frame_duration = std::time::Duration::from_nanos(16_666_667);
+        let start = std::time::Instant::now();
+
         for frame in 0..max_frames {
+            if realtime {
+                let target = start + frame_duration.mul_f64(frame as f64);
+                let now = std::time::Instant::now();
+                if target > now {
+                    std::thread::sleep(target - now);
+                }
+            }
+
             let input = self.strategy.decide_input(frame, &[]);
             let output = self.runtime.run_frame(input);
 
             if let Some(ref mut rec) = self.recorder {
                 rec.write_frame(&output.framebuffer, &output.audio_samples)
                     .map_err(|e| format!("frame {}: {}", frame, e))?;
+            }
+
+            if let Some(obs) = observer.as_mut() {
+                obs(frame, &output.framebuffer);
             }
         }
 

@@ -25,17 +25,54 @@ pub struct Recording {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Serialize, Deserialize, Default)]
+struct Snapshot {
+    games: Vec<Game>,
+    recordings: Vec<Recording>,
+}
+
 pub struct Database {
+    path: String,
     games: Mutex<HashMap<String, Game>>,
     recordings: Mutex<HashMap<String, Recording>>,
 }
 
 impl Database {
-    pub fn new(_path: &str) -> Result<Self, String> {
+    pub fn new(path: &str) -> Result<Self, String> {
+        let mut snapshot: Snapshot = std::fs::read_to_string(path)
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default();
+
+        // Drop recordings whose MP4 no longer exists on disk.
+        snapshot
+            .recordings
+            .retain(|r| std::path::Path::new(&r.path).exists());
+
+        // A restart can leave games stuck in "generating"; their session is gone.
+        for game in &mut snapshot.games {
+            if game.status == "generating" {
+                game.status = "ready".to_string();
+            }
+        }
+
         Ok(Self {
-            games: Mutex::new(HashMap::new()),
-            recordings: Mutex::new(HashMap::new()),
+            path: path.to_string(),
+            games: Mutex::new(snapshot.games.into_iter().map(|g| (g.id.clone(), g)).collect()),
+            recordings: Mutex::new(
+                snapshot.recordings.into_iter().map(|r| (r.id.clone(), r)).collect(),
+            ),
         })
+    }
+
+    fn persist(&self) {
+        let snapshot = Snapshot {
+            games: self.games.lock().unwrap().values().cloned().collect(),
+            recordings: self.recordings.lock().unwrap().values().cloned().collect(),
+        };
+        if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+            let _ = std::fs::write(&self.path, json);
+        }
     }
 
     pub fn create_game(&self, title: &str, genre: &str, description: &str) -> Result<Game, String> {
@@ -49,6 +86,7 @@ impl Database {
             created_at: Utc::now(),
         };
         self.games.lock().unwrap().insert(id, game.clone());
+        self.persist();
         Ok(game)
     }
 
@@ -61,9 +99,18 @@ impl Database {
     }
 
     pub fn update_game_status(&self, id: &str, status: &str) -> Result<(), String> {
-        let mut games = self.games.lock().unwrap();
-        if let Some(game) = games.get_mut(id) {
-            game.status = status.to_string();
+        let found = {
+            let mut games = self.games.lock().unwrap();
+            match games.get_mut(id) {
+                Some(game) => {
+                    game.status = status.to_string();
+                    true
+                }
+                None => false,
+            }
+        };
+        if found {
+            self.persist();
             Ok(())
         } else {
             Err("Game not found".to_string())
@@ -72,6 +119,7 @@ impl Database {
 
     pub fn add_recording(&self, recording: Recording) -> Result<(), String> {
         self.recordings.lock().unwrap().insert(recording.id.clone(), recording);
+        self.persist();
         Ok(())
     }
 

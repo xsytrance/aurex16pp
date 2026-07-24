@@ -7,3 +7,6 @@
 .DS_Store
 node_modules/
 dist/
+# The dashboard SPA is hand-authored (no build step) and served by the server:
+!webapp/dist/
+!webapp/dist/index.html

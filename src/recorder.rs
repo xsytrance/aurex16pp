@@ -162,18 +162,25 @@ impl SessionRecorder {
             let _ = t.join();
         }
 
-        // Close our references to FIFOs - ffmpeg will see EOF
-        // Then wait for ffmpeg to finish encoding
+        // FIFO writers have exited, so ffmpeg sees EOF on both inputs. Wait for
+        // it to finish encoding and the faststart rewrite — killing it early
+        // truncates the moov atom and corrupts the file. Bound the wait so a
+        // wedged ffmpeg can't hang the session forever.
         if let Some(mut child) = self.ffmpeg_child.take() {
-            // Give ffmpeg time to flush
-            std::thread::sleep(std::time::Duration::from_millis(500));
-
-            match child.try_wait() {
-                Ok(None) => {
-                    let _ = child.kill();
-                    let _ = child.wait();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+            loop {
+                match child.try_wait() {
+                    Ok(Some(_)) => break,
+                    Ok(None) => {
+                        if std::time::Instant::now() > deadline {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            break;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                    }
+                    Err(_) => break,
                 }
-                _ => {}
             }
         }
 

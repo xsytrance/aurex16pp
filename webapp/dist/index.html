@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurex-16++ Agent Console</title>
+<style>
+  :root {
+    --bg: #070a14;
+    --panel: #0d1224;
+    --panel2: #131a33;
+    --edge: #1f2a4d;
+    --text: #c8d4f5;
+    --dim: #6b7aa8;
+    --cyan: #38e1ff;
+    --magenta: #ff4fd8;
+    --lime: #6dff8f;
+    --amber: #ffc93c;
+    --red: #ff5d5d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "JetBrains Mono", "Fira Mono", ui-monospace, Menlo, Consolas, monospace;
+    min-height: 100vh;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0 1px, transparent 1px 3px);
+    z-index: 999;
+  }
+  header {
+    display: flex; align-items: center; gap: 24px;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--edge);
+    background: linear-gradient(180deg, #0c1226, #080c18);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo {
+    font-size: 18px; font-weight: 700; letter-spacing: 2px;
+    color: var(--cyan);
+    text-shadow: 0 0 12px rgba(56,225,255,.55);
+  }
+  .logo span { color: var(--magenta); text-shadow: 0 0 12px rgba(255,79,216,.55); }
+  nav { display: flex; gap: 6px; margin-left: auto; }
+  nav a {
+    color: var(--dim); text-decoration: none; font-size: 13px;
+    padding: 7px 14px; border: 1px solid transparent; border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  nav a.active { color: var(--cyan); border-color: var(--edge); background: var(--panel); }
+  nav a:hover { color: var(--text); }
+  #live-indicator {
+    display: none; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--red); letter-spacing: 1px;
+    cursor: pointer;
+  }
+  #live-indicator .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--red); box-shadow: 0 0 10px var(--red);
+    animation: pulse 1.1s infinite;
+  }
+  @keyframes pulse { 50% { opacity: .35; } }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px; }
+  h2 {
+    font-size: 14px; letter-spacing: 3px; color: var(--dim);
+    text-transform: uppercase; margin-bottom: 18px;
+  }
+  h2 b { color: var(--cyan); font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card .title { font-size: 16px; font-weight: 700; color: #eaf0ff; }
+  .card .meta { font-size: 12px; color: var(--dim); display: flex; gap: 12px; flex-wrap: wrap; }
+  .badge {
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 3px; border: 1px solid;
+  }
+  .badge.pending  { color: var(--amber);   border-color: var(--amber); }
+  .badge.generating { color: var(--magenta); border-color: var(--magenta); animation: pulse 1.2s infinite; }
+  .badge.ready    { color: var(--lime);    border-color: var(--lime); }
+  .badge.failed   { color: var(--red);     border-color: var(--red); }
+  .badge.live     { color: var(--red);     border-color: var(--red); animation: pulse 1.1s infinite; }
+  .desc { font-size: 12px; color: var(--dim); line-height: 1.5; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button, .btn {
+    font-family: inherit; font-size: 12px; letter-spacing: 1px;
+    background: var(--panel2); color: var(--cyan);
+    border: 1px solid var(--edge); border-radius: 4px;
+    padding: 8px 14px; cursor: pointer; text-decoration: none; display: inline-block;
+  }
+  button:hover, .btn:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(56,225,255,.25); }
+  button.primary { color: #041018; background: var(--cyan); font-weight: 700; }
+  button.primary:hover { box-shadow: 0 0 16px rgba(56,225,255,.6); }
+  button.danger { color: var(--magenta); }
+  button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+  input, select, textarea {
+    font-family: inherit; font-size: 13px;
+    background: #0a0f1f; color: var(--text);
+    border: 1px solid var(--edge); border-radius: 4px;
+    padding: 9px 12px; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); }
+  label { font-size: 11px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .field { margin-bottom: 14px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    padding: 22px; margin-bottom: 26px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--dim); padding: 10px 12px; border-bottom: 1px solid var(--edge);
+  }
+  td { padding: 12px; border-bottom: 1px solid #141c38; }
+  tr:hover td { background: rgba(56,225,255,.03); }
+  .screen-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .screen {
+    position: relative;
+    border: 2px solid var(--edge); border-radius: 10px;
+    background: #000; overflow: hidden;
+    box-shadow: 0 0 40px rgba(56,225,255,.12), inset 0 0 60px rgba(0,0,0,.6);
+  }
+  .screen canvas, .screen video { display: block; width: 852px; max-width: 90vw; }
+  .screen canvas { image-rendering: pixelated; }
+  .screen .live-tag {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(0,0,0,.65); color: var(--red);
+    font-size: 11px; letter-spacing: 2px; padding: 4px 10px; border-radius: 3px;
+    display: flex; gap: 7px; align-items: center;
+  }
+  .screen .live-tag .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); animation: pulse 1.1s infinite; }
+  .progress { width: 852px; max-width: 90vw; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+  .progress div { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta)); width: 0%; transition: width .3s linear; }
+  .stat-line { font-size: 12px; color: var(--dim); letter-spacing: 1px; }
+  .empty { color: var(--dim); font-size: 13px; padding: 30px; text-align: center; }
+  dialog {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--edge); border-radius: 10px;
+    padding: 26px; min-width: 380px;
+  }
+  dialog::backdrop { background: rgba(3,5,12,.8); }
+  .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    background: var(--panel2); border: 1px solid var(--cyan); color: var(--text);
+    border-radius: 6px; padding: 12px 18px; font-size: 13px;
+    box-shadow: 0 0 20px rgba(56,225,255,.2);
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">AUREX-16<span>++</span> <small style="color:var(--dim);font-weight:400;font-size:11px;letter-spacing:1px">AGENT CONSOLE</small></div>
+  <div id="live-indicator"><span class="dot"></span><span id="live-indicator-text">LIVE</span></div>
+  <nav>
+    <a href="#/library" data-route="library">LIBRARY</a>
+    <a href="#/recordings" data-route="recordings">RECORDINGS</a>
+  </nav>
+</header>
+<main id="app"></main>
+
+<dialog id="play-dialog">
+  <h2>DEPLOY <b>AGENT</b></h2>
+  <div class="field">
+    <label>Strategy</label>
+    <select id="play-strategy"></select>
+  </div>
+  <div class="form-grid2">
+    <div class="field">
+      <label>Duration (seconds)</label>
+      <input id="play-duration" type="number" value="30" min="5" max="600">
+    </div>
+    <div class="field">
+      <label>Audio profile</label>
+      <select id="play-audio">
+        <option value="default">default</option>
+        <option value="soft">soft</option>
+        <option value="arcade">arcade</option>
+      </select>
+    </div>
+  </div>
+  <div class="row" style="justify-content:flex-end; margin-top:8px">
+    <button onclick="document.getElementById('play-dialog').close()">CANCEL</button>
+    <button class="primary" id="play-go">▶ PLAY LIVE</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (s, el=document) => el.querySelector(s);
+const app = $('#app');
+const API = '/api';
+let liveTimer = null;
+let liveIndicatorTimer = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtBytes = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : (n/1024).toFixed(0)+' KB';
+const fmtDate = iso => new Date(iso).toLocaleString();
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+async function api(path, opts) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) throw new Error(`${res.status} on ${path}`);
+  return res.json();
+}
+
+// ---------- routing ----------
+function route() {
+  if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+  const hash = location.hash || '#/library';
+  const [_, page, arg] = hash.split('/');
+  document.querySelectorAll('nav a').forEach(a =>
+    a.classList.toggle('active', a.dataset.route === page));
+  if (page === 'recordings') return renderRecordings();
+  if (page === 'live' && arg) return renderLive(arg);
+  if (page === 'watch' && arg) return renderWatch(arg);
+  return renderLibrary();
+}
+window.addEventListener('hashchange', route);
+
+// ---------- library ----------
+async function renderLibrary() {
+  app.innerHTML = `
+    <div class="panel">
+      <h2>REQUEST <b>NEW GAME</b></h2>
+      <div class="form-grid2">
+        <div class="field"><label>Title</label><input id="g-title" placeholder="Neon Drift"></div>
+        <div class="field"><label>Genre</label><input id="g-genre" placeholder="shmup / racer / puzzle"></div>
+      </div>
+      <div class="field"><label>Description</label><textarea id="g-desc" rows="2" placeholder="What should this game be?"></textarea></div>
+      <button class="primary" id="g-create">+ CREATE GAME</button>
+    </div>
+    <h2>GAME <b>LIBRARY</b></h2>
+    <div class="grid" id="games"><div class="empty">Loading…</div></div>`;
+
+  $('#g-create').onclick = async () => {
+    const title = $('#g-title').value.trim();
+    if (!title) return toast('Title required');
+    await api('/games/create', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ title, genre: $('#g-genre').value.trim() || 'unknown', description: $('#g-desc').value.trim() })
+    });
+    toast(`Game "${title}" created`);
+    loadGames();
+    $('#g-title').value = ''; $('#g-genre').value = ''; $('#g-desc').value = '';
+  };
+  loadGames();
+}
+
+async function loadGames() {
+  const el = $('#games');
+  if (!el) return;
+  const [{games}, {sessions}] = await Promise.all([api('/games'), api('/live')]);
+  const liveByGame = Object.fromEntries(sessions.map(s => [s.game_id, s.session_id]));
+  if (!games.length) {
+    el.innerHTML = '<div class="empty">No games yet — request one above and let an agent play it.</div>';
+    return;
+  }
+  games.sort((a,b) => b.created_at.localeCompare(a.created_at));
+  el.innerHTML = games.map(g => {
+    const liveSid = liveByGame[g.id];
+    return `<div class="card">
+      <div class="row" style="justify-content:space-between">
+        <span class="title">${esc(g.title)}</span>
+        ${liveSid ? '<span class="badge live">● LIVE</span>' : `<span class="badge ${esc(g.status)}">${esc(g.status)}</span>`}
+      </div>
+      <div class="meta"><span>${esc(g.genre)}</span><span>${g.recording_count} recording${g.recording_count===1?'':'s'}</span></div>
+      <div class="row" style="margin-top:auto">
+        ${liveSid
+          ? `<a class="btn" href="#/live/${esc(liveSid)}">👁 WATCH LIVE</a>`
+          : `<button onclick="openPlayDialog('${esc(g.id)}')">▶ PLAY AGENT</button>`}
+        ${g.recording_count ? `<button onclick="watchLatest('${esc(g.id)}')">⏵ LATEST VOD</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function watchLatest(gameId) {
+  const g = await api(`/games/${gameId}`);
+  if (!g.recordings.length) return toast('No recordings yet');
+  g.recordings.sort((a,b) => b.created_at.localeCompare(a.created_at));
+  location.hash = `#/watch/${g.recordings[0].id}`;
+}
+
+// ---------- play dialog ----------
+let playGameId = null;
+async function openPlayDialog(gameId) {
+  playGameId = gameId;
+  const {strategies} = await api('/strategies');
+  $('#play-strategy').innerHTML = strategies.map(s => `<option value="${s}">${s}</option>`).join('');
+  $('#play-dialog').showModal();
+}
+$('#play-go').onclick = async () => {
+  const btn = $('#play-go');
+  btn.disabled = true;
+  try {
+    const res = await api(`/games/${playGameId}/play`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        strategy: $('#play-strategy').value,
+        max_frames: Math.round((+$('#play-duration').value || 30) * 60),
+        audio_profile: $('#play-audio').value,
+      })
+    });
+    $('#play-dialog').close();
+    location.hash = `#/live/${res.session_id}`;
+  } catch (e) {
+    toast('Failed to start session: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ---------- live view ----------
+function renderLive(sessionId) {
+  const isReplay = sessionId.startsWith('replay_');
+  app.innerHTML = `
+    <div class="screen-wrap">
+      <h2>${isReplay ? 'CANVAS <b>REPLAY</b>' : 'AGENT <b>PLAYING LIVE</b>'}</h2>
+      <div class="screen">
+        <canvas id="live-canvas" width="426" height="240"></canvas>
+        <div class="live-tag"><span class="dot"></span>${isReplay ? 'REPLAY' : 'LIVE'}</div>
+      </div>
+      <div class="progress"><div id="live-progress"></div></div>
+      <div class="stat-line" id="live-stats">connecting…</div>
+      <div class="row"><a class="btn" href="#/library">◀ BACK TO LIBRARY</a></div>
+    </div>`;
+
+  const ctx = $('#live-canvas').getContext('2d');
+  const img = ctx.createImageData(426, 240);
+  let ended = false;
+
+  liveTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API}/live/${sessionId}/frame`, {cache: 'no-store'});
+      if (res.status === 404) {
+        if (ended) return;
+        ended = true;
+        clearInterval(liveTimer); liveTimer = null;
+        onLiveEnded(sessionId);
+        return;
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.length === img.data.length) {
+        img.data.set(buf);
+        ctx.putImageData(img, 0, 0);
+      }
+      const frame = +res.headers.get('x-frame-number') || 0;
+      const max = +res.headers.get('x-max-frames') || 1;
+      $('#live-progress').style.width = (100 * frame / max).toFixed(1) + '%';
+      $('#live-stats').textContent = `frame ${frame} / ${max}  ·  ${(frame/60).toFixed(1)}s / ${(max/60).toFixed(0)}s`;
+    } catch (e) { /* transient; keep polling */ }
+  }, 50);
+}
+
+async function onLiveEnded(sessionId) {
+  if (sessionId.startsWith('replay_')) {
+    toast('Replay finished');
+    location.hash = '#/recordings';
+    return;
+  }
+  $('#live-stats').textContent = 'session complete — encoding recording…';
+  // The recording id === session id. Poll briefly until it lands in the DB.
+  for (let i = 0; i < 20; i++) {
+    try {
+      await api(`/recordings/${sessionId}/info`);
+      location.hash = `#/watch/${sessionId}`;
+      return;
+    } catch { await new Promise(r => setTimeout(r, 500)); }
+  }
+  toast('Recording not found — check the recordings page');
+  location.hash = '#/recordings';
+}
+
+async function startCanvasReplay(recordingId) {
+  try {
+    const res = await api(`/recordings/${recordingId}/replay`, {method: 'POST'});
+    location.hash = `#/live/${res.session_id}`;
+  } catch (e) {
+    toast('Replay failed: ' + e.message);
+  }
+}
+
+// ---------- watch ----------
+async function renderWatch(recordingId) {
+  let info = null;
+  try { info = await api(`/recordings/${recordingId}/info`); } catch {}
+  app.innerHTML = `
+    <div class="screen-wrap">
+      <h2>REPLAY <b>${esc(info ? info.game_id : recordingId)}</b></h2>
+      <div class="screen">
+        <video controls autoplay muted src="${API}/recordings/${esc(recordingId)}"></video>
+      </div>
+      ${info ? `<div class="stat-line">strategy: ${esc(info.strategy)} · ${info.duration_secs.toFixed(1)}s · ${fmtBytes(info.file_size)} · ${fmtDate(info.created_at)}</div>` : ''}
+      <div class="row">
+        <button onclick="startCanvasReplay('${esc(recordingId)}')">⏵ CANVAS REPLAY</button>
+        <a class="btn" href="${API}/recordings/${esc(recordingId)}" download="${esc(recordingId)}.mp4">⬇ DOWNLOAD MP4</a>
+        <a class="btn" href="#/recordings">◀ ALL RECORDINGS</a>
+        <a class="btn" href="#/library">LIBRARY</a>
+      </div>
+      <div class="stat-line" id="watch-note"></div>
+    </div>`;
+
+  // Some browsers (VMs, automation builds) have no media decode pipeline at
+  // all: the <video> never reaches HAVE_METADATA and never errors. Detect the
+  // stall and fall back to the server-decoded canvas replay automatically.
+  const video = $('video');
+  setTimeout(() => {
+    if (video.isConnected && video.readyState === 0) {
+      $('#watch-note').textContent = 'video decode unavailable in this browser — switching to canvas replay…';
+      startCanvasReplay(recordingId);
+    }
+  }, 4000);
+}
+
+// ---------- recordings ----------
+async function renderRecordings() {
+  app.innerHTML = `<h2>SESSION <b>RECORDINGS</b></h2><div class="panel" id="rec-panel"><div class="empty">Loading…</div></div>`;
+  const {recordings} = await api('/recordings');
+  const panel = $('#rec-panel');
+  if (!recordings.length) {
+    panel.innerHTML = '<div class="empty">No recordings yet. Send an agent to play something.</div>';
+    return;
+  }
+  recordings.sort((a,b) => b.created_at.localeCompare(a.created_at));
+  panel.innerHTML = `<table>
+    <tr><th>Game</th><th>Strategy</th><th>Duration</th><th>Size</th><th>Recorded</th><th></th></tr>
+    ${recordings.map(r => `<tr>
+      <td>${esc(r.game_id)}</td>
+      <td>${esc(r.strategy)}</td>
+      <td>${r.duration_secs.toFixed(1)}s</td>
+      <td>${fmtBytes(r.file_size)}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><a class="btn" href="#/watch/${esc(r.id)}">⏵ WATCH</a></td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+// ---------- global live indicator ----------
+async function pollLiveIndicator() {
+  try {
+    const {sessions} = await api('/live');
+    const el = $('#live-indicator');
+    if (sessions.length) {
+      el.style.display = 'flex';
+      $('#live-indicator-text').textContent = `LIVE × ${sessions.length}`;
+      el.onclick = () => location.hash = `#/live/${sessions[0].session_id}`;
+    } else {
+      el.style.display = 'none';
+    }
+    // refresh library badges if visible
+    if ((location.hash || '#/library').startsWith('#/library')) loadGames();
+  } catch {}
+}
+liveIndicatorTimer = setInterval(pollLiveIndicator, 4000);
+
+route();
+pollLiveIndicator();
+</script>
+</body>
+</html>
