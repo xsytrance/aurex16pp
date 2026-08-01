@@ -27,7 +27,7 @@ pub struct AppState {
 
 pub type SharedState = Arc<Mutex<AppState>>;
 
-pub async fn run_server(port: u16, recordings_dir: String) -> Result<(), String> {
+pub async fn run_server(bind: String, port: u16, recordings_dir: String) -> Result<(), String> {
     std::fs::create_dir_all(&recordings_dir).map_err(|e| format!("recordings dir: {}", e))?;
     let db = db::Database::new(&format!("{}/aurex.db.json", recordings_dir))
         .map_err(|e| format!("db init: {}", e))?;
@@ -39,11 +39,11 @@ pub async fn run_server(port: u16, recordings_dir: String) -> Result<(), String>
         .merge(api::routes())
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", bind, port))
         .await
-        .map_err(|e| format!("bind: {}", e))?;
+        .map_err(|e| format!("bind {}:{}: {}", bind, port, e))?;
 
-    println!("Aurex server listening on http://0.0.0.0:{}", port);
+    println!("Aurex server listening on http://{}:{}", bind, port);
     axum::serve(listener, app)
         .await
         .map_err(|e| format!("serve: {}", e))?;

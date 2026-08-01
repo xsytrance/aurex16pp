@@ -342,10 +342,12 @@ fn main() {
             let port = parse_usize_arg(&args, "--port", 8080) as u16;
             let recordings_dir = parse_string_arg(&args, "--recordings-dir")
                 .unwrap_or_else(|| "./recordings".to_string());
-            
+            let bind = parse_string_arg(&args, "--bind")
+                .unwrap_or_else(|| "0.0.0.0".to_string());
+
             let rt = tokio::runtime::Runtime::new().expect("tokio runtime failed");
             rt.block_on(async {
-                if let Err(e) = server::run_server(port, recordings_dir).await {
+                if let Err(e) = server::run_server(bind, port, recordings_dir).await {
                     eprintln!("Server error: {}", e);
                     std::process::exit(1);
                 }

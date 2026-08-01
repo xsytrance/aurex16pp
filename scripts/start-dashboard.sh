@@ -1,11 +1,13 @@
 #!/bin/bash
 # Aurex-16++ Agent Console — Dashboard Startup Script
-# Usage: ./scripts/start-dashboard.sh [port] [recordings-dir]
+# Usage: ./scripts/start-dashboard.sh [port] [recordings-dir] [bind-addr]
+# e.g. tailnet-only: ./scripts/start-dashboard.sh 28739 ./recordings "$(tailscale ip -4)"
 
 set -e
 
 PORT="${1:-8080}"
 RECORDINGS_DIR="${2:-./recordings}"
+BIND="${3:-0.0.0.0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -29,10 +31,11 @@ fi
 echo "========================================"
 echo "  Aurex-16++ Agent Console"
 echo "========================================"
+echo "  Bind:         $BIND"
 echo "  Port:         $PORT"
 echo "  Recordings:   $RECORDINGS_DIR"
-echo "  Dashboard:    http://localhost:$PORT"
-echo "  API:          http://localhost:$PORT/api"
+echo "  Dashboard:    http://$BIND:$PORT"
+echo "  API:          http://$BIND:$PORT/api"
 echo "========================================"
 echo ""
 
@@ -44,4 +47,4 @@ echo ""
 echo "Starting server..."
 echo ""
 
-exec cargo run --no-default-features --features server -- --server --port "$PORT" --recordings-dir "$RECORDINGS_DIR"
+exec cargo run --no-default-features --features server -- --server --bind "$BIND" --port "$PORT" --recordings-dir "$RECORDINGS_DIR"
